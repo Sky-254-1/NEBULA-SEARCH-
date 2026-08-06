@@ -12,6 +12,16 @@ settings = get_settings()
 router = APIRouter(prefix="/api/v1/auth/webauthn/verify", tags=["WebAuthn Verify"])
 
 
+@router.get("/status")
+async def webauthn_verify_status():
+    """Check if WebAuthn verification is enabled."""
+    return {
+        "enabled": settings.enable_webauthn,
+        "rp_id": settings.webauthn_rp_id,
+        "rp_name": settings.webauthn_rp_name,
+    }
+
+
 class WebAuthnVerification(BaseModel):
     """WebAuthn verification result."""
     valid: bool

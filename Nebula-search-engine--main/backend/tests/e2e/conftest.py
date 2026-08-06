@@ -31,7 +31,7 @@ async def e2e_client():
 async def e2e_auth(e2e_client: AsyncClient):
     """Register and login a fresh E2E user, return auth headers."""
     import uuid
-    email = f"e2e_{uuid.uuid4().hex[:8]}@nebula.test"
+    email = f"e2e_{uuid.uuid4().hex[:8]}@nebula.dev"
     password = "E2ePassword1!"
 
     await e2e_client.post(

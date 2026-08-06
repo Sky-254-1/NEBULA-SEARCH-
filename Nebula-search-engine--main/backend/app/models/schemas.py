@@ -73,14 +73,23 @@ class UserInfo(BaseModel):
 
 # Search schemas
 class SearchResult(BaseModel):
-    """Search result item."""
-    document_id: int
-    chunk_id: int
-    filename: str
-    content: str
-    score: float
+    """Search result item — supports both web and vector results."""
+    # Vector / document result fields
+    document_id: Optional[int] = None
+    chunk_id: Optional[int] = None
+    filename: Optional[str] = None
+    content: Optional[str] = None
+    # Web result fields
+    title: Optional[str] = None
+    url: Optional[str] = None
+    snippet: Optional[str] = None
+    source: Optional[str] = None
+    # Shared ranking field
+    score: float = 0.0
     vector_score: Optional[float] = None
     keyword_score: Optional[float] = None
+    combined_score: Optional[float] = None
+    semantic_score: Optional[float] = None
 
 
 class OrchestratedSearchResponse(BaseModel):

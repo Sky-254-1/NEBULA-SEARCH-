@@ -8,7 +8,7 @@ from httpx import AsyncClient
 @pytest.mark.asyncio
 async def test_signup_login_refresh_logout(e2e_client: AsyncClient):
     """Full auth lifecycle: signup → login → refresh → logout."""
-    email = f"e2e_{uuid.uuid4().hex[:8]}@nebula.test"
+    email = f"e2e_{uuid.uuid4().hex[:8]}@nebula.dev"
     password = "StrongPass1!"
 
     # 1. Signup
@@ -60,7 +60,7 @@ async def test_signup_login_refresh_logout(e2e_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_duplicate_signup_rejected(e2e_client: AsyncClient):
     """Signing up with the same email twice returns 409."""
-    email = f"dup_{uuid.uuid4().hex[:8]}@nebula.test"
+    email = f"dup_{uuid.uuid4().hex[:8]}@nebula.dev"
     password = "DupPass1!"
 
     # First signup succeeds
@@ -75,7 +75,7 @@ async def test_duplicate_signup_rejected(e2e_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_login_wrong_password_returns_401(e2e_client: AsyncClient):
     """Wrong password returns 401."""
-    email = f"wp_{uuid.uuid4().hex[:8]}@nebula.test"
+    email = f"wp_{uuid.uuid4().hex[:8]}@nebula.dev"
     await e2e_client.post("/api/v1/auth/signup", json={"email": email, "password": "Correct1!"})
 
     resp = await e2e_client.post(
@@ -105,7 +105,7 @@ async def test_me_without_token_returns_401(e2e_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_refresh_token_reuse_rejected(e2e_client: AsyncClient):
     """Reusing a refresh token after rotation is rejected."""
-    email = f"reuse_{uuid.uuid4().hex[:8]}@nebula.test"
+    email = f"reuse_{uuid.uuid4().hex[:8]}@nebula.dev"
     await e2e_client.post("/api/v1/auth/signup", json={"email": email, "password": "Reuse1Pass!"})
     login = await e2e_client.post("/api/v1/auth/login", json={"email": email, "password": "Reuse1Pass!"})
     original_refresh = login.json()["refresh_token"]
