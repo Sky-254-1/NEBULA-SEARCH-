@@ -30,18 +30,18 @@ def _hash_embed(text: str, dimensions: int = DEFAULT_DIMENSIONS) -> list[float]:
 async def embed_text(text: str, model: str | None = None) -> tuple[list[float], str, int]:
     settings = get_settings()
 
-    # Try sentence-transformers first (local, fast, high quality)
+    # OpenAI is the default provider when an API key is configured.
+    if settings.openai_api_key and model != "local-hash":
+        try:
+            return await _openai_embed(text, settings)
+        except Exception:
+            pass
+
+    # Fall back to local sentence-transformers when OpenAI is unavailable.
     if model != "local-hash":
         try:
             from vector.semantic import embed_semantic
             return await embed_semantic(text)
-        except Exception:
-            pass
-
-    # Try OpenAI as fallback
-    if settings.openai_api_key and model != "local-hash":
-        try:
-            return await _openai_embed(text, settings)
         except Exception:
             pass
 
@@ -50,15 +50,18 @@ async def embed_text(text: str, model: str | None = None) -> tuple[list[float], 
     return vec, "local-hash", len(vec)
 
 
+EMBEDDING_MODEL = "text-embedding-3-small"
+
+
 async def _openai_embed(text: str, settings) -> tuple[list[float], str, int]:
     url = f"{settings.openai_base_url.rstrip('/')}/embeddings"
     headers = {"Authorization": f"Bearer {settings.openai_api_key}"}
-    payload = {"input": text, "model": "text-embedding-3-small"}
+    payload = {"input": text, "model": EMBEDDING_MODEL}
     async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.post(url, headers=headers, json=payload)
         resp.raise_for_status()
         data = resp.json()["data"][0]["embedding"]
-        return data, "text-embedding-3-small", len(data)
+        return data, EMBEDDING_MODEL, len(data)
 
 
 def save_vector(path: Path, vector: list[float]) -> None:

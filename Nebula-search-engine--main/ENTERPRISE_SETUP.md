@@ -60,6 +60,30 @@ curl https://your-domain.com/api/v1/auth/saml/login
 ### Prerequisites
 - `webauthn` library installed: `pip install webauthn`
 
+### Mobile Biometric Auth (Capacitor)
+
+For native iOS/Android apps built with Capacitor:
+
+```bash
+npm install @capacitor-community/biometric
+npx cap sync
+```
+
+Example usage:
+
+```typescript
+const result = await BiometricAuth.checkBiometric({
+  biometricReason: 'Authenticate to access Nebula Search',
+  allowDeviceCredentialFallback: true,
+});
+
+if (result.isAvailable) {
+  // Use backend WebAuthn endpoints:
+  // POST /api/v1/auth/webauthn/login/start
+  // POST /api/v1/auth/webauthn/login/complete
+}
+```
+
 ### Configuration
 
 1. **Enable WebAuthn in `.env`:**
