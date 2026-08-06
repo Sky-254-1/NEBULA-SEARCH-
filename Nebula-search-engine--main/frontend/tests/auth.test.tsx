@@ -41,13 +41,13 @@ describe('LoginPage', () => {
     expect(screen.getByText('Welcome back')).toBeInTheDocument();
     expect(screen.getByLabelText('Email address')).toBeInTheDocument();
     expect(screen.getByLabelText('Password')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument();
   });
 
   it('shows validation errors for empty fields', async () => {
     renderWithProviders(<LoginPage />);
     
-    const submitButton = screen.getByRole('button', { name: /sign in/i });
+    const submitButton = screen.getByRole('button', { name: 'Sign in' });
     fireEvent.click(submitButton);
     
     await waitFor(() => {
@@ -61,7 +61,7 @@ describe('LoginPage', () => {
     
     const emailInput = screen.getByLabelText('Email address');
     const passwordInput = screen.getByLabelText('Password');
-    const submitButton = screen.getByRole('button', { name: /sign in/i });
+    const submitButton = screen.getByRole('button', { name: 'Sign in' });
     
     fireEvent.change(emailInput, { target: { value: 'invalid-email' } });
     fireEvent.change(passwordInput, { target: { value: 'password123' } });
