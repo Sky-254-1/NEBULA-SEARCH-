@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, User, Bot, Trash2, Copy, Check } from 'lucide-react';
+import { Send, Loader2, User, Bot, Trash2, Copy, Check, Lock } from 'lucide-react';
 import { useAIChatStore } from '@/state';
+import { useAuth } from '@/context/AuthContext';
 import { toast } from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
 export const AIChatPage: React.FC = () => {
@@ -10,6 +11,7 @@ export const AIChatPage: React.FC = () => {
   const [useStreaming, setUseStreaming] = useState(true);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { isGuest } = useAuth();
 
   useEffect(() => {
     fetchChatHistory();
@@ -54,6 +56,20 @@ export const AIChatPage: React.FC = () => {
     toast.success('Copied to clipboard');
     setTimeout(() => setCopiedId(null), 2000);
   };
+
+  if (isGuest) {
+    return (
+      <div className="max-w-4xl mx-auto h-[calc(100vh-8rem)] flex flex-col items-center justify-center">
+        <Lock className="text-gray-400 mb-4" size={48} />
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          AI Chat Locked
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300 mb-6">
+          Sign up or sign in to access AI-powered chat features
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto h-[calc(100vh-8rem)] flex flex-col">

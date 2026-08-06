@@ -18,6 +18,7 @@ import {
 import { useAuthStore } from '@/state';
 import { useNotificationStore } from '@/state';
 import { useSettingsStore } from '@/state';
+import { useAuth } from '@/context/AuthContext';
 import { NebulaLogo } from '@/components/NebulaLogo';
 
 interface HeaderProps {
@@ -31,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, isMobileMenuOpen }
   const { unreadCount } = useNotificationStore();
   const { theme, setTheme } = useSettingsStore();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const { isGuest } = useAuth();
 
   const handleLogout = async () => {
     await logout();
@@ -101,6 +103,13 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, isMobileMenuOpen }
           <div className="flex items-center gap-3">
             {isAuthenticated ? (
               <>
+                {/* Guest badge */}
+                {isGuest && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 text-xs font-medium rounded-full">
+                    Guest
+                  </span>
+                )}
+
                 {/* Theme toggle */}
                 <button
                   onClick={toggleTheme}

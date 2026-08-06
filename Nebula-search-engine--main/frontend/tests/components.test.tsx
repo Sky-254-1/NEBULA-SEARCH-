@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider } from '@/context/AuthContext';
 
 // ── Shared mocks ────────────────────────────────────────────────────────────
 
@@ -50,7 +51,9 @@ const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 const wrap = (ui: React.ReactElement) =>
   render(
     <QueryClientProvider client={qc}>
-      <BrowserRouter>{ui}</BrowserRouter>
+      <BrowserRouter>
+        <AuthProvider>{ui}</AuthProvider>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 
@@ -109,6 +112,33 @@ vi.mock('@/state', () => ({
     isOffline: false,
     queue: [],
   }),
+}));
+
+vi.mock('@/context/AuthContext', () => ({
+  useAuth: () => ({
+    user: { email: 'test@nebula.app', role: 'user' },
+    isAuthenticated: true,
+    isGuest: false,
+    guestFeatures: {
+      canUseAIChat: true,
+      canUseDocuments: true,
+      canUseHistory: true,
+      canUseAnalytics: true,
+      canUseSavedSearches: true,
+      canUseCollections: true,
+      canUseBookmarks: true,
+      maxSearchesPerDay: 999,
+      maxDocumentsPerDay: 999,
+      maxAIChatsPerDay: 999,
+    },
+    login: vi.fn(),
+    signup: vi.fn(),
+    loginAsGuest: vi.fn(),
+    logout: vi.fn(),
+    logoutAll: vi.fn(),
+    refreshUser: vi.fn(),
+  }),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => React.createElement(React.Fragment, null, children),
 }));
 
 describe('SearchPage', () => {

@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search as SearchIcon, Filter, X, Loader2, ChevronDown } from 'lucide-react';
+import { Search as SearchIcon, Filter, X, Loader2, ChevronDown, Lock } from 'lucide-react';
 import { useSearchStore } from '@/state';
+import { useAuth } from '@/context/AuthContext';
 import { SearchResult } from '@/types';
 
 export const SearchPage: React.FC = () => {
   const { query, results, isSearching, searchError, intelligentSearch, setQuery } = useSearchStore();
   const [localQuery, setLocalQuery] = useState(query);
   const [showFilters, setShowFilters] = useState(false);
+  const { isGuest, guestFeatures } = useAuth();
 
   useEffect(() => {
     setLocalQuery(query);
@@ -45,7 +47,7 @@ export const SearchPage: React.FC = () => {
             type="text"
             value={localQuery}
             onChange={(e) => setLocalQuery(e.target.value)}
-            placeholder="Search for anything..."
+            placeholder={isGuest ? `Guest mode: ${guestFeatures.maxSearchesPerDay} searches/day` : "Search for anything..."}
             className="w-full pl-12 pr-4 py-4 text-lg border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
           />
           {isSearching && (
@@ -72,6 +74,11 @@ export const SearchPage: React.FC = () => {
             <Filter size={20} />
           </button>
         </div>
+        {isGuest && (
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Guest mode: Unlimited searches. Sign up to unlock AI Chat, Documents, and more.
+          </p>
+        )}
       </form>
 
       {/* Filters */}
@@ -117,6 +124,11 @@ export const SearchPage: React.FC = () => {
         <div className="space-y-4">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
             Found {results.length} results
+            {isGuest && (
+              <span className="ml-2 text-xs text-gray-500 dark:text-gray-400 font-normal">
+                (Guest preview)
+              </span>
+            )}
           </h2>
 
           <div className="space-y-4">

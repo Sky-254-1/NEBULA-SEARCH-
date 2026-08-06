@@ -195,6 +195,9 @@ export default defineConfig({
     alias: {
       '@': '/src',
     },
+    // Prefer TypeScript files over legacy JavaScript files
+    // This prevents App.jsx (legacy) from overriding App.tsx (new)
+    extensions: ['.tsx', '.ts', '.jsx', '.js', '.json'],
   },
   optimizeDeps: {
     esbuildOptions: {

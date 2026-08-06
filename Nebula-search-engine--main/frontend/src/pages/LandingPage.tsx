@@ -90,6 +90,17 @@ export const LandingPage: React.FC = () => {
               >
                 Sign In
               </Link>
+              <button
+                onClick={async () => {
+                  const { useAuth } = await import('@/context/AuthContext');
+                  const auth = useAuth();
+                  await auth.loginAsGuest();
+                  window.location.href = '/search';
+                }}
+                className="inline-flex items-center justify-center gap-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white px-8 py-4 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              >
+                Continue as Guest
+              </button>
             </div>
           </motion.div>
         </div>

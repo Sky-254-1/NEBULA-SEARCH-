@@ -11,7 +11,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children, 
   requireAuth = true 
 }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isGuest, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -21,11 +21,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  if (requireAuth && !isAuthenticated) {
+  if (requireAuth && !isAuthenticated && !isGuest) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!requireAuth && isAuthenticated) {
+  if (!requireAuth && isAuthenticated && !isGuest) {
     return <Navigate to="/dashboard" replace />;
   }
 
