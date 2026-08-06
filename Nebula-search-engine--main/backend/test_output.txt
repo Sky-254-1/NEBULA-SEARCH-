@@ -6,22 +6,16 @@ rootdir: c:\Users\KNP LIBRARY\Downloads\Nebula Search\Nebula-search-engine--main
 configfile: pytest.ini
 plugins: anyio-4.14.2, asyncio-1.4.0, cov-7.1.0
 asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collecting ... collected 12 items
+collecting ... collected 6 items
 
-tests/test_search_unified.py::test_unified_search_requires_auth PASSED   [  8%]
-tests/test_search_unified.py::test_unified_search_returns_results PASSED [ 16%]
-tests/test_search_unified.py::test_unified_search_ai_mode PASSED         [ 25%]
-tests/test_search_unified.py::test_unified_search_invalid_mode PASSED    [ 33%]
-tests/test_search_unified.py::test_unified_search_empty_query PASSED     [ 41%]
-tests/test_search_unified.py::test_search_suggestions PASSED             [ 50%]
-tests/test_search_unified.py::test_search_history PASSED                 [ 58%]
-tests/test_search_unified.py::test_clear_search_history PASSED           [ 66%]
-tests/test_search_unified.py::test_save_search PASSED                    [ 75%]
-tests/test_search_unified.py::test_list_saved_searches PASSED            [ 83%]
-tests/test_search_unified.py::test_delete_saved_search_not_found PASSED  [ 91%]
-tests/test_search_unified.py::test_unified_search_with_facets PASSED     [100%]
+tests/e2e/test_e2e_auth.py::test_signup_login_refresh_logout PASSED      [ 16%]
+tests/e2e/test_e2e_auth.py::test_duplicate_signup_rejected PASSED        [ 33%]
+tests/e2e/test_e2e_auth.py::test_login_wrong_password_returns_401 PASSED [ 50%]
+tests/e2e/test_e2e_auth.py::test_weak_password_rejected PASSED           [ 66%]
+tests/e2e/test_e2e_auth.py::test_me_without_token_returns_401 PASSED     [ 83%]
+tests/e2e/test_e2e_auth.py::test_refresh_token_reuse_rejected PASSED     [100%]
 
-============================= 12 passed in 1.03s ==============================
+============================== 6 passed in 1.65s ==============================
 
 STDERR:
 

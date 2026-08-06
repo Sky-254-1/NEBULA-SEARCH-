@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Settings as SettingsIcon, User, Bell, Shield, Palette, Globe, Save } from 'lucide-react';
+import { Settings as SettingsIcon, User, Bell, Shield, Palette, Globe, Save, BellRing, Smartphone } from 'lucide-react';
 import { useSettingsStore } from '@/state';
 import { useAuthStore } from '@/state';
 import { toast } from 'react-hot-toast';
@@ -10,10 +10,72 @@ export const SettingsPage: React.FC = () => {
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState('profile');
   const [isSaving, setIsSaving] = useState(false);
+  const [pushRegistered, setPushRegistered] = useState(false);
+  const [isRegisteringPush, setIsRegisteringPush] = useState(false);
+  const [devices, setDevices] = useState<Array<{session_id: string; device_name: string; is_active: boolean}>>([]);
 
   useEffect(() => {
     fetchSettings();
+
+    // Check push notification registration status
+    fetch('/api/v1/notifications/push/status')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) setPushRegistered(data.registered); })
+      .catch(() => {});
+
+    // Fetch federated search devices
+    fetch('/api/v1/search/federated/devices')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data?.devices) setDevices(data.devices); })
+      .catch(() => {});
   }, [fetchSettings]);
+
+  const handleRegisterPush = async () => {
+    setIsRegisteringPush(true);
+    try {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        toast.error('Push notifications are not supported in this browser');
+        return;
+      }
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        toast.error('Push notification permission denied');
+        return;
+      }
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      const subscription = await registration.pushManager.subscribe({ userVisibleOnly: true });
+      const token = btoa(JSON.stringify(subscription)).replace(/=/g, '');
+
+      const resp = await fetch('/api/v1/notifications/push/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, platform: 'web' }),
+      });
+      if (resp.ok) {
+        setPushRegistered(true);
+        toast.success('Push notifications enabled');
+      } else {
+        const data = await resp.json();
+        toast.error(data?.detail || 'Failed to register for push');
+      }
+    } catch (error) {
+      toast.error('Failed to enable push notifications');
+    } finally {
+      setIsRegisteringPush(false);
+    }
+  };
+
+  const handleRemoveDevice = async (sessionId: string) => {
+    try {
+      const resp = await fetch(`/api/v1/search/federated/devices/${sessionId}`, { method: 'DELETE' });
+      if (resp.ok) {
+        setDevices((prev) => prev.filter((d) => d.session_id !== sessionId));
+        toast.success('Device removed');
+      }
+    } catch {
+      toast.error('Failed to remove device');
+    }
+  };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,7 +237,6 @@ export const SettingsPage: React.FC = () => {
               <div className="space-y-4">
                 {[
                   { id: 'email_notifications', label: 'Email Notifications', description: 'Receive email updates' },
-                  { id: 'push_notifications', label: 'Push Notifications', description: 'Receive push notifications' },
                   { id: 'search_alerts', label: 'Search Alerts', description: 'Get notified about search results' },
                 ].map((setting) => (
                   <div
@@ -192,6 +253,28 @@ export const SettingsPage: React.FC = () => {
                     </label>
                   </div>
                 ))}
+
+                {/* Push Notification Registration */}
+                <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <BellRing className="text-blue-600 dark:text-blue-400" size={20} />
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900 dark:text-white">Push Notifications</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {pushRegistered ? 'Push notifications are enabled' : 'Receive instant push notifications'}
+                      </p>
+                    </div>
+                    {!pushRegistered && (
+                      <button
+                        onClick={handleRegisterPush}
+                        disabled={isRegisteringPush}
+                        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                      >
+                        {isRegisteringPush ? 'Enabling...' : 'Enable'}
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}
@@ -224,6 +307,41 @@ export const SettingsPage: React.FC = () => {
                     <input type="checkbox" defaultChecked className="sr-only peer" />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
                   </label>
+                </div>
+
+                {/* Federated Search Devices */}
+                <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Smartphone className="text-blue-600 dark:text-blue-400" size={20} />
+                    <h3 className="font-medium text-gray-900 dark:text-white">Connected Devices</h3>
+                  </div>
+                  {devices.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      No devices connected for federated search
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {devices.map((device) => (
+                        <div
+                          key={device.session_id}
+                          className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Smartphone size={16} className="text-gray-400" />
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">
+                              {device.device_name || 'Unknown device'}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => handleRemoveDevice(device.session_id)}
+                            className="text-sm text-red-600 hover:text-red-700"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>

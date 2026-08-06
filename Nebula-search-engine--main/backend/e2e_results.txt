@@ -1,0 +1,74 @@
+
+============================================================
+Running auth...
+============================================================
+
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Program Files\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: c:\Users\KNP LIBRARY\Downloads\Nebula Search\Nebula-search-engine--main\backend
+configfile: pytest.ini
+plugins: anyio-4.14.2, asyncio-1.4.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 6 items
+
+tests/e2e/test_e2e_auth.py::test_signup_login_refresh_logout PASSED      [ 16%]
+tests/e2e/test_e2e_auth.py::test_duplicate_signup_rejected PASSED        [ 33%]
+tests/e2e/test_e2e_auth.py::test_login_wrong_password_returns_401 PASSED [ 50%]
+tests/e2e/test_e2e_auth.py::test_weak_password_rejected PASSED           [ 66%]
+tests/e2e/test_e2e_auth.py::test_me_without_token_returns_401 PASSED     [ 83%]
+tests/e2e/test_e2e_auth.py::test_refresh_token_reuse_rejected PASSED     [100%]
+
+============================== 6 passed in 1.61s ==============================
+
+Return code: 0
+
+============================================================
+Running documents...
+============================================================
+
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Program Files\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: c:\Users\KNP LIBRARY\Downloads\Nebula Search\Nebula-search-engine--main\backend
+configfile: pytest.ini
+plugins: anyio-4.14.2, asyncio-1.4.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 5 items
+
+tests/e2e/test_e2e_documents.py::test_document_upload_list_delete_cycle PASSED [ 20%]
+tests/e2e/test_e2e_documents.py::test_upload_multiple_types PASSED       [ 40%]
+tests/e2e/test_e2e_documents.py::test_upload_disallowed_type_rejected PASSED [ 60%]
+tests/e2e/test_e2e_documents.py::test_upload_requires_auth PASSED        [ 80%]
+tests/e2e/test_e2e_documents.py::test_document_pagination PASSED         [100%]
+
+============================== 5 passed in 1.01s ==============================
+
+Return code: 0
+
+============================================================
+Running search...
+============================================================
+
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Program Files\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: c:\Users\KNP LIBRARY\Downloads\Nebula Search\Nebula-search-engine--main\backend
+configfile: pytest.ini
+plugins: anyio-4.14.2, asyncio-1.4.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 9 items
+
+tests/e2e/test_e2e_search.py::test_web_search_returns_results PASSED     [ 11%]
+tests/e2e/test_e2e_search.py::test_unified_search_hybrid_mode PASSED     [ 22%]
+tests/e2e/test_e2e_search.py::test_search_history_persisted PASSED       [ 33%]
+tests/e2e/test_e2e_search.py::test_save_and_list_saved_search PASSED     [ 44%]
+tests/e2e/test_e2e_search.py::test_delete_saved_search PASSED            [ 55%]
+tests/e2e/test_e2e_search.py::test_search_v2_suggestions PASSED          [ 66%]
+tests/e2e/test_e2e_search.py::test_search_spell_check PASSED             [ 77%]
+tests/e2e/test_e2e_search.py::test_trending_endpoint PASSED              [ 88%]
+tests/e2e/test_e2e_search.py::test_popular_endpoint PASSED               [100%]
+
+============================== 9 passed in 1.32s ==============================
+
+Return code: 0

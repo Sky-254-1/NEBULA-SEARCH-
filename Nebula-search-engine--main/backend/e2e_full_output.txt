@@ -1,0 +1,38 @@
+STDOUT:
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Program Files\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: c:\Users\KNP LIBRARY\Downloads\Nebula Search\Nebula-search-engine--main\backend
+configfile: pytest.ini
+plugins: anyio-4.14.2, asyncio-1.4.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 20 items
+
+tests/e2e/test_e2e_auth.py::test_signup_login_refresh_logout PASSED      [  5%]
+tests/e2e/test_e2e_auth.py::test_duplicate_signup_rejected PASSED        [ 10%]
+tests/e2e/test_e2e_auth.py::test_login_wrong_password_returns_401 PASSED [ 15%]
+tests/e2e/test_e2e_auth.py::test_weak_password_rejected PASSED           [ 20%]
+tests/e2e/test_e2e_auth.py::test_me_without_token_returns_401 PASSED     [ 25%]
+tests/e2e/test_e2e_auth.py::test_refresh_token_reuse_rejected PASSED     [ 30%]
+tests/e2e/test_e2e_documents.py::test_document_upload_list_delete_cycle PASSED [ 35%]
+tests/e2e/test_e2e_documents.py::test_upload_multiple_types PASSED       [ 40%]
+tests/e2e/test_e2e_documents.py::test_upload_disallowed_type_rejected PASSED [ 45%]
+tests/e2e/test_e2e_documents.py::test_upload_requires_auth PASSED        [ 50%]
+tests/e2e/test_e2e_documents.py::test_document_pagination PASSED         [ 55%]
+tests/e2e/test_e2e_search.py::test_web_search_returns_results PASSED     [ 60%]
+tests/e2e/test_e2e_search.py::test_unified_search_hybrid_mode PASSED     [ 65%]
+tests/e2e/test_e2e_search.py::test_search_history_persisted PASSED       [ 70%]
+tests/e2e/test_e2e_search.py::test_save_and_list_saved_search PASSED     [ 75%]
+tests/e2e/test_e2e_search.py::test_delete_saved_search PASSED            [ 80%]
+tests/e2e/test_e2e_search.py::test_search_v2_suggestions PASSED          [ 85%]
+tests/e2e/test_e2e_search.py::test_search_spell_check PASSED             [ 90%]
+tests/e2e/test_e2e_search.py::test_trending_endpoint PASSED              [ 95%]
+tests/e2e/test_e2e_search.py::test_popular_endpoint PASSED               [100%]
+
+============================= 20 passed in 3.26s ==============================
+
+
+STDERR:
+
+
+Return code: 0
