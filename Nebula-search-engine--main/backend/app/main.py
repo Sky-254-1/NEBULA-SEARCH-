@@ -50,7 +50,9 @@ from app.routes.search_v2 import router as search_v2_router
 from app.routes.users import router as users_router
 from app.routes.webhooks import router as webhooks_router
 from app.routes.saml import router as saml_router
+from app.routes.saml_config import router as saml_config_router
 from app.routes.webauthn import router as webauthn_router
+from app.routes.webauthn_verify import router as webauthn_verify_router
 from app.routes.push import router as push_router
 from app.routes.preview import router as preview_router
 from app.routes.federated import router as federated_router
@@ -510,7 +512,9 @@ app.include_router(autocomplete_router)  # Autocomplete system
 app.include_router(mfa_router)  # Multi-factor authentication
 app.include_router(oauth_router)  # OAuth provider authentication
 app.include_router(saml_router)  # SAML 2.0 SSO
+app.include_router(saml_config_router)  # SAML configuration helpers
 app.include_router(webauthn_router)  # WebAuthn biometric authentication
+app.include_router(webauthn_verify_router)  # WebAuthn verification helpers
 app.include_router(push_router)  # Push notifications (FCM/APNs)
 app.include_router(preview_router)  # Document preview for mobile WebView
 app.include_router(federated_router)  # Federated search across devices
