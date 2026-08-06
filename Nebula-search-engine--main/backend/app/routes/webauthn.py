@@ -25,6 +25,8 @@ class WebAuthnRegistrationComplete(BaseModel):
     credential_id: str
     public_key: str
     sign_count: int
+    attestation_object: Optional[str] = None
+    client_data_json: Optional[str] = None
 
 
 class WebAuthnLoginStart(BaseModel):
@@ -71,6 +73,10 @@ async def webauthn_register_start(body: WebAuthnRegistrationStart, db=Depends(ge
             "id": str(user["id"]),
             "name": body.username,
         },
+        "pubKeyCredParams": [
+            {"type": "public-key", "alg": -7},   # ES256
+            {"type": "public-key", "alg": -257},  # RS256
+        ],
     }
 
 
@@ -83,8 +89,8 @@ async def webauthn_register_complete(body: WebAuthnRegistrationComplete, email: 
     users = UserRepository(db)
     user = await users.get_by_email(email)
     
-    # Store credential (in production, use proper storage)
-    # For now, mark user as having WebAuthn enabled
+    # In production, verify the attestation object and public key
+    # For now, store the credential
     await users.update(user["id"], {
         "webauthn_credential_id": body.credential_id,
         "webauthn_public_key": body.public_key,
@@ -126,7 +132,8 @@ async def webauthn_login_complete(body: WebAuthnLoginComplete, db=Depends(get_db
     if not settings.enable_webauthn:
         raise HTTPException(status_code=404, detail="WebAuthn is not enabled")
     
-    # Verify challenge (in production, use proper WebAuthn verification library)
+    # In production, verify the assertion using the public key
+    # For now, find user by credential_id
     users = UserRepository(db)
     user = await users.get_by_webauthn_credential_id(body.credential_id)
     
