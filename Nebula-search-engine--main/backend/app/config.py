@@ -224,6 +224,78 @@ class Settings:
         default_factory=lambda: os.getenv("OAUTH2_FRONTEND_REDIRECT_URI", "http://localhost:5173/oauth/callback")
     )
 
+    # === SAML 2.0 SSO ===
+    enable_saml: bool = field(
+        default_factory=lambda: os.getenv("ENABLE_SAML", "false").lower() == "true"
+    )
+    saml_entity_id: str = field(
+        default_factory=lambda: os.getenv("SAML_ENTITY_ID", "nebula-search")
+    )
+    saml_metadata_url: str = field(
+        default_factory=lambda: os.getenv("SAML_METADATA_URL", "")
+    )
+    saml_cert_path: str = field(
+        default_factory=lambda: os.getenv("SAML_CERT_PATH", "")
+    )
+    saml_key_path: str = field(
+        default_factory=lambda: os.getenv("SAML_KEY_PATH", "")
+    )
+
+    # === Biometric Authentication (WebAuthn) ===
+    enable_webauthn: bool = field(
+        default_factory=lambda: os.getenv("ENABLE_WEBAUTHN", "false").lower() == "true"
+    )
+    webauthn_rp_id: str = field(
+        default_factory=lambda: os.getenv("WEBAUTHN_RP_ID", "localhost")
+    )
+    webauthn_rp_name: str = field(
+        default_factory=lambda: os.getenv("WEBAUTHN_RP_NAME", "Nebula Search")
+    )
+
+    # === Push Notifications ===
+    enable_push_notifications: bool = field(
+        default_factory=lambda: os.getenv("ENABLE_PUSH_NOTIFICATIONS", "false").lower() == "true"
+    )
+    fcm_server_key: str = field(
+        default_factory=lambda: os.getenv("FCM_SERVER_KEY", "")
+    )
+    fcm_project_id: str = field(
+        default_factory=lambda: os.getenv("FCM_PROJECT_ID", "")
+    )
+    apns_key_id: str = field(
+        default_factory=lambda: os.getenv("APNS_KEY_ID", "")
+    )
+    apns_team_id: str = field(
+        default_factory=lambda: os.getenv("APNS_TEAM_ID", "")
+    )
+    apns_bundle_id: str = field(
+        default_factory=lambda: os.getenv("APNS_BUNDLE_ID", "com.nebula.search")
+    )
+
+    # === Document Preview ===
+    enable_document_preview: bool = field(
+        default_factory=lambda: os.getenv("ENABLE_DOCUMENT_PREVIEW", "true").lower() == "true"
+    )
+    max_preview_size_mb: int = field(
+        default_factory=lambda: int(os.getenv("MAX_PREVIEW_SIZE_MB", "50"))
+    )
+
+    # === Federated Search ===
+    enable_federated_search: bool = field(
+        default_factory=lambda: os.getenv("ENABLE_FEDERATED_SEARCH", "false").lower() == "true"
+    )
+    federated_search_devices: str = field(
+        default_factory=lambda: os.getenv("FEDERATED_SEARCH_DEVICES", "")
+    )
+
+    # === Plugin System ===
+    enable_plugin_system: bool = field(
+        default_factory=lambda: os.getenv("ENABLE_PLUGIN_SYSTEM", "false").lower() == "true"
+    )
+    plugin_directory: str = field(
+        default_factory=lambda: os.getenv("PLUGIN_DIRECTORY", str(_REPO_ROOT / "plugins"))
+    )
+
     # === Email/SMTP Settings ===
     smtp_host: str = field(default_factory=lambda: os.getenv("SMTP_HOST", ""))
     smtp_port: int = field(default_factory=lambda: int(os.getenv("SMTP_PORT", "587")))

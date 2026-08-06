@@ -49,6 +49,11 @@ from app.routes.search_unified import router as search_unified_router
 from app.routes.search_v2 import router as search_v2_router
 from app.routes.users import router as users_router
 from app.routes.webhooks import router as webhooks_router
+from app.routes.saml import router as saml_router
+from app.routes.webauthn import router as webauthn_router
+from app.routes.push import router as push_router
+from app.routes.preview import router as preview_router
+from app.routes.federated import router as federated_router
 # GraphQL router temporarily disabled - schema needs type fixes
 # from app.routes.graphql import router as graphql_router
 from app.hybrid.routes import router as hybrid_router
@@ -504,6 +509,11 @@ app.include_router(hybrid_router)  # Hybrid search engine
 app.include_router(autocomplete_router)  # Autocomplete system
 app.include_router(mfa_router)  # Multi-factor authentication
 app.include_router(oauth_router)  # OAuth provider authentication
+app.include_router(saml_router)  # SAML 2.0 SSO
+app.include_router(webauthn_router)  # WebAuthn biometric authentication
+app.include_router(push_router)  # Push notifications (FCM/APNs)
+app.include_router(preview_router)  # Document preview for mobile WebView
+app.include_router(federated_router)  # Federated search across devices
 app.include_router(spell_router)  # Spell correction system
 app.include_router(suggestions_router)  # Search suggestions system
 # GraphQL router temporarily disabled - schema needs type fixes
