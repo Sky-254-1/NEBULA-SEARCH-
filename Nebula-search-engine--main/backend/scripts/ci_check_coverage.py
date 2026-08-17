@@ -2,7 +2,7 @@
 import xml.etree.ElementTree as ET
 import sys
 
-THRESHOLD = 85
+THRESHOLD = 95
 
 try:
     tree = ET.parse("coverage.xml")

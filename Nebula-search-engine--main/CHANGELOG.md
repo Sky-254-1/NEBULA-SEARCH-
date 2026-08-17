@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-08-07
+
+### Added
+
+- **Enterprise SSO (SAML 2.0)** - Support for Azure AD, Okta, Auth0, Keycloak
+- **WebAuthn Biometric Auth** - Production-grade FIDO2 verification
+- **Push Notifications** - FCM/APNs backend routes + frontend registration + Android FCM token bridge
+- **Federated Search** - Search across connected devices
+- **Plugin System** - Search providers (Brave, Google, Bing, DuckDuckGo)
+- **Document Preview** - Mobile WebView document preview routes
+- **Native Mobile Apps** - Android (Kotlin) + iOS (Swift) apps
+- **Desktop App** - Electron desktop wrapper
+- **RBAC** - Full role-based access control with role hierarchy
+- **Icon Assets** - desktop/mobile app icons
+- **Push Token API Docs** - `/api/v1/notifications/push/*` documented in docs/API.md
+
+### Changed
+
+- **Dependencies** - Updated `eslint@10`, `react-syntax-highlighter@16`
+- **Documentation** - README, ROADMAP, API docs, task_progress all updated to match current state
+- **Test Setup** - Fixed ESM compatibility in vitest setup
+
+### Fixed
+
+- **SQLite Migration Compatibility** - `014_pgvector_postgres.sql` skipped on SQLite, `IF NOT EXISTS` stripped, `vector(1536)` mapped to `BLOB`
+- **Backend Tests** - 923 passing
+- **Frontend Tests** - 58 passing
+
+### Security
+
+- Dependency security updates (Dependabot alerts addressed)
+
+---
+
 ## [1.1.0] - 2026-07-28
 
 ### Added

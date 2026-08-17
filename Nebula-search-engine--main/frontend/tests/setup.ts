@@ -1,9 +1,6 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
-// Import security hardening
-import './security/vite-security';
-
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -21,13 +18,16 @@ Object.defineProperty(window, 'matchMedia', {
 
 // Mock localStorage
 const localStorageMock = {
-  getItem: vi.fn(),
+  getItem: vi.fn(() => null),
   setItem: vi.fn(),
   removeItem: vi.fn(),
   clear: vi.fn(),
+  key: vi.fn(() => null),
+  length: 0,
 };
 Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
+  writable: true,
 });
 
 // Mock crypto.randomUUID
@@ -41,7 +41,7 @@ Object.defineProperty(navigator, 'onLine', {
 });
 
 // Block all network access during testing
-import { isDevelopment } from './security/vite-security';
+const isDevelopment = () => process.env.NODE_ENV === 'development';
 
 if (isDevelopment()) {
   // Mock fetch to reject all network requests

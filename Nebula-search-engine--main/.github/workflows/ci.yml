@@ -174,14 +174,18 @@ jobs:
         working-directory: backend
         run: python -c "from app.database import init_db; import asyncio; asyncio.run(init_db())"
 
-      - name: Run E2E tests
+      - name: Run E2E tests with coverage
         working-directory: backend
-        run: python -m pytest tests/e2e/ -v --tb=short --cov=app --cov-report=term-missing
+        run: python -m pytest tests/e2e/ -v --tb=short --cov=app --cov-report=xml --cov-report=term-missing
         env:
           DATABASE_URL: postgresql://nebula:nebula_test@localhost:5432/nebula_test
           REDIS_URL: redis://localhost:6379/0
           APP_ENV: testing
           JWT_SECRET: test_jwt_secret_key_min_32_chars_long!!
+
+      - name: E2E coverage validation
+        working-directory: backend
+        run: python scripts/ci_check_coverage.py
 
       - name: E2E test results
         if: always()

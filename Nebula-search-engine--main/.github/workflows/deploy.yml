@@ -1,492 +1,141 @@
-name: Nebula Search Deploy & Test
+name: Deploy to Production
 
 on:
   push:
-    branches: [ main, develop ]
-    tags: [ 'v*' ]
-  pull_request:
-    branches: [ main ]
-  schedule:
-    - cron: '0 6 * * 1'  # 6 AM UTC every Monday
+    branches: [main]
+  workflow_dispatch:
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-
-# Least-privilege default: all jobs get read-only access unless overridden
-permissions:
-  contents: read
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: nebula-backend
 
 jobs:
-  # ============================================
-  # Lint & Code Quality
-  # ============================================
-  lint:
-    name: Lint & Code Quality
+  test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-      
-      - name: Install Python deps
-        run: |
-          pip install -r backend/requirements-dev.txt
-          pip install ruff mypy
-      
-      - name: Lint Python
-        run: |
-          ruff check backend/app/ backend/tests/
-          ruff format --check backend/app/ backend/tests/
-      
-      - name: Type check Python
-        run: mypy --ignore-missing-imports backend/app/ || true
-      
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-      
-      - name: Install frontend deps
-        run: npm ci
-        working-directory: frontend
-      
-      - name: Lint frontend
-        run: npm run lint || npx tsc --noEmit
-        working-directory: frontend
+    - uses: actions/checkout@v4
 
-# ============================================
-  # Security & PR Validation
-  # ============================================
-  pr-validate:
-    name: PR Validation & Security
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install backend dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+
+    - name: Run backend tests
+      run: |
+        cd backend
+        pytest tests/ -v --tb=short
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install frontend dependencies
+      run: |
+        cd frontend
+        npm ci
+
+    - name: Run frontend tests
+      run: |
+        cd frontend
+        npm test -- --run
+
+    - name: Run lint
+      run: |
+        cd frontend
+        npm run lint
+
+  security-scan:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    needs: [lint]
-    
+    needs: test
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Security Hardening
-        run: |
-          cd frontend
-          npm run security:setup
-          echo "VITE_SECURE_MODE=true" >> .env.local
-      
-      - name: Validate Security Hardening
-        run: |
-          if [ ! -f frontend/tests/security/vite-security.ts ]; then
-            echo "❌ Security hardening configuration missing"
-            exit 1
-          fi
-          echo "✅ Security hardening configuration present"
-      
-      - name: Generate Security Report
-        run: |
-          cd frontend
-          if [ -f tests/security/security-report.json ]; then
-            cat tests/security/security-report.json
-          else
-            echo "⚠️  Security report not generated"
-          fi
-      
-      - name: PR Security Validation Complete
-        run: |
-          echo "🛡️  PR security validation completed successfully"
+    - uses: actions/checkout@v4
 
-  # ============================================
-  # Run All Backend Tests
-  # ============================================
-  test-backend:
-    name: Backend Tests
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy results to GitHub Security
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  build-and-push:
     runs-on: ubuntu-latest
-    needs: [lint, pr-validate]
-    strategy:
-      matrix:
-        python-version: ['3.10', '3.11', '3.12']
-      fail-fast: false
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: nebula
-          POSTGRES_PASSWORD: nebula_test
-          POSTGRES_DB: nebula_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-      
-      - name: Install dependencies
-        run: |
-          pip install -r backend/requirements.txt
-          pip install -r backend/requirements-dev.txt
-          pip install pytest pytest-asyncio pytest-cov httpx
-      
-      - name: Run pytest suite
-        env:
-          DATABASE_URL: postgresql://nebula:nebula_test@localhost:5432/nebula_test
-          REDIS_URL: redis://localhost:6379/0
-          APP_ENV: testing
-          JWT_SECRET: test_jwt_secret_key_min_32_chars_long!!
-        run: |
-          cd backend
-          python -m pytest tests/ -v --tb=short --cov=app --cov-report=term-missing \
-            --ignore=tests/test_async.py \
-            --ignore=tests/e2e/ \
-            --ignore=tests/performance/ \
-            -k "not test_chunk_text" 2>&1 | tee pytest_output.txt
-      
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pytest-results-${{ matrix.python-version }}
-          path: backend/pytest_output.txt
-      
-      - name: Check pass rate
-        if: always()
-        run: |
-          TOTAL=$(grep -c "PASSED\|FAILED\|ERROR" backend/pytest_output.txt || echo 0)
-          PASSED=$(grep -c "PASSED" backend/pytest_output.txt || echo 0)
-          if [ "$TOTAL" -gt "0" ]; then
-            RATE=$((PASSED * 100 / TOTAL))
-            echo "Pass rate: ${RATE}% (${PASSED}/${TOTAL})"
-            if [ "$RATE" -lt "95" ]; then
-              echo "::warning::Test pass rate ${RATE}% is below 95% threshold"
-            fi
-          fi
-
-  # ============================================
-  # Run All Frontend Tests
-  # ============================================
-  test-frontend:
-    name: Frontend Tests
-    runs-on: ubuntu-latest
-    needs: [lint, pr-validate]
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-      
-      - name: Install frontend dependencies
-        run: npm ci
-        working-directory: frontend
-      
-      - name: Run frontend vitest
-        run: npx vitest run --reporter=verbose
-        working-directory: frontend
-      
-      - name: Build for production
-        run: npm run build
-        working-directory: frontend
-        env:
-          VITE_API_URL: https://api.nebula-search.com
-          NODE_ENV: production
-
-  # ============================================
-  # Security Scanning
-  # ============================================
-  security:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    needs: [lint, pr-validate]
+    needs: [test, security-scan]
     permissions:
+      id-token: write
       contents: read
-      security-events: write  # CodeQL needs to upload results
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Run CodeQL Analysis
-        uses: github/codeql-action/init@v3
-        with:
-          languages: python, javascript, typescript
-          queries: security-extended,security-and-quality
-      
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
-      
-      - name: Perform Analysis
-        uses: github/codeql-action/analyze@v3
-      
-      - name: Run Bandit (Python security)
-        run: |
-          pip install bandit
-          bandit -r backend/app/ -f json -o bandit-report.json || true
-      
-      - name: Check dependencies for vulnerabilities
-        run: |
-          pip install safety
-          safety check -r backend/requirements.txt || true
-        working-directory: backend
-      
-      - name: Upload security report
-        uses: actions/upload-artifact@v4
-        with:
-          name: security-reports
-          path: |
-            bandit-report.json
-            **/safety-report.txt
 
-  # ============================================
-  # Build & Push Docker Images
-  # ============================================
-  build:
-    name: Build & Push
-    runs-on: ubuntu-latest
-    needs: [test-backend, test-frontend, security]
-    if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
-    permissions:
-      contents: read
-      packages: write  # Needs to push to GHCR
-    
-    strategy:
-      matrix:
-        service: [backend, frontend, vector-worker]
-    
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,format=short
-            type=ref,event=branch
-      
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: docker/${{ matrix.service }}.Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+    - uses: actions/checkout@v4
 
-  # ============================================
-  # Deploy to Staging
-  # ============================================
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [build]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: staging
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Configure kubectl
-        uses: azure/setup-kubectl@v4
-        with:
-          version: 'latest'
-      
-      - name: Set up Kubernetes config
-        run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
-      
-      - name: Run zero-downtime deployment
-        run: |
-          chmod +x scripts/zero_downtime_deploy.sh
-          ./scripts/zero_downtime_deploy.sh staging ${{ github.sha }}
-        env:
-          DOCKER_REGISTRY: ${{ env.REGISTRY }}
-      
-      - name: Run smoke tests
-        run: |
-          sleep 10
-          curl -f http://staging.nebula-search.com/health || exit 1
-          curl -f http://staging.nebula-search.com/api/v1/search?q=test || exit 1
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubActionsRole
+        aws-region: ${{ env.AWS_REGION }}
 
-  # ============================================
-  # Deploy to Production
-  # ============================================
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [deploy-staging]
-    if: startsWith(github.ref, 'refs/tags/v')
-    environment: production
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Configure kubectl
-        uses: azure/setup-kubectl@v4
-        with:
-          version: 'latest'
-      
-      - name: Set up Kubernetes config
-        run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > $HOME/.kube/config
-      
-      - name: Run database migrations
-        run: |
-          kubectl exec -n nebula-production deployment/backend -- python -m app.database.migrate
-      
-      - name: Run zero-downtime deployment
-        run: |
-          chmod +x scripts/zero_downtime_deploy.sh
-          ./scripts/zero_downtime_deploy.sh production ${GITHUB_REF_NAME}
-        env:
-          DOCKER_REGISTRY: ${{ env.REGISTRY }}
-      
-      - name: Post-deployment health check
-        run: |
-          for i in $(seq 1 30); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://search.nebula-search.com/health)
-            if [ "$STATUS" = "200" ]; then
-              echo "Health check passed!"
-              exit 0
-            fi
-            echo "Waiting for service... (${i}/30)"
-            sleep 10
-          done
-          echo "Health check failed"
-          exit 1
-      
-      - name: Notify deployment success
-        uses: slackapi/slack-github-action@v1
-        with:
-          payload: |
-            {
-              "text": "🚀 Nebula Search v${{ github.ref_name }} deployed to production!",
-              "blocks": [{
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "🚀 *Nebula Search* v`${{ github.ref_name }}` deployed to *production*!\nDeployed by: ${{ github.actor }}\nCommit: ${{ github.sha }}"
-                }
-              }]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        continue-on-error: true
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
 
-  # ============================================
-  # Automated Load Testing
-  # ============================================
-  load-test:
-    name: Load Test
-    runs-on: ubuntu-latest
-    needs: [deploy-staging]
-    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Install Locust
-        run: pip install locust
-      
-      - name: Run load tests
-        run: |
-          locust -f tests/load/locustfile.py \
-            --host=http://staging.nebula-search.com \
-            --users 100 \
-            --spawn-rate 10 \
-            --run-time 5m \
-            --headless \
-            --only-summary \
-            --csv=load-test-results 2>&1 | tee load-test-output.txt
-      
-      - name: Check load test results
-        run: |
-          FAILURES=$(grep "Failures:" load-test-output.txt | awk '{print $2}')
-          AVG_RESPONSE=$(grep "Avg response time:" load-test-output.txt | awk '{print $4}')
-          P95=$(grep "P95 response time:" load-test-output.txt | awk '{print $4}')
-          
-          echo "Load Test Results:"
-          echo "  Failures: ${FAILURES}"
-          echo "  Avg response: ${AVG_RESPONSE}ms"
-          echo "  P95: ${P95}ms"
-          
-          # Fail if P95 > 2 seconds
-          if [ -n "$P95" ] && [ "${P95%.*}" -gt "2000" ]; then
-            echo "::warning::P95 response time ${P95}ms exceeds 2000ms threshold"
-          fi
-      
-      - name: Upload load test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: load-test-results
-          path: |
-            load-test-results*
-            load-test-output.txt
+    - name: Build and push Docker image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f backend/Dockerfile .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-  # ============================================
-  # Generate Production Readiness Report
-  # ============================================
-  report:
-    name: Generate Report
+    - name: Update Terraform
+      working-directory: infra/terraform
+      env:
+        TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+        TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+        TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
+        TF_VAR_encryption_key: ${{ secrets.ENCRYPTION_KEY }}
+        TF_VAR_ssl_certificate_arn: ${{ secrets.SSL_CERTIFICATE_ARN }}
+      run: |
+        terraform init
+        terraform plan -out=tfplan
+        terraform apply tfplan
+
+    - name: Deploy to Kubernetes
+      env:
+        KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+      run: |
+        echo "$KUBE_CONFIG" > kubeconfig
+        export KUBECONFIG=kubeconfig
+        kubectl apply -f infra/kubernetes/namespace.yaml
+        kubectl apply -f infra/kubernetes/secrets.yaml
+        kubectl apply -f infra/kubernetes/deployment.yaml
+        kubectl rollout status deployment/nebula-backend -n nebula --timeout=5m
+
+  notify:
     runs-on: ubuntu-latest
-    needs: [test-backend, test-frontend, security]
+    needs: build-and-push
     if: always()
-    
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Generate status badge
-        run: |
-          echo "# Status Badge" > status.md
-          echo "[![Nebula Search CI](https://github.com/${{ github.repository }}/actions/workflows/deploy.yml/badge.svg)](https://github.com/${{ github.repository }}/actions/workflows/deploy.yml)" >> status.md
-      
-      - name: Upload status
-        uses: actions/upload-artifact@v4
-        with:
-          name: ci-status
-          path: status.md
+    - name: Notify Slack
+      uses: slackapi/slack-github-action@v1
+      with:
+        webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+        payload: |
+          {
+            "text": "Deployment ${{ job.status }}: ${{ github.repository }} @ ${{ github.sha }}"
+          }

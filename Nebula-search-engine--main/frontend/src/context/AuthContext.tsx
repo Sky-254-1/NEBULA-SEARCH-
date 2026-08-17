@@ -100,9 +100,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, []);
 
+  // Listen for native push tokens from mobile/desktop bridge
+  useEffect(() => {
+    const handleFcmToken = (event: Event) => {
+      const customEvent = event as CustomEvent<string>;
+      localStorage.setItem('push_token', customEvent.detail);
+      if (user) {
+        registerPushToken();
+      }
+    };
+
+    window.addEventListener('fcm-token', handleFcmToken as EventListener);
+    return () => window.removeEventListener('fcm-token', handleFcmToken as EventListener);
+  }, [user]);
+
+  const registerPushToken = async () => {
+    try {
+      const platform = (window as any).nebula?.platform || 'web';
+      const token = localStorage.getItem('push_token');
+      if (token) {
+        await apiClient.registerPushToken(token, platform);
+      }
+    } catch (error) {
+      console.error('Failed to register push token:', error);
+    }
+  };
+
   const login = async (email: string, password: string): Promise<AuthResponse> => {
     const response = await apiClient.login(email, password);
     await refreshUser();
+    await registerPushToken();
     return response;
   };
 

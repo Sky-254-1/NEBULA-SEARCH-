@@ -1,218 +1,180 @@
-.PHONY: help install test lint format clean deploy migrate backup restore
+# Nebula Search - Makefile
+# Common development and deployment commands
 
+.PHONY: help
 help: ## Show this help message
-	@echo "Nebula Search Engine - Available Commands:"
+	@echo "Nebula Search - Available commands:"
 	@echo ""
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+	@echo ""
 
-install: ## Install all dependencies
+# Development
+.PHONY: install
+install: ## Install all dependencies (backend + frontend)
 	@echo "Installing backend dependencies..."
 	cd backend && pip install -r requirements.txt
 	@echo "Installing frontend dependencies..."
-	cd frontend && npm install
-	@echo "✅ Dependencies installed"
+	cd frontend && npm ci
 
+.PHONY: dev
 dev: ## Start development environment
 	@echo "Starting development environment..."
-	docker-compose up -d postgres redis
-	@echo "✅ Development environment started"
-	@echo "Backend: http://localhost:8000"
-	@echo "Frontend: http://localhost:5173"
-	@echo "API Docs: http://localhost:8000/docs"
+	docker compose -f docker-compose.dev.yml up --build
 
-dev-backend: ## Start backend in development mode
-	@echo "Starting backend..."
-	cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+.PHONY: dev-down
+dev-down: ## Stop development environment
+	@echo "Stopping development environment..."
+	docker compose -f docker-compose.dev.yml down
 
-dev-frontend: ## Start frontend in development mode
-	@echo "Starting frontend..."
-	cd frontend && npm run dev
+.PHONY: logs
+logs: ## Show logs from all services
+	docker compose -f docker-compose.dev.yml logs -f
 
-test: ## Run all tests
-	@echo "Running all tests..."
-	cd backend && pytest --cov=app --cov-report=term-missing
-	cd frontend && npm test
-
-test-backend: ## Run backend tests only
+# Testing
+.PHONY: test
+test: ## Run all tests (backend + frontend)
 	@echo "Running backend tests..."
-	cd backend && pytest --cov=app --cov-report=term-missing
-
-test-frontend: ## Run frontend tests only
+	cd backend && pytest tests/ -v --tb=short
 	@echo "Running frontend tests..."
-	cd frontend && npm test
+	cd frontend && npm test -- --run
 
-test-e2e: ## Run frontend end-to-end tests
-	@echo "Running frontend E2E tests..."
-	cd frontend && npm run e2e
+.PHONY: test-backend
+test-backend: ## Run backend tests only
+	cd backend && pytest tests/ -v --tb=short
 
-test-e2e-backend: ## Run backend E2E tests (requires server on localhost:8000)
+.PHONY: test-frontend
+test-frontend: ## Run frontend tests only
+	cd frontend && npm test -- --run
+
+.PHONY: test-e2e
+test-e2e: ## Run E2E tests
+	@echo "Starting services for E2E tests..."
+	docker compose -f docker-compose.prod.yml up -d postgres redis elasticsearch
+	sleep 10
 	@echo "Running backend E2E tests..."
-	@echo "⚠️  Ensure backend is running on http://localhost:8000"
-	cd backend && python -m pytest ../tests/e2e/ -v
+	cd backend && pytest tests/e2e/ -v --tb=short
+	@echo "Running Playwright E2E tests..."
+	cd frontend && npm run test:e2e
 
-test-performance: ## Run performance tests
-	@echo "Running performance tests..."
-	cd tests/performance && python -m pytest
-
-lint: ## Run all linters
-	@echo "Running linters..."
-	cd backend && ruff check app/
+.PHONY: lint
+lint: ## Run linting on frontend and backend
 	cd frontend && npm run lint
+	@echo "Running mypy on backend..."
+	cd backend && mypy app/ || true
 
-format: ## Format all code
-	@echo "Formatting code..."
-	cd backend && ruff format app/
-	cd frontend && npm run format
-
+.PHONY: typecheck
 typecheck: ## Run type checking
-	@echo "Running type checks..."
-	cd backend && mypy app/
 	cd frontend && npm run typecheck
+	cd backend && mypy app/
 
-security: ## Run security scans
-	@echo "Running security scans..."
-	cd backend && safety check
-	cd backend && bandit -r app/ -s B608
-	cd backend && pip-audit
+# Database
+.PHONY: db-migrate
+db-migrate: ## Run database migrations
+	@echo "Running migrations..."
+	docker compose -f docker-compose.prod.yml exec -T backend alembic upgrade head
 
-build: ## Build Docker images
-	@echo "Building Docker images..."
-	docker-compose build
+.PHONY: db-rollback
+db-rollback: ## Rollback last migration
+	docker compose -f docker-compose.prod.yml exec -T backend alembic downgrade -1
 
+.PHONY: db-shell
+db-shell: ## Open PostgreSQL shell
+	docker compose -f docker-compose.prod.yml exec postgres psql -U nebula -d nebula
+
+.PHONY: db-seed
+db-seed: ## Seed database with initial data
+	@echo "Seeding database..."
+	cd backend && python -m app.database.seed
+
+# Build
+.PHONY: build
+build: ## Build all Docker images
+	@echo "Building production images..."
+	docker compose -f docker-compose.prod.yml build
+
+.PHONY: build-backend
 build-backend: ## Build backend Docker image
-	@echo "Building backend image..."
-	docker build -t nebula-backend:latest docker/
+	docker build -t nebula-backend:latest -f docker/Dockerfile.prod .
 
-build-frontend: ## Build frontend Docker image
-	@echo "Building frontend image..."
-	docker build -t nebula-frontend:latest docker/frontend/
+.PHONY: build-frontend
+build-frontend: ## Build frontend
+	cd frontend && npm run build
 
+# Deploy
+.PHONY: deploy
 deploy: ## Deploy to production
 	@echo "Deploying to production..."
-	@echo "⚠️  This will deploy to production. Are you sure? (y/n)"
-	@read -p "" confirm; [ "$$confirm" = "y" ]
-	docker-compose -f docker-compose.prod.yml up -d
-	@echo "✅ Deployed to production"
+	./scripts/deploy.ps1
 
-deploy-k8s: ## Deploy to Kubernetes
-	@echo "Deploying to Kubernetes..."
-	kubectl apply -f infrastructure/k8s/
-	@echo "✅ Deployed to Kubernetes"
+.PHONY: deploy-staging
+deploy-staging: ## Deploy to staging
+	@echo "Deploying to staging..."
+	git push origin develop
 
-migrate: ## Run database migrations
-	@echo "Running database migrations..."
-	cd backend && alembic upgrade head
-	@echo "✅ Migrations complete"
+.PHONY: verify
+verify: ## Verify deployment
+	@echo "Verifying deployment..."
+	./scripts/verify-deployment.ps1
 
-migrate-create: ## Create new migration
-	@echo "Creating new migration..."
-	@read -p "Migration message: " msg; cd backend && alembic revision --autogenerate -m "$$msg"
-	@echo "✅ Migration created"
-
-seed: ## Seed database with sample data
-	@echo "Seeding database..."
-	cd backend && python -m app.database.seeds.main
-	@echo "✅ Database seeded"
-
-backup: ## Backup database
-	@echo "Backing up database..."
-	@mkdir -p database/backups
-	@timestamp=$$(date +%Y%m%d_%H%M%S); \
-	pg_dump -h localhost -U nebula -d nebula > database/backups/nebula_$$timestamp.sql
-	@echo "✅ Backup created: database/backups/nebula_$$timestamp.sql"
-
-restore: ## Restore database from backup
-	@echo "Restoring database..."
-	@read -p "Backup file: " file; psql -h localhost -U nebula -d nebula < $$file
-	@echo "✅ Database restored"
-
-logs: ## Show application logs
-	docker-compose logs -f
-
-logs-backend: ## Show backend logs
-	docker-compose logs -f backend
-
-logs-frontend: ## Show frontend logs
-	docker-compose logs -f frontend
-
-clean: ## Clean up temporary files
+# Cleanup
+.PHONY: clean
+clean: ## Clean build artifacts and temporary files
 	@echo "Cleaning up..."
-	find . -type d -name __pycache__ -exec rm -rf {} +
-	find . -type d -name .pytest_cache -exec rm -rf {} +
-	find . -type d -name node_modules -exec rm -rf {} +
-	find . -type d -name .next -exec rm -rf {} +
-	find . -type f -name "*.pyc" -delete
-	find . -type f -name "*.pyo" -delete
-	@echo "✅ Cleanup complete"
-
-clean-docker: ## Clean Docker resources
-	@echo "Cleaning Docker resources..."
-	docker-compose down -v
+	cd backend && find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	cd backend && find . -type f -name "*.pyc" -delete 2>/dev/null || true
+	cd frontend && rm -rf dist node_modules/.vite 2>/dev/null || true
 	docker system prune -f
-	@echo "✅ Docker cleaned"
 
-monitor: ## Start monitoring stack
-	@echo "Starting monitoring stack..."
-	docker-compose -f infrastructure/monitoring/docker-compose.monitoring.yml up -d
-	@echo "✅ Monitoring started"
-	@echo "Grafana: http://localhost:3000"
-	@echo "Prometheus: http://localhost:9090"
+.PHONY: reset
+reset: ## Reset everything (WARNING: deletes all data)
+	@echo "WARNING: This will delete all data!"
+	@read -p "Are you sure? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		docker compose -f docker-compose.prod.yml down -v; \
+		rm -rf backend/storage frontend/dist; \
+	fi
 
-monitor-stop: ## Stop monitoring stack
-	@echo "Stopping monitoring stack..."
-	docker-compose -f infrastructure/monitoring/docker-compose.monitoring.yml down
-	@echo "✅ Monitoring stopped"
+# Monitoring
+.PHONY: logs-backend
+logs-backend: ## Show backend logs
+	docker compose -f docker-compose.prod.yml logs -f backend
 
-shell-backend: ## Open backend shell
-	docker-compose exec backend bash
+.PHONY: logs-worker
+logs-worker: ## Show worker logs
+	docker compose -f docker-compose.prod.yml logs -f worker
 
-shell-postgres: ## Open PostgreSQL shell
-	docker-compose exec postgres psql -U nebula -d nebula
+.PHONY: ps
+ps: ## Show running services
+	docker compose -f docker-compose.prod.yml ps
 
-shell-redis: ## Open Redis shell
-	docker-compose exec redis redis-cli
+# Utilities
+.PHONY: shell
+shell: ## Open shell in backend container
+	docker compose -f docker-compose.prod.yml exec backend bash
 
-health: ## Check service health
+.PHONY: generate-secrets
+generate-secrets: ## Generate secure secrets for production
+	@echo "Generating secrets..."
+	pwsh scripts/generate-secrets.ps1
+
+.PHONY: backup-db
+backup-db: ## Backup PostgreSQL database
+	@echo "Backing up database..."
+	mkdir -p database/backups
+	docker compose -f docker-compose.prod.yml exec -T postgres pg_dump -U nebula nebula > database/backups/backup_$$(date +%Y%m%d_%H%M%S).sql
+	@echo "Backup saved to database/backups/"
+
+.PHONY: restore-db
+restore-db: ## Restore PostgreSQL database from backup
+	@echo "Restoring database..."
+	@if [ -z "$(FILE)" ]; then echo "Usage: make restore-db FILE=backup.sql"; exit 1; fi
+	docker compose -f docker-compose.prod.yml exec -T postgres psql -U nebula -d nebula < $(FILE)
+
+# Health checks
+.PHONY: health
+health: ## Check health of all services
 	@echo "Checking service health..."
-	@curl -s http://localhost:8000/health > /dev/null && echo "✅ Backend: Healthy" || echo "❌ Backend: Unhealthy"
-	@curl -s http://localhost:5173 > /dev/null && echo "✅ Frontend: Healthy" || echo "❌ Frontend: Unhealthy"
-	@docker-compose exec -T postgres pg_isready -U nebula > /dev/null 2>&1 && echo "✅ PostgreSQL: Healthy" || echo "❌ PostgreSQL: Unhealthy"
-	@docker-compose exec -T redis redis-cli ping > /dev/null 2>&1 && echo "✅ Redis: Healthy" || echo "❌ Redis: Unhealthy"
-
-benchmark: ## Run performance benchmarks
-	@echo "Running benchmarks..."
-	cd tests/performance && python benchmarks.py
-	@echo "✅ Benchmarks complete"
-
-load-test: ## Run load tests
-	@echo "Running load tests..."
-	cd tests/load && locust -f locustfile.py --headless -u 100 -r 10 -t 1m
-
-docs: ## Generate documentation
-	@echo "Generating documentation..."
-	cd backend && python -m app.docs.generator
-	@echo "✅ Documentation generated"
-
-docs-serve: ## Serve documentation locally
-	@echo "Serving documentation..."
-	cd docs && python -m http.server 8080
-	@echo "✅ Documentation available at http://localhost:8080"
-
-update: ## Update all dependencies
-	@echo "Updating backend dependencies..."
-	cd backend && pip install --upgrade -r requirements.txt
-	@echo "Updating frontend dependencies..."
-	cd frontend && npm update
-	@echo "✅ Dependencies updated"
-
-info: ## Show system information
-	@echo "Nebula Search Engine - System Information"
-	@echo "========================================"
-	@echo "Python: $$(python --version 2>&1)"
-	@echo "Node: $$(node --version 2>&1)"
-	@echo "Docker: $$(docker --version 2>&1)"
-	@echo "Docker Compose: $$(docker-compose --version 2>&1)"
-	@echo "PostgreSQL: $$(docker-compose exec -T postgres psql -V 2>&1 | head -n1)"
-	@echo "Redis: $$(docker-compose exec -T redis redis-cli --version 2>&1)"
-
-.DEFAULT_GOAL := help
+	@curl -s http://localhost:8000/health | jq . || echo "Backend: ❌"
+	@curl -s http://localhost:9000/minio/health/live | grep OK && echo "MinIO: ✅" || echo "MinIO: ❌"
+	@docker compose -f docker-compose.prod.yml exec -T redis redis-cli ping | grep PONG && echo "Redis: ✅" || echo "Redis: ❌"

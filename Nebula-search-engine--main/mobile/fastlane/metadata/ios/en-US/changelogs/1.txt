@@ -1,0 +1,7 @@
+## Version 1.0.0
+- Initial release
+- AI-powered search with privacy
+- Offline mode support
+- Cross-platform sync
+- Voice search
+- Dark mode

@@ -22,7 +22,8 @@
     "@capacitor/preferences": "^6.0.0",
     "@capacitor/push-notifications": "^6.0.0",
     "@capacitor/share": "^6.0.0",
-    "@capacitor-community/speech-recognition": "^6.0.0"
+    "@capacitor-community/speech-recognition": "^6.0.0",
+    "@capacitor-community/biometric": "^6.0.0"
   },
   "devDependencies": {
     "@capacitor/cli": "^6.2.0",

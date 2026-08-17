@@ -1,0 +1,1 @@
+AI-powered private search engine with offline support.

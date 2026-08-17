@@ -1,2 +1,2 @@
-Test result: PASSED
-Exit code: 0
+Test result: FAILED
+Exit code: 1

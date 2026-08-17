@@ -1,352 +1,267 @@
 # Contributing to Nebula Search
 
-Thank you for your interest in contributing to Nebula Search! This document provides guidelines and instructions for contributing to the project.
-
-## Table of Contents
-
-- [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [Development Workflow](#development-workflow)
-- [Coding Standards](#coding-standards)
-- [Testing Guidelines](#testing-guidelines)
-- [Commit Messages](#commit-messages)
-- [Pull Request Process](#pull-request-process)
-- [Documentation](#documentation)
+Thank you for your interest in contributing! This guide will help you get started.
 
 ## Code of Conduct
 
-This project adheres to a Code of Conduct that all contributors are expected to follow. Please read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before contributing.
+- Be respectful and inclusive
+- Welcome newcomers and help them get started
+- Focus on constructive feedback
+- Respect differing viewpoints and experiences
 
-## Getting Started
+## How to Contribute
 
-### Prerequisites
-
-- Python 3.11 or higher
-- Node.js 20 or higher
-- Git
-- Docker (optional, for full stack testing)
-
-### Fork and Clone
-
-1. Fork the repository on GitHub
-2. Clone your fork locally:
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/Nebula-search-engine-.git
-   cd Nebula-search-engine-
-   ```
-
-3. Add upstream remote:
-   ```bash
-   git remote add upstream https://github.com/Sky-254-1/Nebula-search-engine-.git
-   ```
-
-### Local Setup
-
-See [docs/SETUP.md](docs/SETUP.md) for detailed setup instructions.
-
-**Quick start:**
+### 1. Set Up Development Environment
 
 ```bash
-# Backend
-cd backend
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-pip install -r requirements-dev.txt
+# Clone the repository
+git clone https://github.com/Sky-254-1/Nebula-search-engine-.git
+cd Nebula-search-engine--main
 
-# Frontend
-cd ../frontend
-npm install
+# Run quick start script
+bash scripts/quick-start.sh
 
-# Run tests
-cd ../backend
-pytest
+# Or using Make
+make install
+make dev
 ```
 
-## Development Workflow
+### 2. Find or Create an Issue
 
-### Branch Strategy
+- Check existing issues on GitHub
+- For new features, create an issue first to discuss the approach
+- For bug fixes, reference the bug report
 
-- `main` — stable production code
-- `develop` — integration branch for features
-- `feature/name` — new features
-- `fix/name` — bug fixes
-- `docs/name` — documentation updates
-
-### Creating a Feature Branch
+### 3. Create a Branch
 
 ```bash
-git checkout develop
-git pull upstream develop
+# Create a feature branch
 git checkout -b feature/your-feature-name
+
+# Or for bug fixes
+git checkout -b fix/issue-number-description
 ```
 
-### Keeping Your Fork Updated
+Branch naming conventions:
+- `feature/` - New features
+- `fix/` - Bug fixes
+- `docs/` - Documentation updates
+- `refactor/` - Code refactoring
+- `test/` - Adding or updating tests
+- `chore/` - Maintenance tasks
 
+### 4. Make Changes
+
+Follow these guidelines:
+
+#### Code Style
+
+**Python (Backend):**
+- Follow PEP 8
+- Use type hints
+- Maximum line length: 100 characters
+- Use async/await for I/O operations
+- Write docstrings for all public functions/classes
+
+**TypeScript (Frontend):**
+- Use functional components with hooks
+- Prefer `const` over `let`
+- Use descriptive variable names
+- Write JSDoc comments for complex functions
+
+#### Commit Messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) format:
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer]
+```
+
+Types:
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation changes
+- `style`: Code style changes (formatting, etc.)
+- `refactor`: Code refactoring
+- `test`: Adding or updating tests
+- `chore`: Maintenance tasks
+
+Examples:
+```
+feat(search): add vector search support
+fix(auth): resolve JWT token expiration issue
+docs(readme): update installation instructions
+```
+
+### 5. Write Tests
+
+All new features should include tests:
+
+**Backend (pytest):**
 ```bash
-git fetch upstream
-git checkout develop
-git merge upstream/develop
-git push origin develop
+# Run all tests
+make test
+
+# Run specific test file
+pytest backend/tests/test_documents_routes.py -v
+
+# Run with coverage
+pytest --cov=backend --cov-report=html
 ```
 
-## Coding Standards
-
-### Python (Backend)
-
-- **Style:** Follow PEP 8
-- **Formatter:** Black (line length: 100)
-- **Linter:** Ruff
-- **Type hints:** Use type annotations where possible
-- **Docstrings:** Google style
-
-**Run formatters:**
+**Frontend (Vitest):**
 ```bash
-black backend/app
-ruff check backend/app --fix
-```
-
-**Example:**
-```python
-async def search_documents(
-    query: str,
-    user_id: int,
-    limit: int = 10,
-) -> list[dict[str, Any]]:
-    """
-    Search documents for a user.
-
-    Args:
-        query: Search query string
-        user_id: User ID for scoping
-        limit: Maximum number of results
-
-    Returns:
-        List of document dictionaries with scores
-
-    Raises:
-        ValueError: If query is empty
-    """
-    if not query.strip():
-        raise ValueError("Query cannot be empty")
-    
-    # Implementation
-    return results
-```
-
-### JavaScript/React (Frontend)
-
-- **Style:** Prettier with 2-space indentation
-- **Linter:** ESLint
-- **Components:** Functional components with hooks
-- **Props:** Use PropTypes or TypeScript
-
-**Run formatters:**
-```bash
-cd frontend
-npm run lint
-npm run format
-```
-
-**Example:**
-```javascript
-export function SearchBar({ value, onChange, onSubmit, loading }) {
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      onSubmit();
-    }
-  };
-
-  return (
-    <div className="search-bar">
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyPress={handleKeyPress}
-        disabled={loading}
-        placeholder="Search..."
-      />
-    </div>
-  );
-}
-```
-
-## Testing Guidelines
-
-### Backend Tests
-
-- **Framework:** pytest + pytest-asyncio
-- **Coverage:** Minimum 80% (enforced by CI)
-- **Location:** `tests/` directory
-
-**Run tests:**
-```bash
-cd backend
-pytest --cov=app --cov-report=term-missing
-```
-
-**Test structure:**
-```python
-import pytest
-from app.services.search import sanitize_query
-
-@pytest.mark.asyncio
-async def test_sanitize_query_removes_control_chars():
-    """Ensure control characters are stripped from queries."""
-    result = sanitize_query("hello\x00world\x1f")
-    assert result == "helloworld"
-
-def test_sanitize_query_normalizes_whitespace():
-    """Ensure multiple spaces are normalized."""
-    result = sanitize_query("hello    world")
-    assert result == "hello world"
-```
-
-### Frontend Tests
-
-- **Framework:** Jest + React Testing Library
-- **Coverage:** Minimum 70%
-
-**Run tests:**
-```bash
+# Run all tests
 cd frontend
 npm test
+
+# Run with coverage
 npm run test:coverage
 ```
 
-### E2E Tests
+### 6. Run Linters
 
-- **Framework:** Playwright
-- **Location:** `tests/e2e/`
-
-**Run E2E:**
 ```bash
-npm run e2e
-npm run e2e:ui  # Interactive mode
+# Backend linting
+cd backend
+ruff check .
+mypy .
+
+# Frontend linting
+cd frontend
+npm run lint
+npm run type-check
 ```
 
-## Commit Messages
+### 7. Submit Pull Request
 
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
+1. Push your branch to GitHub
+2. Create a Pull Request against `main` branch
+3. Fill out the PR template
+4. Ensure CI checks pass
+5. Request review from maintainers
 
-```
-<type>(<scope>): <subject>
+## Development Guidelines
 
-<body>
+### Architecture
 
-<footer>
-```
+- **Backend**: FastAPI with async/await patterns
+- **Frontend**: React with TypeScript
+- **Database**: PostgreSQL with SQLAlchemy ORM
+- **Cache**: Redis (optional, falls back to in-memory)
+- **Search**: Elasticsearch for vector search (optional)
+- **Storage**: Local filesystem or S3/MinIO
 
-**Types:**
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation only
-- `style`: Formatting, no code change
-- `refactor`: Code restructuring
-- `test`: Adding tests
-- `chore`: Maintenance tasks
-
-**Examples:**
-```
-feat(search): add semantic search with embeddings
-
-Implement sentence-transformers integration for vector search.
-Chunks are now embedded with all-MiniLM-L6-v2 model and stored
-in FAISS index for similarity search.
-
-Closes #42
-```
+### Project Structure
 
 ```
-fix(auth): prevent token reuse after refresh
+backend/
+├── app/
+│   ├── middleware/     # Security, rate limiting, etc.
+│   ├── routes/         # API endpoints
+│   ├── services/       # Business logic
+│   ├── models/         # Database models
+│   └── main.py         # Application entry
+├── tests/              # Test suite
+└── requirements.txt    # Dependencies
 
-Session rotation was not being marked correctly, allowing
-refresh tokens to be reused multiple times.
-
-Fixes #89
+frontend/
+├── src/
+│   ├── components/     # Reusable UI components
+│   ├── pages/          # Page components
+│   ├── context/        # React contexts
+│   ├── api/            # API client
+│   └── utils/          # Utility functions
+└── package.json        # Dependencies
 ```
 
-## Pull Request Process
+### Database Migrations
 
-### Before Submitting
+When changing database models:
 
-1. **Update your branch:**
-   ```bash
-   git fetch upstream
-   git rebase upstream/develop
-   ```
+```bash
+# Create migration
+cd backend
+alembic revision --autogenerate -m "description"
 
-2. **Run all tests:**
-   ```bash
-   pytest
-   npm test
-   npm run e2e
-   ```
+# Apply migration
+alembic upgrade head
 
-3. **Run linters:**
-   ```bash
-   black backend/app
-   ruff check backend/app
-   npm run lint
-   ```
+# Rollback migration
+alembic downgrade -1
+```
 
-4. **Update documentation** if needed
+### API Design
 
-5. **Add tests** for new features
+- Use RESTful conventions
+- Version APIs (`/api/v1/...`)
+- Return consistent JSON responses
+- Use proper HTTP status codes
+- Document with OpenAPI/Swagger
 
-### Submitting
+### Error Handling
 
-1. Push your branch:
-   ```bash
-   git push origin feature/your-feature-name
-   ```
+- Use custom exception classes
+- Log errors with context
+- Return user-friendly error messages
+- Never expose internal details to users
 
-2. Open a Pull Request on GitHub
+### Security
 
-3. Fill out the PR template:
-   - **Title:** Clear, descriptive (use conventional commit format)
-   - **Description:** What changed and why
-   - **Testing:** How you tested the changes
-   - **Screenshots:** For UI changes
-   - **Breaking changes:** List any breaking changes
+- Always validate user input
+- Use parameterized queries (prevent SQL injection)
+- Implement proper authentication/authorization
+- Never log sensitive data (passwords, tokens)
+- Use HTTPS in production
+- Set security headers
 
-### PR Review Process
+## Testing Strategy
 
-- **Automated checks** must pass (CI/CD, tests, linting)
-- **Code review** by at least one maintainer
-- **Changes requested:** Address feedback and push updates
-- **Approval:** Once approved, a maintainer will merge
+### Backend Tests
 
-### After Merge
+1. **Unit Tests**: Test individual functions/methods
+2. **Integration Tests**: Test API endpoints
+3. **E2E Tests**: Test complete user flows
 
-1. Delete your feature branch (locally and on GitHub)
-2. Update your local develop branch:
-   ```bash
-   git checkout develop
-   git pull upstream develop
-   ```
+### Frontend Tests
+
+1. **Unit Tests**: Test utility functions and components
+2. **Integration Tests**: Test component interactions
+3. **E2E Tests**: Test user workflows with Playwright
+
+## Performance
+
+- Use database indexes for frequently queried fields
+- Implement caching for expensive operations
+- Use connection pooling for databases
+- Compress API responses
+- Optimize database queries (avoid N+1 problems)
 
 ## Documentation
 
-### Updating Docs
+- Update README.md for major changes
+- Add docstrings to new functions/classes
+- Update API documentation (auto-generated from code)
+- Add examples for complex features
 
-- **API changes:** Update `docs/API_V1.1.md`
-- **Architecture changes:** Update `docs/ARCHITECTURE.md`
-- **Setup instructions:** Update `docs/SETUP.md`
-- **New features:** Update `README.md` and relevant docs
+## Review Process
 
-### Writing Docs
+1. **Automated Checks**: CI must pass (tests, linting, type checking)
+2. **Code Review**: At least one maintainer must approve
+3. **Testing**: New features must have tests
+4. **Documentation**: Changes must be documented
 
-- Use clear, concise language
-- Include code examples
-- Add screenshots for UI features
-- Keep formatting consistent
+## Getting Help
 
-## Questions?
+- Open an issue for bugs or feature requests
+- Check documentation in `docs/` folder
+- Review existing code for examples
+- Ask questions in GitHub Discussions
 
-- **Bugs:** Open an issue with the `bug` label
-- **Features:** Open an issue with the `enhancement` label
-- **Questions:** Open a discussion on GitHub Discussions
-- **Security:** Email security@nebula-search.example.com (do not open public issues)
+## License
 
-Thank you for contributing to Nebula Search! 🚀
+By contributing, you agree that your contributions will be licensed under the MIT License.

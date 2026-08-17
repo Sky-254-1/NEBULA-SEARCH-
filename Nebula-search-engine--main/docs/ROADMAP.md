@@ -50,8 +50,15 @@
 
 - [ ] Push to origin/main — security fixes pending publication
 - [ ] Enable GitHub branch protection with required CI status checks
-- [ ] Resolve Dependabot alerts (eslint@10, vitest@4, react-syntax-highlighter@16)
+- [ ] Resolve Dependabot alerts (`eslint@10`, `vitest@4`, `react-syntax-highlighter@16`)
 - [ ] Live staging deployment + full release checklist
+
+## Completed (v1.2.1)
+
+- [x] SQLite migration compatibility for `014_pgvector_postgres.sql`
+- [x] Icon assets for desktop/mobile (`desktop/assets/icon.png`, `desktop/assets/icon.ico`)
+- [x] Firebase/APNs push token registration bridge (frontend `AuthContext` + Android FCM token bridge)
+- [x] Docker Compose stack validated
 
 ## Planned (v1.3)
 

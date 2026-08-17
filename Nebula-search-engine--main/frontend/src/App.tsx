@@ -1,8 +1,15 @@
 import React, { useEffect } from 'react';
 import { AppRoutes } from '@/routes';
 import { AuthProvider } from '@/context/AuthContext';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import { setupGlobalErrorHandlers } from '@/utils/errorHandling';
 
 function App() {
+  // Initialize global error handlers
+  useEffect(() => {
+    setupGlobalErrorHandlers();
+  }, []);
+
   // Global keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -31,9 +38,11 @@ function App() {
   }, []);
 
   return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -25,7 +25,12 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
 from app.database import init_db
-from app.middleware.security import SecurityHeadersMiddleware, CSRFProtectionMiddleware
+from app.middleware.security import (
+    SecurityHeadersMiddleware,
+    CSRFProtectionMiddleware,
+    IPWhitelistMiddleware,
+)
+from app.middleware.security_enhanced import InputValidationMiddleware, AdvancedRateLimitMiddleware, AuditLoggingMiddleware
 from app.middleware.versioning import VersioningMiddleware
 from app.middleware.response import ResponseStandardizationMiddleware
 from app.middleware.rate_limit import RateLimitHeadersMiddleware
@@ -35,6 +40,7 @@ from app.health_routes import router as health_router
 from app.routes.autocomplete import router as autocomplete_router
 from app.routes.spell import router as spell_router
 from app.routes.suggestions import router as suggestions_router
+from app.routes.search_suggestions import router as search_suggestions_router
 from app.routes.analytics import router as analytics_router
 from app.routes.analytics_extended import router as analytics_extended_router
 from app.routes.auth_extended import router as auth_extended_router
@@ -56,9 +62,9 @@ from app.routes.webauthn_verify import router as webauthn_verify_router
 from app.routes.push import router as push_router
 from app.routes.preview import router as preview_router
 from app.routes.federated import router as federated_router
-# GraphQL router temporarily disabled - schema needs type fixes
-# from app.routes.graphql import router as graphql_router
+from app.routes.graphql import router as graphql_router
 from app.hybrid.routes import router as hybrid_router
+from app.routes.research import router as research_router
 from app.services.cache import cache_service
 from app.services.queue import job_queue
 
@@ -275,6 +281,21 @@ async def _verify_dependencies() -> list[str]:
     return issues
 
 
+async def _validate_configuration() -> None:
+    """Validate application configuration at startup."""
+    from app.config_validation import validate_config
+    
+    result = validate_config(settings)
+    
+    if result.errors:
+        for error in result.errors:
+            logger.error("Configuration error: %s", error)
+    
+    if result.warnings:
+        for warning in result.warnings:
+            logger.warning("Configuration warning: %s", warning)
+
+
 # ---------------------------------------------------------------------------
 # Prometheus metrics
 # ---------------------------------------------------------------------------
@@ -380,9 +401,17 @@ async def lifespan(app: FastAPI):
     from app.crawler.scheduler import crawl_scheduler
 
     await crawl_scheduler.start()
+    
+    # Initialize pgvector for production vector storage
+    from vector.storage.pgvector_store import get_pgvector_store
+    pgvector_store = get_pgvector_store()
+    await pgvector_store.initialize()
     from app.services.analytics_background import start_analytics_worker
     await start_analytics_worker()
 
+    # Validate configuration
+    await _validate_configuration()
+    
     # Verify deps on startup
     issues = await _verify_dependencies()
     if issues:
@@ -406,6 +435,11 @@ async def lifespan(app: FastAPI):
     await close_pool()
     await cache_service.close()
     await job_queue.close()
+    
+    # Cleanup pgvector connection pool
+    from vector.storage.pgvector_store import get_pgvector_store
+    pgvector_store = get_pgvector_store()
+    await pgvector_store.close()
     from app.crawler.scheduler import crawl_scheduler
 
     try:
@@ -462,6 +496,10 @@ app.add_middleware(ResponseStandardizationMiddleware)
 app.add_middleware(RateLimitHeadersMiddleware)
 app.add_middleware(MetricsMiddleware)
 app.add_middleware(CSRFProtectionMiddleware)
+app.add_middleware(IPWhitelistMiddleware, allowed_ips=settings.admin_ip_whitelist)
+app.add_middleware(InputValidationMiddleware)
+app.add_middleware(AdvancedRateLimitMiddleware)
+app.add_middleware(AuditLoggingMiddleware)
 
 # Register compression middleware
 from app.middleware.compression import CompressionMiddleware
@@ -520,8 +558,9 @@ app.include_router(preview_router)  # Document preview for mobile WebView
 app.include_router(federated_router)  # Federated search across devices
 app.include_router(spell_router)  # Spell correction system
 app.include_router(suggestions_router)  # Search suggestions system
-# GraphQL router temporarily disabled - schema needs type fixes
-# app.include_router(graphql_router)  # GraphQL API endpoint
+app.include_router(search_suggestions_router)  # Search autocomplete and query expansion
+app.include_router(graphql_router)  # GraphQL API endpoint
+app.include_router(research_router)  # Research hub - projects, notes, bookmarks, citations
 
 # --- Prometheus /metrics endpoint (mounted after routes) ---
 

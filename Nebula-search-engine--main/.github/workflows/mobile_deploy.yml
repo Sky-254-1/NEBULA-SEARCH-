@@ -1,0 +1,49 @@
+name: Deploy Mobile to Play Store
+
+on:
+  push:
+    tags:
+      - 'mobile-v*'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.16.0'
+        channel: 'stable'
+
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Decode keystore
+      env:
+        KEYSTORE_BASE64: ${{ secrets.NEBULA_KEYSTORE_BASE64 }}
+      run: |
+        echo "$KEYSTORE_BASE64" | base64 -d > android/app/nebula.keystore
+
+    - name: Build release AAB
+      run: |
+        cd mobile
+        flutter clean
+        flutter pub get
+        flutter build appbundle --release \
+          --obfuscate \
+          --split-debug-info=build/debug-info
+
+    - name: Upload to Play Store
+      uses: r0adkll/upload-google-play@v1
+      with:
+        serviceAccountJson: ${{ secrets.GOOGLE_PLAY_JSON_KEY }}
+        packageName: com.nebula.search
+        releaseFiles: mobile/build/app/outputs/bundle/release/app-release.aab
+        track: internal
+        status: completed

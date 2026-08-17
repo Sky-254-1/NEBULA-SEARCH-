@@ -4,7 +4,29 @@ import { AuthResponse, APIError } from '@/types';
 // ============================================
 // API Client Configuration
 // ============================================
-export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
+// Detect desktop environment (Electron) and use the bridge-provided API URL
+declare global {
+  interface Window {
+    nebula?: {
+      getApiBaseUrl?: () => Promise<string>;
+      isDesktop?: boolean;
+    };
+  }
+}
+
+const getDesktopApiBaseUrl = async (): Promise<string | null> => {
+  try {
+    if (window.nebula?.getApiBaseUrl) {
+      const base = await window.nebula.getApiBaseUrl();
+      if (base) return `${base}/api/v1`;
+    }
+  } catch {
+    // Fall through to default
+  }
+  return null;
+};
+
+export const API_BASE_URL = (import.meta.env && import.meta.env.VITE_API_URL) || '/api/v1';
 const API_TIMEOUT = 30000;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
@@ -25,6 +47,14 @@ class APIClient {
 
     this.setupInterceptors();
     this.setupNetworkListeners();
+    this.initDesktopApiUrl();
+  }
+
+  private async initDesktopApiUrl(): Promise<void> {
+    const desktopBase = await getDesktopApiBaseUrl();
+    if (desktopBase) {
+      this.client.defaults.baseURL = desktopBase;
+    }
   }
 
   private setupNetworkListeners(): void {
@@ -300,6 +330,24 @@ class APIClient {
       },
     });
 
+    return response.data;
+  }
+
+  // Push Notifications
+  public async registerPushToken(token: string, platform: 'ios' | 'android' | 'web', deviceId?: string): Promise<void> {
+    await this.client.post('/notifications/push/register', {
+      token,
+      platform,
+      device_id: deviceId,
+    });
+  }
+
+  public async unregisterPushToken(): Promise<void> {
+    await this.client.delete('/notifications/push/unregister');
+  }
+
+  public async getPushStatus(): Promise<{ enabled: boolean; registered: boolean; platform?: string; updated_at?: string }> {
+    const response = await this.client.get('/notifications/push/status');
     return response.data;
   }
 }

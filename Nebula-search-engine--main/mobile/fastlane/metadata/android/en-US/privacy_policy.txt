@@ -1,0 +1,10 @@
+Your privacy is our priority.
+
+Nebula Search is designed to protect your data:
+- No personal data collected without consent
+- Search history stored locally on device
+- Optional encrypted sync across devices
+- No third-party analytics or advertising
+- You can delete all data anytime
+
+Contact: privacy@nebula-search.example.com

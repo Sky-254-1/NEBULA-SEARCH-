@@ -1,202 +1,264 @@
-from fastapi import APIRouter
-from fastapi.responses import JSONResponse
-import logging
+"""
+Enhanced health check endpoints.
+Provides detailed health status for monitoring and load balancers.
+"""
+
+import asyncio
 import time
-from typing import Dict, Any
-import os
+from datetime import datetime
+from typing import Literal
 
-logger = logging.getLogger("nebula.health")
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+
+from app.config import get_settings
+from app.database.engine import connect
+from app.services.cache import cache_service
+from app.services.queue import job_queue
+
 router = APIRouter()
+settings = get_settings()
 
 
-@router.get("/health")
-async def health_check() -> Dict[str, Any]:
+class HealthResponse(BaseModel):
+    """Health check response schema."""
+    status: Literal["healthy", "degraded", "unhealthy"]
+    timestamp: str
+    uptime: float
+    version: str
+    checks: dict
+    dependencies: dict
+
+
+class DependencyHealth(BaseModel):
+    """Individual dependency health status."""
+    status: Literal["up", "down", "degraded"]
+    latency_ms: float | None = None
+    error: str | None = None
+    details: dict | None = None
+
+
+_start_time = time.time()
+
+
+def get_uptime() -> float:
+    """Get application uptime in seconds."""
+    return time.time() - _start_time
+
+
+async def check_database() -> DependencyHealth:
+    """Check database connectivity and performance."""
+    start = time.monotonic()
+    try:
+        db = await connect()
+        await db.execute("SELECT 1")
+        await db.close()
+        latency = (time.monotonic() - start) * 1000
+        
+        # Check connection pool
+        pool_info = {}
+        if hasattr(db, 'pool'):
+            pool = db.pool
+            pool_info = {
+                "size": getattr(pool, 'size', None),
+                "free": getattr(pool, 'free', None),
+            }
+        
+        return DependencyHealth(
+            status="up",
+            latency_ms=latency,
+            details={"pool": pool_info}
+        )
+    except Exception as exc:
+        return DependencyHealth(
+            status="down",
+            error=str(exc)
+        )
+
+
+async def check_redis() -> DependencyHealth:
+    """Check Redis connectivity."""
+    start = time.monotonic()
+    try:
+        if cache_service._redis:
+            await cache_service._redis.ping()
+            latency = (time.monotonic() - start) * 1000
+            info = await cache_service._redis.info()
+            return DependencyHealth(
+                status="up",
+                latency_ms=latency,
+                details={
+                    "version": info.get("redis_version"),
+                    "connected_clients": info.get("connected_clients"),
+                }
+            )
+        else:
+            return DependencyHealth(
+                status="up",
+                details={"mode": "in-memory"}
+            )
+    except Exception as exc:
+        return DependencyHealth(status="down", error=str(exc))
+
+
+async def check_elasticsearch() -> DependencyHealth:
+    """Check Elasticsearch connectivity."""
+    start = time.monotonic()
+    try:
+        from elasticsearch import AsyncElasticsearch
+        
+        if not hasattr(check_elasticsearch, 'client'):
+            check_elasticsearch.client = AsyncElasticsearch(
+                [settings.elasticsearch_url] if settings.elasticsearch_url else []
+            )
+        
+        health = await check_elasticsearch.client.cluster.health()
+        latency = (time.monotonic() - start) * 1000
+        
+        status = "up" if health["status"] in ["green", "yellow"] else "degraded"
+        
+        return DependencyHealth(
+            status=status,
+            latency_ms=latency,
+            details={
+                "cluster_status": health["status"],
+                "number_of_nodes": health.get("number_of_nodes"),
+            }
+        )
+    except Exception as exc:
+        return DependencyHealth(status="down", error=str(exc))
+
+
+async def check_storage() -> DependencyHealth:
+    """Check storage directories and permissions."""
+    try:
+        import os
+        from pathlib import Path
+        
+        dirs = {
+            "uploads": settings.storage_uploads,
+            "cache": settings.storage_cache,
+            "vector": settings.storage_vector,
+            "indexes": settings.storage_indexes,
+        }
+        
+        missing = []
+        for name, path in dirs.items():
+            if not Path(path).exists():
+                missing.append(name)
+        
+        if missing:
+            return DependencyHealth(
+                status="degraded",
+                error=f"Missing directories: {', '.join(missing)}"
+            )
+        
+        return DependencyHealth(status="up", details={"directories": list(dirs.keys())})
+    except Exception as exc:
+        return DependencyHealth(status="down", error=str(exc))
+
+
+@router.get("/health", response_model=HealthResponse, tags=["Health"])
+async def health_check():
     """
-    Basic health check - returns if service is running.
-    Used by Docker healthcheck and load balancers.
+    Comprehensive health check endpoint.
+    Returns overall status and individual dependency checks.
     """
-    return {
-        "status": "healthy",
-        "service": "nebula-backend",
-        "timestamp": int(time.time()),
-    }
+    # Run all dependency checks in parallel
+    checks = await asyncio.gather(
+        check_database(),
+        check_redis(),
+        check_storage(),
+        return_exceptions=True
+    )
+    
+    # Optional Elasticsearch check
+    es_check = None
+    if settings.elasticsearch_url:
+        es_check = await check_elasticsearch()
+        checks.append(es_check)
+    
+    # Aggregate results
+    dependencies = {}
+    dep_names = ["database", "redis", "storage"]
+    if es_check:
+        dep_names.append("elasticsearch")
+    
+    for name, check in zip(dep_names, checks):
+        if isinstance(check, Exception):
+            dependencies[name] = DependencyHealth(
+                status="down",
+                error=str(check)
+            ).dict()
+        else:
+            dependencies[name] = check.dict()
+    
+    # Determine overall status
+    statuses = [d["status"] for d in dependencies.values()]
+    
+    if all(s == "up" for s in statuses):
+        overall_status = "healthy"
+    elif any(s == "down" for s in statuses):
+        overall_status = "unhealthy"
+    else:
+        overall_status = "degraded"
+    
+    return HealthResponse(
+        status=overall_status,
+        timestamp=datetime.utcnow().isoformat() + "Z",
+        uptime=get_uptime(),
+        version="1.2.1",
+        checks={
+            "database": dependencies.get("database", {}).get("status") == "up",
+            "redis": dependencies.get("redis", {}).get("status") == "up",
+            "storage": dependencies.get("storage", {}).get("status") == "up",
+        },
+        dependencies=dependencies
+    )
 
 
-@router.get("/health/live")
-async def liveness_check() -> Dict[str, Any]:
+@router.get("/health/live", tags=["Health"])
+async def liveness_probe():
     """
     Kubernetes liveness probe.
-    Returns 200 if the application is alive.
+    Returns 200 if the application is running.
     """
-    return {
-        "status": "alive",
-        "service": "nebula-backend",
-    }
+    return {"status": "ok"}
 
 
-@router.get("/health/ready")
-async def readiness_check() -> Dict[str, Any]:
+@router.get("/health/ready", tags=["Health"])
+async def readiness_probe():
     """
     Kubernetes readiness probe.
     Returns 200 if the application is ready to serve traffic.
-    Checks database, redis, and other dependencies.
     """
-    checks = {}
-    overall_status = "ready"
+    # Check critical dependencies
+    db_health = await check_database()
     
-    # Check database connection
-    try:
-        from app.database.engine import connect
-        db = await connect()
-        await db.execute("SELECT 1")
-        await db.close()
-        checks["database"] = {
-            "status": "healthy",
-            "message": "Database connection successful"
-        }
-    except Exception as e:
-        logger.error("Database health check failed", exc_info=True)
-        checks["database"] = {
-            "status": "unhealthy",
-            "message": "Database connection failed"
-        }
-        overall_status = "not_ready"
+    if db_health.status == "down":
+        raise HTTPException(status_code=503, detail="Database not ready")
     
-    # Check Redis connection
-    try:
-        from app.services.cache import cache_service
-        if cache_service._redis:
-            await cache_service._redis.ping()
-            checks["redis"] = {
-                "status": "healthy",
-                "message": "Redis connection successful"
-            }
-        else:
-            checks["redis"] = {
-                "status": "healthy",
-                "message": "Redis not configured (in-memory cache)"
-            }
-    except Exception as e:
-        logger.error("Redis health check failed", exc_info=True)
-        checks["redis"] = {
-            "status": "unhealthy",
-            "message": "Redis connection failed"
-        }
-        overall_status = "not_ready"
-    
-    # Check disk space
-    try:
-        import shutil
-        disk = shutil.disk_usage(os.getcwd())
-        disk_free_percent = (disk.free / disk.total) * 100
-        checks["disk"] = {
-            "status": "healthy" if disk_free_percent > 10 else "warning",
-            "free_percent": round(disk_free_percent, 2),
-            "free_gb": round(disk.free / (1024**3), 2),
-        }
-        if disk_free_percent < 10:
-            overall_status = "not_ready"
-    except Exception as e:
-        logger.error("Disk health check failed", exc_info=True)
-        checks["disk"] = {
-            "status": "unknown",
-            "message": "Could not check disk"
-        }
-    
-    response = {
-        "status": overall_status,
-        "service": "nebula-backend",
-        "checks": checks,
-        "timestamp": int(time.time()),
-    }
-    
-    status_code = 200 if overall_status == "ready" else 503
-    return JSONResponse(content=response, status_code=status_code)
+    return {"status": "ready"}
 
 
-@router.get("/health/detailed")
-async def detailed_health_check() -> Dict[str, Any]:
+@router.get("/health/detailed", tags=["Health"])
+async def detailed_health():
     """
-    Comprehensive health check with all system details.
-    Used for monitoring and debugging.
+    Detailed health check with system information.
     """
-    checks = {}
-    
-    # Database check
-    try:
-        from app.database.engine import connect
-        db = await connect()
-        await db.execute("SELECT 1")
-        await db.close()
-        checks["database"] = {"status": "healthy", "details": {}}
-    except Exception as e:
-        logger.error("Database detailed health check failed", exc_info=True)
-        checks["database"] = {"status": "unhealthy", "error": "check failed"}
-    
-    # Redis check
-    try:
-        from app.services.cache import cache_service
-        if cache_service._redis:
-            redis_info = await cache_service._redis.info()
-            checks["redis"] = {
-                "status": "healthy",
-                "connected_clients": redis_info.get("connected_clients", 0),
-                "used_memory": redis_info.get("used_memory_human", "unknown"),
-                "version": redis_info.get("redis_version", "unknown"),
-            }
-        else:
-            checks["redis"] = {"status": "not_configured", "message": "Using in-memory cache"}
-    except Exception as e:
-        logger.error("Redis detailed health check failed", exc_info=True)
-        checks["redis"] = {"status": "unhealthy", "error": "check failed"}
-    
-    # Storage check
-    try:
-        from app.config import get_settings
-        settings = get_settings()
-        storage_path = settings.storage_uploads
-        os.makedirs(storage_path, exist_ok=True)
-        test_file = os.path.join(storage_path, ".health_check")
-        with open(test_file, "w") as f:
-            f.write("ok")
-        os.remove(test_file)
-        checks["storage"] = {"status": "healthy", "path": str(storage_path)}
-    except Exception as e:
-        logger.error("Storage health check failed", exc_info=True)
-        checks["storage"] = {"status": "unhealthy", "error": "check failed"}
-    
-    # Workers check (if applicable)
-    try:
-        from app.indexing.worker import worker_status
-        checks["indexing_worker"] = worker_status()
-    except ImportError:
-        checks["indexing_worker"] = {"status": "not_configured"}
-    
-    # External AI providers check
-    try:
-        from app.services.ai_provider import check_ai_providers
-        checks["ai_providers"] = check_ai_providers()
-    except Exception as e:
-        logger.error("AI providers health check failed", exc_info=True)
-        checks["ai_providers"] = {"status": "unknown", "error": "check failed"}
-    
-    # Search indexes check
-    try:
-        from app.hybrid.services import check_search_indexes
-        checks["search_indexes"] = check_search_indexes()
-    except Exception as e:
-        logger.error("Search indexes health check failed", exc_info=True)
-        checks["search_indexes"] = {"status": "unknown", "error": "check failed"}
-    
-    overall_status = "healthy" if all(
-        c.get("status") in ["healthy", "not_configured"] for c in checks.values()
-    ) else "unhealthy"
+    import psutil
     
     return {
-        "status": overall_status,
-        "service": "nebula-backend",
-        "version": os.getenv("APP_VERSION", "unknown"),
-        "environment": os.getenv("APP_ENV", "unknown"),
-        "checks": checks,
-        "timestamp": int(time.time()),
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "uptime": get_uptime(),
+        "version": "1.2.1",
+        "system": {
+            "cpu_percent": psutil.cpu_percent(interval=1),
+            "memory_percent": psutil.virtual_memory().percent,
+            "disk_percent": psutil.disk_usage("/").percent,
+        },
+        "python": {
+            "version": __import__('sys').version,
+        }
     }

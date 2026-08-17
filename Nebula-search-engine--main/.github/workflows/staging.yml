@@ -1,0 +1,89 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install frontend dependencies
+      run: |
+        cd frontend
+        npm ci
+
+    - name: Run frontend tests
+      run: |
+        cd frontend
+        npm test -- --run
+
+    - name: Build frontend
+      run: |
+        cd frontend
+        npm run build
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install backend dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+
+    - name: Run backend tests
+      run: |
+        cd backend
+        pytest tests/ -v --tb=short
+
+    - name: Build and push Docker image
+      env:
+        ECR_REGISTRY: ${{ secrets.STAGING_ECR_REGISTRY }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -t $ECR_REGISTRY/nebula-backend:$IMAGE_TAG -f backend/Dockerfile .
+        docker push $ECR_REGISTRY/nebula-backend:$IMAGE_TAG
+        docker tag $ECR_REGISTRY/nebula-backend:$IMAGE_TAG $ECR_REGISTRY/nebula-backend:staging-latest
+        docker push $ECR_REGISTRY/nebula-backend:staging-latest
+
+    - name: Deploy to staging Kubernetes
+      env:
+        KUBE_CONFIG: ${{ secrets.STAGING_KUBE_CONFIG }}
+      run: |
+        echo "$KUBE_CONFIG" > kubeconfig
+        export KUBECONFIG=kubeconfig
+        kubectl apply -f infra/kubernetes/namespace.yaml
+        kubectl apply -f infra/kubernetes/secrets.yaml
+        kubectl apply -f infra/kubernetes/deployment.yaml
+        kubectl rollout status deployment/nebula-backend -n nebula-staging --timeout=5m
+
+    - name: Run smoke tests
+      run: |
+        curl -f http://staging.nebula-search.example.com/health || exit 1
+        curl -f http://staging.nebula-search.example.com/docs || exit 1
+
+    - name: Notify Slack
+      if: always()
+      uses: slackapi/slack-github-action@v1
+      with:
+        webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+        payload: |
+          {
+            "text": "Staging deployment ${{ job.status }}: ${{ github.repository }} @ ${{ github.sha }}\nEnvironment: https://staging.nebula-search.example.com"
+          }

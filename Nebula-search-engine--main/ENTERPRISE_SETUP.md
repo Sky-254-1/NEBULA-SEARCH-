@@ -139,6 +139,8 @@ WEBAUTHN_RP_NAME=Nebula Search
 ### Prerequisites
 - Firebase project for Android/Web push notifications
 - Apple Developer account for iOS push notifications
+- `pyfcm` library for FCM: `pip install pyfcm`
+- `aioapns` library for APNs: `pip install aioapns`
 
 ### Configuration
 
@@ -150,6 +152,7 @@ FCM_PROJECT_ID=your_fcm_project_id
 APNS_KEY_ID=your_apns_key_id
 APNS_TEAM_ID=your_apns_team_id
 APNS_BUNDLE_ID=com.nebula.search
+APNS_AUTH_KEY_PATH=/path/to/AuthKey_APNSKEYID.p8
 ```
 
 2. **Firebase Setup (Android/Web):**
@@ -157,14 +160,40 @@ APNS_BUNDLE_ID=com.nebula.search
    - Add Android/iOS/Web app to your project
    - Download `google-services.json` (Android) or `GoogleService-Info.plist` (iOS)
    - Get the FCM Server Key from Project Settings → Cloud Messaging
+   - For Android: Place `google-services.json` in `android/app/`
+   - For iOS: Place `GoogleService-Info.plist` in `ios/App/App/`
 
 3. **Apple Push Notifications (iOS):**
    - Create an App ID in Apple Developer Portal
    - Enable Push Notifications capability
-   - Create an APNs Auth Key (.p8 file)
-   - Note the Key ID and Team ID
+   - Create an APNs Auth Key (.p8 file) in Certificates, Identifiers & Profiles
+   - Download the .p8 file and note:
+     - Key ID (from the key name)
+     - Team ID (from your developer account)
+   - Place the .p8 file in a secure location on your server
 
-4. **Frontend Integration:**
+4. **Backend Implementation:**
+   The push notification system supports three platforms:
+  
+  **Android (FCM):**
+  ```python
+  # Already implemented in backend/app/routes/push.py
+  # Uses FCM HTTP v1 API with server key
+  ```
+  
+  **iOS (APNs):**
+  ```python
+  # Uses aioapns for production APNs delivery
+  # Requires APNS_KEY_ID, APNS_TEAM_ID, and APNS_AUTH_KEY_PATH
+  ```
+  
+  **Web Push:**
+  ```python
+  # Uses pywebpush for browser push notifications
+  # Requires VAPID keys
+  ```
+
+5. **Frontend Integration:**
 ```javascript
 // Register for push notifications
 const token = await pushManager.getSubscription().then(...);
@@ -181,6 +210,19 @@ await fetch('/api/v1/notifications/push/register', {
     device_id: 'unique-device-id'
   })
 });
+```
+
+6. **Testing Push Notifications:**
+```bash
+# Send test notification via API
+curl -X POST https://your-domain.com/api/v1/notifications/push/send \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Test Notification",
+    "body": "This is a test push notification",
+    "data": {"extra": "data"}
+  }'
 ```
 
 5. **API Endpoints:**

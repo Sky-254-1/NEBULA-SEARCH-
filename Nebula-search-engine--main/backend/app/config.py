@@ -393,6 +393,15 @@ class Settings:
         )
     )
 
+    # === Admin IP Whitelist (comma-separated) ===
+    admin_ip_whitelist: list[str] = field(
+        default_factory=lambda: [
+            ip.strip()
+            for ip in os.getenv("ADMIN_IP_WHITELIST", "").split(",")
+            if ip.strip()
+        ]
+    )
+
     # === Indexing System Settings ===
     indexing_max_queue_size: int = field(
         default_factory=lambda: int(os.getenv("INDEXING_MAX_QUEUE_SIZE", "10000"))

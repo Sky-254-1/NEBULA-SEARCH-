@@ -38,6 +38,12 @@ async def run_migrations() -> None:
         base = p.stem.split("_")[0]
         if base in suffixed_bases:
             continue
+        # On SQLite, skip PostgreSQL-only migrations (files suffixed with _postgres)
+        if not settings.uses_postgres and p.name.endswith("_postgres.sql"):
+            continue
+        # On PostgreSQL, skip SQLite-only migrations (files suffixed with _sqlite)
+        if settings.uses_postgres and p.name.endswith("_sqlite.sql"):
+            continue
         files.append(p)
     files.sort()
 
@@ -72,6 +78,9 @@ async def run_migrations() -> None:
             
             sql = path.read_text(encoding="utf-8")
             for statement in _split_statements(sql):
+                # Skip PostgreSQL-specific EXTENSION statements on SQLite
+                if not settings.uses_postgres and _is_extension_statement(statement):
+                    continue
                 # For SQLite, handle ALTER TABLE ADD COLUMN with idempotency check
                 if not settings.uses_postgres and _is_add_column_statement(statement):
                     statement = await _make_add_column_idempotent(db, statement)
@@ -111,6 +120,11 @@ async def run_migrations() -> None:
         await db.close()
 
 
+def _is_extension_statement(statement: str) -> bool:
+    """Check if statement is a PostgreSQL CREATE EXTENSION statement."""
+    return bool(re.match(r"^\s*CREATE\s+EXTENSION\s+", statement, re.IGNORECASE))
+
+
 def _is_add_column_statement(statement: str) -> bool:
     """Check if statement is an ALTER TABLE ADD COLUMN statement."""
     return bool(re.match(r"^\s*ALTER\s+TABLE\s+\w+\s+ADD\s+COLUMN\s+", statement, re.IGNORECASE))
@@ -120,11 +134,21 @@ async def _make_add_column_idempotent(db, statement: str) -> str | None:
     """
     For SQLite: Check if column exists before adding it.
     Returns the statement if it should be executed, or None if column already exists.
+    Also strips PostgreSQL-specific syntax (IF NOT EXISTS, vector type) for SQLite.
     """
+    # Strip PostgreSQL-only "IF NOT EXISTS" clause since SQLite doesn't support it in ADD COLUMN
+    # and we do our own existence check via PRAGMA
+    normalized = re.sub(
+        r"^\s*(ALTER\s+TABLE\s+\w+\s+ADD\s+COLUMN\s+)IF\s+NOT\s+EXISTS\s+",
+        r"\1",
+        statement,
+        flags=re.IGNORECASE,
+    )
+
     # Parse table name and column name from ALTER TABLE statement
-    match = re.match(r"^\s*ALTER\s+TABLE\s+(\w+)\s+ADD\s+COLUMN\s+(\w+)", statement, re.IGNORECASE)
+    match = re.match(r"^\s*ALTER\s+TABLE\s+(\w+)\s+ADD\s+COLUMN\s+(\w+)", normalized, re.IGNORECASE)
     if not match:
-        return statement
+        return normalized
     
     table_name = match.group(1)
     column_name = match.group(2)
@@ -139,7 +163,15 @@ async def _make_add_column_idempotent(db, statement: str) -> str | None:
     if column_exists:
         return None  # Skip this statement
     
-    return statement
+    # Replace PostgreSQL vector(n) type with BLOB for SQLite (vector unsupported)
+    normalized = re.sub(
+        r"\bvector\(\s*\d+\s*\)",
+        "BLOB",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    
+    return normalized
 
 
 def _split_statements(sql: str) -> list[str]:

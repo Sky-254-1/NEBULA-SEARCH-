@@ -19,3 +19,4 @@ export { SavedSearchesPage } from './SavedSearchesPage';
 export { DocumentViewerPage } from './DocumentViewerPage';
 export { ResetPasswordPage } from './ResetPasswordPage';
 export { default as AdminDashboard } from './AdminDashboard';
+export { ResearchHubPage } from './ResearchHubPage';

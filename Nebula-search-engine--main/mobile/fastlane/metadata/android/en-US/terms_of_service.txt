@@ -1,0 +1,18 @@
+TERMS OF SERVICE
+
+By using Nebula Search, you agree to these terms.
+
+SERVICE
+Nebula Search provides AI-powered search capabilities. The service is provided "as is" without warranty.
+
+PRIVACY
+We respect your privacy. Search history is stored locally. Optional sync is encrypted.
+
+USER CONDUCT
+You agree not to misuse the service or attempt to compromise its security.
+
+CHANGES
+We may update these terms. Continued use constitutes acceptance.
+
+CONTACT
+support@nebula-search.example.com

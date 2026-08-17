@@ -321,6 +321,50 @@ Export analytics as CSV. Requires admin.
 
 ---
 
+
+## GraphQL API (`/graphql`)
+
+### POST `/graphql/`
+GraphQL endpoint for querying search, AI, history, and suggestions.
+
+**Example Query**
+```graphql
+query Search($input: SearchInput!) {
+  search(input: $input) {
+    query
+    total
+    documents {
+      id
+      title
+      content
+      url
+      source
+      score
+    }
+  }
+}
+```
+
+**Available Queries**
+- `search(input: SearchInput!)` - Search documents
+- `search_history(user_id: String, limit: Int)` - Get search history
+- `ai_search(query: String!, context: JSON)` - AI-enhanced search
+- `suggest(query: String!, limit: Int)` - Get suggestions
+- `knowledge_graph(input: GraphQueryInput!)` - Knowledge graph queries
+- `facets(query: String!, field: String!, limit: Int)` - Get facets
+
+**Available Mutations**
+- `save_search(query: String!, results_count: Int!, user_id: String)` - Save search
+- `clear_search_history(user_id: String)` - Clear history
+
+### GET `/graphql/schema`
+Get GraphQL schema as JSON.
+
+### GET `/graphql/playground`
+GraphQL playground (disabled in production).
+
+---
+
 ## Health
 
 ### GET `/health`
@@ -336,6 +380,40 @@ Detailed health including DB and Redis status.
 
 ### GET `/metrics`
 Prometheus metrics endpoint.
+
+---
+
+
+## Push Notifications (`/api/v1/notifications/push`)
+
+### POST `/api/v1/notifications/push/register`
+Register a push notification token. Requires auth.
+
+**Body**
+```json
+{ "token": "fcm_token_or_apns_token", "platform": "android", "device_id": "optional-device-id" }
+```
+
+**Response** `200`
+```json
+{ "message": "Push token registered" }
+```
+
+### DELETE `/api/v1/notifications/push/unregister`
+Unregister push notification token. Requires auth.
+
+**Response** `200`
+```json
+{ "message": "Push token unregistered" }
+```
+
+### GET `/api/v1/notifications/push/status`
+Get push notification registration status. Requires auth.
+
+**Response** `200`
+```json
+{ "enabled": true, "registered": true, "platform": "android", "updated_at": "2025-01-01T00:00:00Z" }
+```
 
 ---
 
