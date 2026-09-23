@@ -1,122 +1,280 @@
 # =====================================================================
-# ROOT GITIGNORE — this lives at the git-initialized parent folder to
-# prevent accidental commits of parent node_modules, sibling projects,
-# or stray outputs. ONLY the Nebula-search-engine--main/ project folder
-# (and any supporting readme/license right here) is allowed in commits.
+# Nebula Search Engine — consolidated, repo-root .gitignore
+# =====================================================================
+# Merged from:
+#   1. prior repo-root (whitelist/deny-by-default policy — OBSOLETE; now
+#      flattened repo uses a conventional ignore list)
+#   2. Nebula-search-engine--main/.gitignore (184 patterns)
+# Plus new ignores for cache, generated Flutter ephemera, and local build
+# artifacts that have leaked into the tree in prior commits.
 # =====================================================================
 
-# By default, WHITELIST-EMPTY policy: ignore everything except the
-# project folder and a few root-level markdown/admin files.
-*
-!*/
-!.gitignore
-!README.md
-!LICENSE
-!CHANGELOG.md
-!CODE_OF_CONDUCT.md
-!CONTRIBUTING.md
-!SECURITY.md
-
-# Allow the actual project — this is the ONLY real tree we commit.
-!Nebula-search-engine--main/**
-
-# =====================================================================
-# Block common leak paths outright, even inside the project if any of
-# these somehow sneak into tracked subfolders.
-# =====================================================================
-
-# Dependencies — never commit.
-node_modules/
-__pycache__/
+# ---------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------
 .venv/
 venv/
 env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+wheels/
+
+# ---------------------------------------------------------------------
+# Environment / secrets
+# ---------------------------------------------------------------------
 .env
-.env.*
+.env.local
+.env.*.local
+*.db
+*.sqlite
+*.sqlite3
+test_nebula.db
+nebula.db
+debug_migration.db
+# Keep the intentional template env files
 !.env.example
 !.env.development
 !.env.production
 
-# Build outputs.
-dist/
-build/
-out/
-.next/
-.nuxt/
-.cache/
+# ---------------------------------------------------------------------
+# OS / editor clutter
+# ---------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+.vs/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings
 
-# Logs, dumps, coverage, ad-hoc test outputs. *.txt is allowed ONLY for
-# files like README.txt that were deliberately committed. These suffix
-# based patterns catch the test/run artifacts we can see in the tree.
+# ---------------------------------------------------------------------
+# Logs
+# ---------------------------------------------------------------------
 *.log
+logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+lerna-debug.log*
 
-# Coverage & reports (any path: backend, frontend, root).
+# ---------------------------------------------------------------------
+# Testing / coverage
+# ---------------------------------------------------------------------
 .coverage
 .coverage.*
 coverage.xml
 coverage/
 htmlcov/
+.pytest_cache/
+.pytest_cache_v2/
+junit/
+test-results/
+test_results.txt
+pytest_errors.txt
 lcov-report/
 lcov.info
+frontend/coverage/
 coverage_*.txt
 coverage-run*.txt
-*_coverage.txt
-*_coverage_*.txt
-frontend/coverage/
-full_test_results.txt
-full_test_output.txt
+coverage_boost.txt
+coverage_results.txt
+coverage_run.txt
 mypy_check.txt
 mypy_report.txt
+full_test_results.txt
+full_test_output.txt
 run*.txt
 out.txt
 output.txt
 results.txt
 single_test.txt
-test_run_output.txt
-test_summary.txt
 config_test.txt
 all_e2e_test_output.txt
 router_test*.txt
 e2e_*_output.txt
 e2e_results.txt
+e2e_full_output.txt
+e2e_isolated_output.txt
 search_output.txt
 test_output*.txt
 documents_output.txt
 test_ranking*.txt
 test_ranking_output*.txt
-Nebula-search-engine--main/frontend/*_test_output.txt
-Nebula-search-engine--main/frontend/frontend_coverage.txt
-Nebula-search-engine--main/frontend/build.err
-Nebula-search-engine--main/frontend/npm-install.err
+frontend/*_test_output.txt
+frontend/frontend_coverage.txt
+frontend/build.err
+frontend/npm-install.err
+test_run_output.txt
+test_summary.txt
+*_coverage.txt
+*_coverage_*.txt
 
-# Large binary / local storage.
-*.db
-*.sqlite
-*.sqlite3
-nebula.db
-test_nebula.db
+# ---------------------------------------------------------------------
+# Node.js / build
+# ---------------------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+dist/
+build/
+out/
+*.tsbuildinfo
+.next/
+.nuxt/
+.cache/
+
+# ---------------------------------------------------------------------
+# Docker / compose override
+# ---------------------------------------------------------------------
+docker-compose.override.yml
+.dockerignore
+
+# ---------------------------------------------------------------------
+# Build output caches / storage scratch space
+# ---------------------------------------------------------------------
+.temp/
+.tmp/
 storage/cache/*
 storage/uploads/*
 storage/index/*
 storage/exports/*
 storage/vector/*
+storage/indexes/*
+storage/vectors/*
+!storage/cache/.gitkeep
+!storage/uploads/.gitkeep
+!storage/index/.gitkeep
+!storage/vector/.gitkeep
+!storage/indexes/.gitkeep
+!storage/vectors/.gitkeep
 
-# IDEs / OS clutter.
-.idea/
-.vscode/
-.vs/
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Runtime / lock clutter.
+# ---------------------------------------------------------------------
+# Process / lock / scratch
+# ---------------------------------------------------------------------
 *.pid
+*.pid.lock
 *.seed
 *.lock.tmp
 
-# Keep gitkeep files, always.
+# ---------------------------------------------------------------------
+# AI / IDE assistant context files (should not ship)
+# ---------------------------------------------------------------------
+CLAUDE.md
+.trae/
+.codex/
+.kiro/
+.kilo/
+.codebase-viz/cache*.json
+.codebase-viz/cache-diagrams.json
+.codebase-viz/cache-pair-src_zip.json
+
+# ---------------------------------------------------------------------
+# Generic generated outputs
+# ---------------------------------------------------------------------
+full_structure.txt
+*.tmp
+*.temp
+
+# ---------------------------------------------------------------------
+# Backups
+# ---------------------------------------------------------------------
+*.bak
+*.backup
+*.orig
+
+# ---------------------------------------------------------------------
+# Jupyter
+# ---------------------------------------------------------------------
+.ipynb_checkpoints
+*.ipynb
+
+# ---------------------------------------------------------------------
+# mypy / ruff
+# ---------------------------------------------------------------------
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+
+# ---------------------------------------------------------------------
+# Generated documentation sites
+# ---------------------------------------------------------------------
+site/
+docs/_build/
+
+# ---------------------------------------------------------------------
+# Codebase viz ephemeral cache (regenerated on open; .md files remain)
+# ---------------------------------------------------------------------
+.codebase-viz/cache*.json
+.codebase-viz/cache-diagrams.json
+.codebase-viz/cache-pair-src_zip.json
+
+# ---------------------------------------------------------------------
+# Graphify output cache
+# ---------------------------------------------------------------------
+graphify-out/
+
+# ---------------------------------------------------------------------
+# Search history exports (user data)
+# ---------------------------------------------------------------------
+storage/exports/**/*.json
+
+# ---------------------------------------------------------------------
+# Playwright E2E reports
+# ---------------------------------------------------------------------
+tests/e2e/playwright-report/
+playwright-report/
+test-results/
+*.retry
+
+# ---------------------------------------------------------------------
+# Ad-hoc build/run error artifacts (any path)
+# ---------------------------------------------------------------------
+backend/*.err
+*.err
+
+# ---------------------------------------------------------------------
+# Generated Flutter / Dart tooling ephemera
+# Users regenerate via `flutter create .` inside mobile/ on their machine.
+# ---------------------------------------------------------------------
+mobile/.dart_tool/**
+mobile/android/local.properties
+mobile/ios/Flutter/ephemeral/**
+mobile/ios/.symlinks/
+mobile/ios/Pods/
+mobile/build/
+mobile/**/GeneratedPluginRegistrant.h
+mobile/**/GeneratedPluginRegistrant.m
+mobile/**/GeneratedPluginRegistrant.java
+
+# ---------------------------------------------------------------------
+# Legacy wrapper folder — NEVER accidentally re-add this after flattening
+# ---------------------------------------------------------------------
+Nebula-search-engine--main/
+
+# ---------------------------------------------------------------------
+# Keep gitkeeps, always
+# ---------------------------------------------------------------------
 !.gitkeep

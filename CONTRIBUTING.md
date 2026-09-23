@@ -15,8 +15,8 @@ Thank you for your interest in contributing! This guide will help you get starte
 
 ```bash
 # Clone the repository
-git clone https://github.com/Sky-254-1/Nebula-search-engine-.git
-cd Nebula-search-engine--main
+git clone https://github.com/Sky-254-1/NEBULA-SEARCH-.git
+cd NEBULA-SEARCH-
 
 # Run quick start script
 bash scripts/quick-start.sh

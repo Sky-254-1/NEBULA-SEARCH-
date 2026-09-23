@@ -1,5 +1,5 @@
 import subprocess, sys, os
-os.chdir(r"c:\Users\KNP LIBRARY\Downloads\Nebula Search\Nebula-search-engine--main\backend")
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 r = subprocess.run(
     [sys.executable, "-m", "pytest", "tests/", "-v", "--tb=short", "-q", "--no-header"],
     capture_output=True, text=True
