@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS index_jobs (
     status TEXT DEFAULT 'QUEUED' NOT NULL,
     progress INTEGER DEFAULT 0 NOT NULL,
     current_step TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     started_at TEXT,
     completed_at TEXT,
     worker_id TEXT,
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS dead_letter_queue (
     filename TEXT NOT NULL,
     failure_reason TEXT NOT NULL,
     retries INTEGER DEFAULT 0 NOT NULL,
-    failed_at TEXT NOT NULL DEFAULT (datetime('now')),
+    failed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     worker_id TEXT,
     stack_trace TEXT,
     FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
@@ -55,8 +55,8 @@ CREATE TABLE IF NOT EXISTS worker_health (
     processed_jobs INTEGER DEFAULT 0 NOT NULL,
     failed_jobs INTEGER DEFAULT 0 NOT NULL,
     average_duration REAL DEFAULT 0.0,
-    heartbeat TEXT NOT NULL DEFAULT (datetime('now')),
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    heartbeat TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_worker_health_status ON worker_health(status);
 
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS indexing_metrics (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     metric_name TEXT NOT NULL,
     metric_value REAL NOT NULL,
-    recorded_at TEXT NOT NULL DEFAULT (datetime('now'))
+    recorded_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_indexing_metrics_name_time ON indexing_metrics(metric_name, recorded_at);
 
@@ -79,8 +79,8 @@ CREATE TABLE IF NOT EXISTS scheduler_configs (
     is_active BOOLEAN DEFAULT 1 NOT NULL,
     last_run TEXT,
     next_run TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Document chunks for incremental indexing
@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS document_chunks (
     content TEXT NOT NULL,
     chunk_hash TEXT NOT NULL,
     embedding_id TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE,
     UNIQUE(document_id, chunk_id)
 );

@@ -89,14 +89,26 @@ async def compute_trending_searches() -> None:
         try:
             repo = db
             # Get top queries from the last 24 hours
-            rows = await repo.fetchall(
-                """SELECT query, COUNT(*) as count 
-                FROM search_events 
-                WHERE created_at >= datetime('now', '-1 day')
-                GROUP BY query 
-                ORDER BY count DESC 
-                LIMIT 50"""
-            )
+            from app.config import get_settings
+            settings = get_settings()
+            if settings.uses_postgres:
+                rows = await repo.fetchall(
+                    """SELECT query, COUNT(*) as count 
+                    FROM search_events 
+                    WHERE created_at >= CURRENT_TIMESTAMP - INTERVAL '1 day'
+                    GROUP BY query 
+                    ORDER BY count DESC 
+                    LIMIT 50"""
+                )
+            else:
+                rows = await repo.fetchall(
+                    """SELECT query, COUNT(*) as count 
+                    FROM search_events 
+                    WHERE created_at >= datetime('now', '-1 day')
+                    GROUP BY query 
+                    ORDER BY count DESC 
+                    LIMIT 50"""
+                )
             
             # Store trending queries
             now = datetime.now()

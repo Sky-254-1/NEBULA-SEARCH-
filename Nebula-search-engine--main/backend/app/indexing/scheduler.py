@@ -294,9 +294,16 @@ class IndexingScheduler:
                         logger.warning("Failed to aggregate day %s: %s", day.date(), exc)
 
                 # Remove search events older than 90 days to keep the table lean
-                await db.execute(
-                    "DELETE FROM search_events WHERE created_at < datetime('now', '-90 days')"
-                )
+                from app.config import get_settings
+                settings = get_settings()
+                if settings.uses_postgres:
+                    await db.execute(
+                        "DELETE FROM search_events WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '90 days'"
+                    )
+                else:
+                    await db.execute(
+                        "DELETE FROM search_events WHERE created_at < datetime('now', '-90 days')"
+                    )
                 await db.commit()
 
                 logger.info("Weekly optimization completed: analytics aggregated and old events pruned")

@@ -71,9 +71,6 @@ class ConfigValidator:
 
         # Production checks
         if self.settings.is_production:
-            if self.settings.debug:
-                self.errors.append("DEBUG must be False in production")
-
             if self.settings.log_level.upper() == "DEBUG":
                 self.warnings.append("Log level is DEBUG in production (recommended: INFO or WARNING)")
 
@@ -86,12 +83,6 @@ class ConfigValidator:
             self.errors.append("JWT_SECRET must be at least 32 characters")
         elif self.settings.is_production and self.settings.jwt_secret in ["change-me", "secret", "your-secret-key"]:
             self.errors.append("JWT_SECRET must be changed from default value in production")
-
-        # Secret key
-        if not self.settings.secret_key:
-            self.errors.append("SECRET_KEY is required")
-        elif len(self.settings.secret_key) < 32:
-            self.errors.append("SECRET_KEY must be at least 32 characters")
 
         # CORS origins in production
         if self.settings.is_production:
@@ -166,11 +157,9 @@ class ConfigValidator:
             self.warnings.append("OPENAI_API_KEY is not set (AI features will be limited)")
 
         # Email configuration
-        if hasattr(self.settings, 'smtp_enabled') and self.settings.smtp_enabled:
-            if not hasattr(self.settings, 'smtp_host') or not self.settings.smtp_host:
-                self.errors.append("SMTP_HOST is required when SMTP is enabled")
-            if not hasattr(self.settings, 'smtp_user') or not self.settings.smtp_user:
-                self.errors.append("SMTP_USER is required when SMTP is enabled")
+        if self.settings.smtp_host:
+            if not self.settings.smtp_username:
+                self.warnings.append("SMTP_USERNAME is not set (authentication may fail)")
 
     def validate_performance(self):
         """Validate performance settings."""

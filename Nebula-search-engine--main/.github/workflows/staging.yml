@@ -57,7 +57,7 @@ jobs:
         ECR_REGISTRY: ${{ secrets.STAGING_ECR_REGISTRY }}
         IMAGE_TAG: ${{ github.sha }}
       run: |
-        docker build -t $ECR_REGISTRY/nebula-backend:$IMAGE_TAG -f backend/Dockerfile .
+        docker build -t $ECR_REGISTRY/nebula-backend:$IMAGE_TAG -f docker/Dockerfile.prod .
         docker push $ECR_REGISTRY/nebula-backend:$IMAGE_TAG
         docker tag $ECR_REGISTRY/nebula-backend:$IMAGE_TAG $ECR_REGISTRY/nebula-backend:staging-latest
         docker push $ECR_REGISTRY/nebula-backend:staging-latest

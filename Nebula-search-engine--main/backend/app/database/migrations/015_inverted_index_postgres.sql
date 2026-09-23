@@ -1,4 +1,4 @@
--- Inverted index for full-text search
+-- Inverted index for full-text search (PostgreSQL version)
 -- Supports BM25 ranking and fast keyword lookup
 
 -- Documents table for crawled/indexed content
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS inverted_index (
     document_id INTEGER NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
     term_frequency INTEGER NOT NULL DEFAULT 1,
     positions INTEGER[] NOT NULL DEFAULT '{}',
-    field TEXT NOT NULL DEFAULT 'content',  -- title, content, headings
+    field TEXT NOT NULL DEFAULT 'content',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

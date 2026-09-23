@@ -181,13 +181,56 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: isDevelopment,
+    minify: isDevelopment ? 'esbuild' : 'terser',
+    terserOptions: !isDevelopment
+      ? {
+          compress: {
+            drop_console: true,
+            drop_debugger: true,
+            pure_funcs: ['console.log', 'console.info', 'console.debug'],
+          },
+          mangle: {
+            safari10: true,
+          },
+          format: {
+            comments: false,
+          },
+        }
+      : undefined,
+    cssMinify: !isDevelopment,
+    cssCodeSplit: true,
+    reportCompressedSize: !isDevelopment,
+    chunkSizeWarningLimit: 1000,
+    target: isDevelopment ? 'es2020' : 'es2019',
+    modulePreload: {
+      polyfill: !isDevelopment,
+    },
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          query: ['@tanstack/react-query'],
-          ui: ['framer-motion', 'lucide-react', 'recharts'],
+        manualChunks: (id: string) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-hook-form') || id.includes('@hookform')) {
+              return 'vendor-react';
+            }
+            if (id.includes('@tanstack')) {
+              return 'vendor-query';
+            }
+            if (id.includes('framer-motion') || id.includes('lucide-react') || id.includes('recharts') || id.includes('react-hot-toast')) {
+              return 'vendor-ui';
+            }
+            if (id.includes('axios') || id.includes('zod') || id.includes('date-fns')) {
+              return 'vendor-lib';
+            }
+            if (id.includes('zustand') || id.includes('idb') || id.includes('react-markdown') || id.includes('react-syntax') || id.includes('react-virtuoso') || id.includes('workbox')) {
+              return 'vendor-features';
+            }
+            return 'vendor';
+          }
+          return undefined;
         },
+        chunkFileNames: !isDevelopment ? 'assets/[name]-[hash].js' : undefined,
+        assetFileNames: !isDevelopment ? 'assets/[name]-[hash][extname]' : undefined,
+        entryFileNames: !isDevelopment ? 'assets/[name]-[hash].js' : undefined,
       },
     },
   },
@@ -195,16 +238,31 @@ export default defineConfig({
     alias: {
       '@': '/src',
     },
-    // Prefer TypeScript files over legacy JavaScript files
-    // This prevents App.jsx (legacy) from overriding App.tsx (new)
     extensions: ['.tsx', '.ts', '.jsx', '.js', '.json'],
   },
   optimizeDeps: {
     esbuildOptions: {
-      target: isDevelopment ? 'es2020' : 'es2015',
+      target: isDevelopment ? 'es2020' : 'es2019',
       supported: {
         'dynamic-import': false,
       },
     },
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@tanstack/react-query',
+      'axios',
+      'zod',
+      'zustand',
+    ],
+  },
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '1.1.0'),
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+  },
+  preview: {
+    port: 4173,
+    host: true,
   },
 });

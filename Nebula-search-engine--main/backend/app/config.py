@@ -88,21 +88,6 @@ class Settings:
         )
     )
 
-    @property
-    def cors_origin_list(self) -> list[str]:
-        """Parse CORS origins into a list.
-
-        A literal ``*`` is rejected because ``allow_credentials=True`` is set
-        in the CORS middleware — combining wildcard origins with credentials
-        is invalid per the CORS spec and silently fails in most browsers.
-        """
-        raw = self.cors_origins.strip()
-        if raw == "*":
-            raise ValueError(
-                "CORS_ORIGINS='*' is not allowed when allow_credentials=True. "
-                "Set CORS_ORIGINS to an explicit allow-list of origins."
-            )
-        return [origin.strip() for origin in raw.split(",") if origin.strip()]
     cache_ttl_seconds: int = field(
         default_factory=lambda: int(os.getenv("CACHE_TTL_SECONDS", "300"))
     )
@@ -242,9 +227,6 @@ class Settings:
     )
 
     # === Biometric Authentication (WebAuthn) ===
-    enable_webauthn: bool = field(
-        default_factory=lambda: os.getenv("ENABLE_WEBAUTHN", "false").lower() == "true"
-    )
     webauthn_rp_id: str = field(
         default_factory=lambda: os.getenv("WEBAUTHN_RP_ID", "localhost")
     )

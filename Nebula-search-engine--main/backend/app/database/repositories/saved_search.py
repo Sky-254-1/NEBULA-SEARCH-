@@ -1,6 +1,7 @@
 """Saved search repository."""
 
 import json
+import re
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -12,11 +13,21 @@ settings = get_settings()
 _TABLE = "saved_searches"
 _PG_TABLE = "search.saved_searches"
 
+# Strict identifier validator for SQL identifiers used in dynamic table names.
+# Table/column names CANNOT be bound as parameters, so we enforce a known-safe shape.
+_SAFE_SQL_IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)?$")
+
+
+def _validate_table_name(value: str) -> str:
+    if not _SAFE_SQL_IDENT_RE.match(value):
+        raise ValueError(f"Refusing unsafe SQL table identifier: {value!r}")
+    return value
+
 
 class SavedSearchRepository:
     def __init__(self, db: DatabaseConnection):
         self._db = db
-        self._table = _PG_TABLE if settings.uses_postgres else _TABLE
+        self._table = _validate_table_name(_PG_TABLE if settings.uses_postgres else _TABLE)
 
     def _ph(self, n: int = 1) -> str:
         """Return the correct placeholder for the current DB engine."""

@@ -46,32 +46,42 @@
 - [x] New frontend component tests: SearchPage, AIChatPage, DashboardPage, DocumentsPage, AnalyticsPage
 - [x] Full API documentation at `docs/API.md`
 
-## In Progress
-
-- [ ] Push to origin/main — security fixes pending publication
-- [ ] Enable GitHub branch protection with required CI status checks
-- [ ] Resolve Dependabot alerts (`eslint@10`, `vitest@4`, `react-syntax-highlighter@16`)
-- [ ] Live staging deployment + full release checklist
-
-## Completed (v1.2.1)
+## ✅ Completed (v1.2.1)
 
 - [x] SQLite migration compatibility for `014_pgvector_postgres.sql`
 - [x] Icon assets for desktop/mobile (`desktop/assets/icon.png`, `desktop/assets/icon.ico`)
 - [x] Firebase/APNs push token registration bridge (frontend `AuthContext` + Android FCM token bridge)
 - [x] Docker Compose stack validated
 
-## Planned (v1.3)
+## ✅ Completed (v1.3)
 
-- [ ] Biometric auth via `@capacitor-community/biometric`
-- [ ] OpenAI embeddings as default (currently local hash)
-- [ ] FAISS or pgvector for large-scale vector storage
-- [ ] E2E coverage gate at 95% in CI (Playwright)
-- [ ] On-device voice search polish
-- [ ] Push notification backend (FCM/APNs)
-- [ ] Document preview in mobile WebView
-- [ ] Federated search across devices
-- [ ] Plugin system for search providers
-- [ ] Enterprise SSO (SAML 2.0 / OIDC)
+- [x] OpenAI embeddings as default — prefers `text-embedding-3-small` when `OPENAI_API_KEY` is set, falls back to sentence-transformers then local-hash
+- [x] pgvector for large-scale vector storage — `vector/storage/pgvector_store.py` with cosine similarity search; graceful SQLite fallback for local dev
+- [x] Mobile biometric auth — `@capacitor-community/biometric` integrated in `mobile/src/auth.ts`; Face ID / Touch ID on iOS, fingerprint on Android
+- [x] Voice search — `@capacitor-community/speech-recognition` wired in mobile shell
+- [x] E2E coverage gate — 20-test suite (auth, documents, search); CI job in `.github/workflows/e2e.yml`
+- [x] pytest scoped to `backend/tests` — removed `../tests` path conflict, excluded `.txt` artifacts
+- [x] Push notification backend (FCM/APNs) — `backend/app/routes/push.py` + frontend registration in SettingsPage
+- [x] Document preview in mobile WebView — `backend/app/routes/preview.py`
+- [x] Federated search across devices — `backend/app/routes/federated.py` + device management in SettingsPage
+- [x] Plugin system for search providers — `backend/app/plugins/` with Brave, Google, Bing, DuckDuckGo
+- [x] Enterprise SSO (SAML 2.0) — `backend/app/routes/saml.py` + "Sign in with Enterprise SSO" button on LoginPage
+- [x] WebAuthn biometric login — `backend/app/routes/webauthn.py` + biometric button on LoginPage
+
+## In Progress (Release Engineering)
+
+- [ ] Push to origin/main — security fixes pending publication
+- [ ] Enable GitHub branch protection with required CI status checks
+- [ ] Resolve Dependabot alerts (`eslint@10`, `vitest@4`, `react-syntax-highlighter@16`)
+- [ ] Live staging deployment + full release checklist
+
+## Planned (v1.4)
+
+- [ ] Playwright E2E coverage gate at 95% in CI
+- [ ] On-device ONNX / local LLM inference
+- [ ] Multi-tenant workspace support
+- [ ] Advanced analytics dashboard (retention, funnel, heatmaps)
+- [ ] Webhook delivery retries with exponential backoff UI
 
 ## Non-Goals
 

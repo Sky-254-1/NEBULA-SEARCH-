@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     filename TEXT UNIQUE NOT NULL,
     version TEXT NOT NULL,
-    applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+    applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 )
 """
 
@@ -136,6 +136,18 @@ async def _make_add_column_idempotent(db, statement: str) -> str | None:
     Returns the statement if it should be executed, or None if column already exists.
     Also strips PostgreSQL-specific syntax (IF NOT EXISTS, vector type) for SQLite.
     """
+    # Strict SQL identifier pattern: alphanumeric + underscore, first char not a digit.
+    # This is the only shape we accept into the PRAGMA call below because PRAGMA
+    # does not support parameterised queries (bound arguments).
+    _SAFE_IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+    def _validate_identifier(value: str, kind: str) -> str:
+        if not _SAFE_IDENT_RE.match(value):
+            raise ValueError(
+                f"Refusing unsafe SQL {kind} identifier: {value!r}"
+            )
+        return value
+
     # Strip PostgreSQL-only "IF NOT EXISTS" clause since SQLite doesn't support it in ADD COLUMN
     # and we do our own existence check via PRAGMA
     normalized = re.sub(
@@ -149,14 +161,16 @@ async def _make_add_column_idempotent(db, statement: str) -> str | None:
     match = re.match(r"^\s*ALTER\s+TABLE\s+(\w+)\s+ADD\s+COLUMN\s+(\w+)", normalized, re.IGNORECASE)
     if not match:
         return normalized
-    
-    table_name = match.group(1)
-    column_name = match.group(2)
-    
-    # Check if column already exists using PRAGMA table_info
+
+    table_name = _validate_identifier(match.group(1), "table")
+    column_name = _validate_identifier(match.group(2), "column")
+
+    # Check if column already exists using PRAGMA table_info.
+    # PRAGMA does NOT support bound parameters (? / $1) so we rely on the strict
+    # identifier validation above combined with the original \w+ regex capture.
     cursor = await db.execute(f"PRAGMA table_info({table_name})")
     columns = await cursor.fetchall()
-    
+
     # PRAGMA table_info returns rows with: cid, name, type, notnull, dflt_value, pk
     column_exists = any(col[1] == column_name for col in columns)
     

@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 import aiosqlite
+from sqlalchemy.orm import declarative_base
 
 from app.config import get_settings
 
@@ -15,17 +16,40 @@ settings = get_settings()
 # Global connection pool for PostgreSQL
 _postgres_pool = None
 
+# SQLAlchemy declarative base for models
+Base = declarative_base()
+
 
 def _adapt_sql(sql: str) -> str:
-    """Convert SQLite-style placeholders to PostgreSQL $1, $2, ..."""
+    """Convert SQLite-style placeholders to PostgreSQL $1, $2, ...
+    
+    Also translates SQLite datetime patterns to PostgreSQL equivalents:
+    - datetime('now') → CURRENT_TIMESTAMP
+    - datetime('now', '-N days/weeks/months/years/hours/minutes') → CURRENT_TIMESTAMP - INTERVAL 'N ...'
+    - datetime('now', ?) is left as-is (callers handle parametrized version separately)
+    """
     index = 0
 
-    def repl(_match: re.Match) -> str:
+    def repl_placeholder(_match: re.Match) -> str:
         nonlocal index
         index += 1
         return f"${index}"
 
-    return re.sub(r"\?", repl, sql)
+    sql = re.sub(r"datetime\('now'\)", "CURRENT_TIMESTAMP", sql)
+
+    sql = re.sub(
+        r"datetime\('now',\s*'(-\d+\s+(?:days?|weeks?|months?|years?|hours?|minutes?|seconds?))'\)",
+        lambda m: f"CURRENT_TIMESTAMP - INTERVAL '{m.group(1).lstrip('-')}'",
+        sql,
+    )
+
+    sql = re.sub(
+        r"datetime\('now',\s*'(\+\d+\s+(?:days?|weeks?|months?|years?|hours?|minutes?|seconds?))'\)",
+        lambda m: f"CURRENT_TIMESTAMP + INTERVAL '{m.group(1).lstrip('+')}'",
+        sql,
+    )
+
+    return re.sub(r"\?", repl_placeholder, sql)
 
 
 class DatabaseConnection(ABC):
@@ -169,3 +193,8 @@ async def connect() -> DatabaseConnection:
     conn = await aiosqlite.connect(settings.db_path)
     conn.row_factory = aiosqlite.Row
     return SQLiteConnection(conn)
+
+
+async def get_db() -> DatabaseConnection:
+    """Get database connection (alias for connect() for compatibility)."""
+    return await connect()

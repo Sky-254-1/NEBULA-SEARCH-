@@ -9,15 +9,15 @@ CREATE TABLE IF NOT EXISTS index_tracking (
     chunk_hashes TEXT NOT NULL,  -- Comma-separated chunk hashes
     chunk_count INTEGER DEFAULT 0 NOT NULL,
     embedding_count INTEGER DEFAULT 0 NOT NULL,
-    last_indexed TEXT NOT NULL DEFAULT (datetime('now')),
-    last_scanned TEXT NOT NULL DEFAULT (datetime('now')),
-    last_modified TEXT NOT NULL DEFAULT (datetime('now')),
+    last_indexed TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_scanned TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     version INTEGER DEFAULT 1 NOT NULL,
     index_generation INTEGER DEFAULT 1 NOT NULL,
     sync_status TEXT DEFAULT 'synced' NOT NULL,
     error_message TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_index_tracking_document_id ON index_tracking(document_id);
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS incremental_jobs (
     started_at TEXT,
     completed_at TEXT,
     duration_seconds REAL,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_incremental_jobs_document_id ON incremental_jobs(document_id);
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS reindex_history (
     metadata_fields_updated TEXT,
     duration_seconds REAL,
     error_message TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_reindex_history_document_id ON reindex_history(document_id);
@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS cleanup_logs (
     dry_run BOOLEAN DEFAULT 0,
     duration_seconds REAL,
     error_message TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_cleanup_logs_created_at ON cleanup_logs(created_at);
 CREATE INDEX IF NOT EXISTS idx_cleanup_logs_operation_type ON cleanup_logs(operation_type);
@@ -89,12 +89,12 @@ CREATE INDEX IF NOT EXISTS idx_cleanup_logs_operation_type ON cleanup_logs(opera
 CREATE TABLE IF NOT EXISTS file_watcher_state (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     path TEXT NOT NULL UNIQUE,
-    last_check TEXT NOT NULL DEFAULT (datetime('now')),
+    last_check TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     files_tracked INTEGER DEFAULT 0,
     is_active BOOLEAN DEFAULT 1,
     error_message TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_file_watcher_state_path ON file_watcher_state(path);
 CREATE INDEX IF NOT EXISTS idx_file_watcher_state_is_active ON file_watcher_state(is_active);
@@ -113,8 +113,8 @@ CREATE TABLE IF NOT EXISTS incremental_scheduler_configs (
     success_count INTEGER DEFAULT 0,
     failure_count INTEGER DEFAULT 0,
     last_error TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_incremental_scheduler_configs_name ON incremental_scheduler_configs(name);
 CREATE INDEX IF NOT EXISTS idx_incremental_scheduler_configs_is_active ON incremental_scheduler_configs(is_active);
@@ -124,21 +124,21 @@ CREATE TRIGGER IF NOT EXISTS update_index_tracking_timestamp
     AFTER UPDATE ON index_tracking
     FOR EACH ROW
     BEGIN
-        UPDATE index_tracking SET updated_at = datetime('now') WHERE id = OLD.id;
+        UPDATE index_tracking SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
     END;
 
 CREATE TRIGGER IF NOT EXISTS update_file_watcher_state_timestamp
     AFTER UPDATE ON file_watcher_state
     FOR EACH ROW
     BEGIN
-        UPDATE file_watcher_state SET updated_at = datetime('now') WHERE id = OLD.id;
+        UPDATE file_watcher_state SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
     END;
 
 CREATE TRIGGER IF NOT EXISTS update_incremental_scheduler_configs_timestamp
     AFTER UPDATE ON incremental_scheduler_configs
     FOR EACH ROW
     BEGIN
-        UPDATE incremental_scheduler_configs SET updated_at = datetime('now') WHERE id = OLD.id;
+        UPDATE incremental_scheduler_configs SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
     END;
 
 -- Views for common queries

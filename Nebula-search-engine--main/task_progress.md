@@ -89,17 +89,34 @@
 | Category | Status |
 |----------|--------|
 | Bugs Fixed | ✅ All identified bugs fixed incl. e2e reserved TLD |
-| Backend Tests | ✅ 923 passing (100%) |
+| Backend Tests | ✅ 903 passing (100%) |
 | Frontend Tests | ✅ 58 passing (100%) |
-| E2E Tests | ⏸️ Skipped in CI due to environment constraints |
+| E2E Tests | ✅ 20 passing (auth, documents, search flows) |
 | Enterprise Features | ✅ SAML, WebAuthn, Push, Preview, Federated, Plugins |
 | Guest Mode | ✅ Unlimited search, locked AI Chat |
 | Mobile Layout | ✅ Responsive for all pages |
-| CI/CD Pipeline | ✅ Coverage, Lint, Security gates |
+| Mobile Biometric | ✅ @capacitor-community/biometric wired |
+| OpenAI Embeddings | ✅ Default when API key set, graceful fallback |
+| pgvector Storage | ✅ Production vector store with SQLite fallback |
+| CI/CD Pipeline | ✅ Coverage, Lint, Security, E2E gates |
 | Docker/Infra | ✅ Healthchecks, proper configs |
 | Documentation | ✅ API + Roadmap + Enterprise Setup |
+| Cleanup | ✅ 32 temp debug files removed |
 
 ---
+
+## Completed (v1.3)
+
+- [x] OpenAI embeddings as default — `vector/embeddings/__init__.py` prefers OpenAI when key set, falls back to sentence-transformers then local-hash
+- [x] pgvector / FAISS vector storage — `vector/storage/pgvector_store.py` with cosine similarity, connection pooling, graceful SQLite fallback
+- [x] Mobile biometric auth — `mobile/src/auth.ts` fully wired with `@capacitor-community/biometric@^6` (isBiometricAvailable, authenticateWithBiometric, enable/disable)
+- [x] Voice search polish — `@capacitor-community/speech-recognition` wired in mobile package
+- [x] E2E coverage gate — `backend/tests/e2e/` suite with 20 passing tests; CI e2e job added to `.github/workflows/e2e.yml`
+- [x] pytest.ini scoped to `backend/tests` only — removed `../tests` from testpaths, excluded `.txt` artifacts
+- [x] SQLite migration compatibility (`014_pgvector_postgres.sql` skipped on SQLite, `IF NOT EXISTS` stripped, `vector(1536)` → `BLOB`)
+- [x] Backend tests: 903 passed, 1 warning
+- [x] Frontend tests: 58 passed, 4 test files
+- [x] Temp debug files cleaned up (32 runner/output files removed from `backend/`)
 
 ## Remaining (Release Engineering)
 
@@ -107,12 +124,3 @@
 - [ ] Enable GitHub branch protection with required CI status checks
 - [ ] Resolve Dependabot alerts (`eslint@10`, `vitest@4`, `react-syntax-highlighter@16`)
 - [ ] Live staging deployment + full release checklist
-
-## Completed Since Last Update
-
-- [x] SQLite migration compatibility fix (`014_pgvector_postgres.sql` skipped on SQLite, `IF NOT EXISTS` stripped, `vector(1536)` mapped to `BLOB`)
-- [x] Backend tests: 903 passed
-- [x] Frontend tests: 58 passed
-- [x] Icon assets generated (`desktop/assets/icon.png`, `desktop/assets/icon.ico`)
-- [x] Firebase/APNs push token registration wired (frontend `AuthContext` + Android FCM token bridge)
-- [x] Docker Compose stack validated (`docker compose config` clean)

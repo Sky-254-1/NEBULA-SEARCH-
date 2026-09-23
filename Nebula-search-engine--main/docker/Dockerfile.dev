@@ -3,25 +3,38 @@ FROM python:3.11-slim
 WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH="/app"
 
+# --- System build dependencies (rarely change) ---
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN addgroup --system nebula && adduser --system --ingroup nebula nebula
-
+# --- Install production requirements first (cacheable layer) ---
+# Copy ONLY requirements.txt here so code edits do not bust this layer.
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# --- Install dev requirements next (separate cache layer) ---
 COPY backend/requirements-dev.txt .
 RUN pip install --no-cache-dir -r requirements-dev.txt
-COPY backend/pytest.ini .
-COPY backend/app ./app/app
-COPY backend/vector ./vector
-COPY backend/static ./static
 
-RUN mkdir -p /app/storage && chown -R nebula:nebula /app
+# --- Runtime user ---
+RUN addgroup --system nebula && adduser --system --ingroup nebula nebula
+
+# --- Test / tooling configuration (small, seldom-changed files) ---
+COPY backend/pytest.ini .
+
+# --- Application code (most-frequently-changed layer, last) ---
+COPY backend/app /app/app
+COPY backend/vector /app/vector
+COPY backend/static /app/static
+
+RUN mkdir -p /app/storage/uploads /app/storage/cache /app/storage/vector \
+             /app/storage/indexes /app/storage/exports /app/logs \
+    && chown -R nebula:nebula /app
 
 USER nebula
 

@@ -12,9 +12,9 @@ CREATE TABLE IF NOT EXISTS documents (
     language TEXT DEFAULT 'en',
     word_count INTEGER DEFAULT 0,
     status TEXT DEFAULT 'indexed' NOT NULL,
-    last_indexed TEXT NOT NULL DEFAULT (datetime('now')),
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    last_indexed TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Inverted index: word -> document occurrences
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS inverted_index (
     term_frequency INTEGER NOT NULL DEFAULT 1,
     positions TEXT NOT NULL DEFAULT '[]',
     field TEXT NOT NULL DEFAULT 'content',
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Index for fast word lookup
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS document_stats (
     avg_term_frequency REAL NOT NULL DEFAULT 0.0,
     unique_words INTEGER NOT NULL DEFAULT 0,
     total_terms INTEGER NOT NULL DEFAULT 0,
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Global corpus stats for BM25
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS corpus_stats (
     avg_document_length REAL NOT NULL DEFAULT 0.0,
     total_terms INTEGER NOT NULL DEFAULT 0,
     vocabulary_size INTEGER NOT NULL DEFAULT 0,
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Insert default corpus stats if not exists
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS search_queries (
     response_time_ms REAL,
     ip_address TEXT,
     user_agent TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Autocomplete suggestions
@@ -77,8 +77,8 @@ CREATE TABLE IF NOT EXISTS autocomplete_suggestions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     suggestion TEXT NOT NULL,
     frequency INTEGER NOT NULL DEFAULT 1,
-    last_used TEXT NOT NULL DEFAULT (datetime('now')),
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    last_used TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Index for autocomplete queries
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS synonyms (
     word TEXT NOT NULL,
     synonym TEXT NOT NULL,
     language TEXT DEFAULT 'en',
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(word, synonym)
 );
 
@@ -100,6 +100,6 @@ CREATE TABLE IF NOT EXISTS saved_filters (
     user_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     filters TEXT NOT NULL DEFAULT '{}',
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS saved_searches (
     filters TEXT DEFAULT '{}',
     is_alert INTEGER DEFAULT 0 NOT NULL,
     last_alerted_at TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     is_deleted INTEGER DEFAULT 0 NOT NULL,
     deleted_at TEXT
 );

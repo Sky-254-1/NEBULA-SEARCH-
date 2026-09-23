@@ -111,7 +111,7 @@ class SearchSessionRepository:
     async def complete(self, session_id: int, results_count: int, metadata: str = "{}") -> None:
         await self._db.execute(
             "UPDATE search_sessions SET results_count = ?, metadata_json = ?, "
-            "completed_at = datetime('now') WHERE id = ?",
+            "completed_at = CURRENT_TIMESTAMP WHERE id = ?",
             (results_count, metadata, session_id),
         )
         await self._db.commit()

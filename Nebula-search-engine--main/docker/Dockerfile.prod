@@ -9,29 +9,36 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Install system dependencies
+# Install build-time system dependencies only needed for compiling wheels
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy and install Python dependencies
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+# Create virtual environment so we copy exactly one known directory tree
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Stage 2: Runtime
+# Copy only requirements first — maximises Docker layer cache hits
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Stage 2: Slim runtime
 FROM python:3.11.9-slim-bookworm AS runtime
 
 WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PATH="/home/nebula/.local/bin:$PATH"
+    PATH="/opt/venv/bin:$PATH" \
+    PYTHONPATH="/app"
 
-# Install runtime system dependencies
+# Install only runtime system dependencies (no compilers, no -dev headers)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     curl \
+    ca-certificates \
     dumb-init \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
@@ -39,18 +46,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Create non-root user
 RUN groupadd -r nebula && useradd -r -g nebula -m -d /home/nebula nebula
 
-# Copy installed dependencies from builder
-COPY --from=builder /install /home/nebula/.local
+# Copy ONLY site-packages + scripts from builder (no build tools)
+COPY --from=builder /opt/venv /opt/venv
 
-# Copy application code
+# Copy only application code and runtime assets
 COPY --chown=nebula:nebula backend/app /app/app
 COPY --chown=nebula:nebula backend/vector /app/vector
 COPY --chown=nebula:nebula backend/static /app/static
+COPY --chown=nebula:nebula backend/gunicorn.conf.py /app/gunicorn.conf.py
 COPY --chown=nebula:nebula docker/entrypoint.sh /app/entrypoint.sh
 COPY --chown=nebula:nebula docker/scheduler-entrypoint.sh /app/scheduler-entrypoint.sh
 
 # Create necessary directories
-RUN mkdir -p /app/storage /app/logs \
+RUN mkdir -p /app/storage/uploads /app/storage/cache /app/storage/vector \
+             /app/storage/indexes /app/storage/exports /app/logs \
     && chmod +x /app/entrypoint.sh /app/scheduler-entrypoint.sh \
     && chown -R nebula:nebula /app
 
@@ -60,7 +69,7 @@ USER nebula
 # Expose port
 EXPOSE 8000
 
-# Health check
+# Health check using the liveness probe endpoint
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')" || exit 1
 

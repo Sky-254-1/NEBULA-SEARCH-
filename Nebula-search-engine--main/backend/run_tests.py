@@ -1,22 +1,26 @@
-import sys
-import os
+#!/usr/bin/env python
+"""Run backend tests with coverage."""
+
 import subprocess
+import sys
 
-backend_dir = r"c:\Users\KNP LIBRARY\Downloads\Nebula Search\Nebula-search-engine--main\backend"
-sys.path.insert(0, backend_dir)
-os.chdir(backend_dir)
+def run():
+    cmd = [
+        sys.executable,
+        "-m",
+        "pytest",
+        "tests/",
+        "--tb=short",
+        "-q",
+        "--cov=app",
+        "--cov-report=term-missing"
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    print(result.stdout)
+    if result.stderr:
+        print(result.stderr, file=sys.stderr)
+    print(f"\nExit code: {result.returncode}")
+    return result.returncode
 
-result = subprocess.run([sys.executable, "-m", "pytest", "tests/e2e/test_e2e_auth.py", "-v", "--tb=short", "-rN"], capture_output=True, text=True)
-
-# Write output to file
-with open("test_output.txt", "w") as f:
-    f.write("STDOUT:\n")
-    f.write(result.stdout)
-    f.write("\nSTDERR:\n")
-    f.write(result.stderr)
-    f.write(f"\nReturn code: {result.returncode}\n")
-
-print(f"Tests completed with return code {result.returncode}")
-print(f"Output written to test_output.txt")
-
-sys.exit(result.returncode)
+if __name__ == "__main__":
+    sys.exit(run())

@@ -173,7 +173,7 @@ class MetadataSynchronizer:
             """UPDATE index_tracking
                SET metadata_hash = ?,
                    sync_status   = 'synced',
-                   updated_at    = datetime('now')
+                   updated_at    = CURRENT_TIMESTAMP
                WHERE document_id = ?""",
             (new_metadata_hash, document_id),
         )
@@ -231,7 +231,7 @@ class MetadataSynchronizer:
                SET embedding_count = ?,
                    chunk_count     = ?,
                    sync_status     = 'synced',
-                   updated_at      = datetime('now')
+                   updated_at      = CURRENT_TIMESTAMP
                WHERE document_id = ?""",
             (embedding_count, chunk_count, document_id),
         )

@@ -9,11 +9,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.engine import get_db
-from app.database.models import User
-from app.middleware.auth import get_current_user
 from app.services.research import ResearchService
 
 router = APIRouter(prefix="/research", tags=["Research"])
@@ -166,13 +163,24 @@ class ResearchSummary(BaseModel):
 @router.post("/projects", response_model=ProjectResponse, status_code=201)
 async def create_project(
     data: ProjectCreate,
-    current_user: User = Depends(get_current_user),
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new research project."""
+    # Get current user from auth token
+    from app.services.auth import get_current_user
+    email = await get_current_user(request)
+    
+    # Fetch user ID from database
+    from app.database.repositories.user import UserRepository
+    users = UserRepository(db)
+    user = await users.get_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
     project = await research_service.create_project(
         db=db,
-        owner_id=current_user.id,
+        owner_id=user["id"],
         title=data.title,
         description=data.description,
         tags=data.tags,
@@ -183,16 +191,25 @@ async def create_project(
 
 @router.get("/projects", response_model=list[ProjectResponse])
 async def list_projects(
-    current_user: User = Depends(get_current_user),
+    request: Request,
     db: AsyncSession = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     include_archived: bool = False,
 ):
     """List all research projects for the current user."""
+    from app.services.auth import get_current_user
+    email = await get_current_user(request)
+    
+    from app.database.repositories.user import UserRepository
+    users = UserRepository(db)
+    user = await users.get_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
     projects = await research_service.list_projects(
         db=db,
-        user_id=current_user.id,
+        user_id=user["id"],
         skip=skip,
         limit=limit,
         include_archived=include_archived,
@@ -203,11 +220,20 @@ async def list_projects(
 @router.get("/projects/{project_id}", response_model=ProjectResponse)
 async def get_project(
     project_id: UUID,
-    current_user: User = Depends(get_current_user),
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """Get a specific research project."""
-    project = await research_service.get_project(db, project_id, current_user.id)
+    from app.services.auth import get_current_user
+    email = await get_current_user(request)
+    
+    from app.database.repositories.user import UserRepository
+    users = UserRepository(db)
+    user = await users.get_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    project = await research_service.get_project(db, project_id, user["id"])
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     return project
@@ -217,14 +243,23 @@ async def get_project(
 async def update_project(
     project_id: UUID,
     data: ProjectUpdate,
-    current_user: User = Depends(get_current_user),
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """Update a research project."""
+    from app.services.auth import get_current_user
+    email = await get_current_user(request)
+    
+    from app.database.repositories.user import UserRepository
+    users = UserRepository(db)
+    user = await users.get_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
     project = await research_service.update_project(
         db=db,
         project_id=project_id,
-        user_id=current_user.id,
+        user_id=user["id"],
         **data.dict(exclude_none=True),
     )
     await db.commit()
@@ -236,11 +271,20 @@ async def update_project(
 @router.delete("/projects/{project_id}", status_code=204)
 async def delete_project(
     project_id: UUID,
-    current_user: User = Depends(get_current_user),
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """Delete a research project."""
-    deleted = await research_service.delete_project(db, project_id, current_user.id)
+    from app.services.auth import get_current_user
+    email = await get_current_user(request)
+    
+    from app.database.repositories.user import UserRepository
+    users = UserRepository(db)
+    user = await users.get_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    deleted = await research_service.delete_project(db, project_id, user["id"])
     await db.commit()
     if not deleted:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -254,14 +298,23 @@ async def delete_project(
 @router.post("/notes", response_model=NoteResponse, status_code=201)
 async def create_note(
     data: NoteCreate,
-    current_user: User = Depends(get_current_user),
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """Create a research note."""
+    from app.services.auth import get_current_user
+    email = await get_current_user(request)
+    
+    from app.database.repositories.user import UserRepository
+    users = UserRepository(db)
+    user = await users.get_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
     note = await research_service.create_note(
         db=db,
         project_id=data.project_id,
-        author_id=current_user.id,
+        author_id=user["id"],
         title=data.title,
         content=data.content,
         source_url=data.source_url,
@@ -274,17 +327,26 @@ async def create_note(
 @router.get("/projects/{project_id}/notes", response_model=list[NoteResponse])
 async def list_notes(
     project_id: UUID,
-    current_user: User = Depends(get_current_user),
+    request: Request,
     db: AsyncSession = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     tags: Optional[list[str]] = Query(None),
 ):
     """List notes in a project."""
+    from app.services.auth import get_current_user
+    email = await get_current_user(request)
+    
+    from app.database.repositories.user import UserRepository
+    users = UserRepository(db)
+    user = await users.get_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
     notes = await research_service.list_notes(
         db=db,
         project_id=project_id,
-        user_id=current_user.id,
+        user_id=user["id"],
         skip=skip,
         limit=limit,
         tags=tags,
@@ -296,14 +358,23 @@ async def list_notes(
 async def update_note(
     note_id: UUID,
     data: NoteUpdate,
-    current_user: User = Depends(get_current_user),
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """Update a research note."""
+    from app.services.auth import get_current_user
+    email = await get_current_user(request)
+    
+    from app.database.repositories.user import UserRepository
+    users = UserRepository(db)
+    user = await users.get_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
     note = await research_service.update_note(
         db=db,
         note_id=note_id,
-        user_id=current_user.id,
+        user_id=user["id"],
         **data.dict(exclude_none=True),
     )
     await db.commit()
@@ -315,11 +386,20 @@ async def update_note(
 @router.delete("/notes/{note_id}", status_code=204)
 async def delete_note(
     note_id: UUID,
-    current_user: User = Depends(get_current_user),
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """Delete a research note."""
-    deleted = await research_service.delete_note(db, note_id, current_user.id)
+    from app.services.auth import get_current_user
+    email = await get_current_user(request)
+    
+    from app.database.repositories.user import UserRepository
+    users = UserRepository(db)
+    user = await users.get_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    deleted = await research_service.delete_note(db, note_id, user["id"])
     await db.commit()
     if not deleted:
         raise HTTPException(status_code=404, detail="Note not found")
@@ -333,14 +413,23 @@ async def delete_note(
 @router.post("/bookmarks", response_model=BookmarkResponse, status_code=201)
 async def create_bookmark(
     data: BookmarkCreate,
-    current_user: User = Depends(get_current_user),
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """Create a research bookmark."""
+    from app.services.auth import get_current_user
+    email = await get_current_user(request)
+    
+    from app.database.repositories.user import UserRepository
+    users = UserRepository(db)
+    user = await users.get_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
     bookmark = await research_service.create_bookmark(
         db=db,
         project_id=data.project_id,
-        user_id=current_user.id,
+        user_id=user["id"],
         url=data.url,
         title=data.title,
         description=data.description,
@@ -353,16 +442,25 @@ async def create_bookmark(
 @router.get("/projects/{project_id}/bookmarks", response_model=list[BookmarkResponse])
 async def list_bookmarks(
     project_id: UUID,
-    current_user: User = Depends(get_current_user),
+    request: Request,
     db: AsyncSession = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
 ):
     """List bookmarks in a project."""
+    from app.services.auth import get_current_user
+    email = await get_current_user(request)
+    
+    from app.database.repositories.user import UserRepository
+    users = UserRepository(db)
+    user = await users.get_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
     bookmarks = await research_service.list_bookmarks(
         db=db,
         project_id=project_id,
-        user_id=current_user.id,
+        user_id=user["id"],
         skip=skip,
         limit=limit,
     )
@@ -372,11 +470,20 @@ async def list_bookmarks(
 @router.delete("/bookmarks/{bookmark_id}", status_code=204)
 async def delete_bookmark(
     bookmark_id: UUID,
-    current_user: User = Depends(get_current_user),
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """Delete a research bookmark."""
-    deleted = await research_service.delete_bookmark(db, bookmark_id, current_user.id)
+    from app.services.auth import get_current_user
+    email = await get_current_user(request)
+    
+    from app.database.repositories.user import UserRepository
+    users = UserRepository(db)
+    user = await users.get_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    deleted = await research_service.delete_bookmark(db, bookmark_id, user["id"])
     await db.commit()
     if not deleted:
         raise HTTPException(status_code=404, detail="Bookmark not found")
@@ -390,10 +497,19 @@ async def delete_bookmark(
 @router.post("/citations", response_model=CitationResponse, status_code=201)
 async def create_citation(
     data: CitationCreate,
-    current_user: User = Depends(get_current_user),
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """Create a citation."""
+    from app.services.auth import get_current_user
+    email = await get_current_user(request)
+    
+    from app.database.repositories.user import UserRepository
+    users = UserRepository(db)
+    user = await users.get_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
     citation = await research_service.create_citation(
         db=db,
         project_id=data.project_id,
@@ -412,16 +528,25 @@ async def create_citation(
 @router.get("/projects/{project_id}/citations", response_model=list[CitationResponse])
 async def list_citations(
     project_id: UUID,
-    current_user: User = Depends(get_current_user),
+    request: Request,
     db: AsyncSession = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
 ):
     """List citations in a project."""
+    from app.services.auth import get_current_user
+    email = await get_current_user(request)
+    
+    from app.database.repositories.user import UserRepository
+    users = UserRepository(db)
+    user = await users.get_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
     citations = await research_service.list_citations(
         db=db,
         project_id=project_id,
-        user_id=current_user.id,
+        user_id=user["id"],
         skip=skip,
         limit=limit,
     )
@@ -436,17 +561,26 @@ async def list_citations(
 @router.post("/query", response_model=ResearchSummary)
 async def ai_research_query(
     query_data: ResearchQuery,
-    current_user: User = Depends(get_current_user),
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """
     Perform AI-assisted research query.
     Analyzes project notes and generates a comprehensive summary.
     """
+    from app.services.auth import get_current_user
+    email = await get_current_user(request)
+    
+    from app.database.repositories.user import UserRepository
+    users = UserRepository(db)
+    user = await users.get_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
     summary = await research_service.ai_research_query(
         db=db,
         project_id=query_data.project_id,
-        user_id=current_user.id,
+        user_id=user["id"],
         query=query_data.query,
         context_note_ids=query_data.context_notes,
     )
@@ -456,15 +590,24 @@ async def ai_research_query(
 @router.get("/projects/{project_id}/export")
 async def export_project(
     project_id: UUID,
+    request: Request,
     format: str = Query("markdown", pattern="^(markdown|pdf|csv|json)$"),
-    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Export research project in various formats."""
+    from app.services.auth import get_current_user
+    email = await get_current_user(request)
+    
+    from app.database.repositories.user import UserRepository
+    users = UserRepository(db)
+    user = await users.get_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
     export_data = await research_service.export_project(
         db=db,
         project_id=project_id,
-        user_id=current_user.id,
+        user_id=user["id"],
         format=format,
     )
     

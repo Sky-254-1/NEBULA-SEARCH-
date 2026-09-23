@@ -11,8 +11,8 @@ ALTER TABLE users ADD COLUMN locked_until TEXT;
 ALTER TABLE users ADD COLUMN failed_login_attempts INTEGER DEFAULT 0 NOT NULL;
 ALTER TABLE users ADD COLUMN last_failed_login TEXT;
 ALTER TABLE users ADD COLUMN last_login TEXT;
-ALTER TABLE users ADD COLUMN password_changed_at TEXT DEFAULT (datetime('now'));
-ALTER TABLE users ADD COLUMN updated_at TEXT DEFAULT (datetime('now'));
+ALTER TABLE users ADD COLUMN password_changed_at TEXT DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE users ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE users ADD COLUMN deleted_at TEXT;
 ALTER TABLE users ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE NOT NULL;
 
@@ -24,7 +24,7 @@ ALTER TABLE users ADD COLUMN mfa_backup_codes TEXT;
 -- Add details to sessions
 ALTER TABLE sessions ADD COLUMN session_id TEXT;
 ALTER TABLE sessions ADD COLUMN device_name TEXT;
-ALTER TABLE sessions ADD COLUMN last_seen TEXT DEFAULT (datetime('now'));
+ALTER TABLE sessions ADD COLUMN last_seen TEXT DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE sessions ADD COLUMN parent_refresh_id INTEGER;
 ALTER TABLE sessions ADD COLUMN rotated_at TEXT;
 ALTER TABLE sessions ADD COLUMN revoked_reason TEXT;
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     user_agent TEXT,
     status TEXT DEFAULT 'success' NOT NULL,
     error_message TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS email_verification (
     is_used BOOLEAN DEFAULT FALSE NOT NULL,
     used_at TEXT,
     expires_at TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     is_deleted BOOLEAN DEFAULT FALSE NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_email_verification_user_id ON email_verification(user_id);
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS password_reset (
     expires_at TEXT NOT NULL,
     ip_address TEXT,
     user_agent TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     is_deleted BOOLEAN DEFAULT FALSE NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_password_reset_user_id ON password_reset(user_id);
@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS auth_sessions (
     user_agent TEXT,
     is_active BOOLEAN DEFAULT TRUE NOT NULL,
     expires_at TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_activity_at TEXT,
     rotated_at TEXT,
     terminated_at TEXT,

@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS notifications (
     expires_at TEXT,
     is_deleted INTEGER DEFAULT 0 NOT NULL,
     deleted_at TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);

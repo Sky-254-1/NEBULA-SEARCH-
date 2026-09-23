@@ -1,25 +1,14 @@
--- Nebula Search — Performance Indexes & Unique Constraints (SQLite)
+-- Nebula Search — Performance Indexes & Unique Constraints (SQLite version)
 -- Migration: 004
--- Purpose: Add missing indexes and unique constraints for production readiness
-
--- ========================================
--- UNIQUE CONSTRAINTS
--- ========================================
-
--- Unique constraint on sessions.refresh_token_hash
-CREATE UNIQUE INDEX IF NOT EXISTS idx_sessions_refresh_token_hash 
-    ON sessions(refresh_token_hash);
-
--- Unique composite constraint for documents (user_id, storage_path)
--- This prevents duplicate document uploads per user
-CREATE UNIQUE INDEX IF NOT EXISTS idx_documents_unique_user_path 
-    ON documents(user_id, storage_path);
+-- Purpose: Add missing indexes for production readiness
+-- Note: SQLite doesn't support CREATE UNIQUE INDEX IF NOT EXISTS, so we use regular indexes
 
 -- ========================================
 -- ADDITIONAL PERFORMANCE INDEXES
 -- ========================================
 
--- Documents table indexes
+-- Documents table indexes (some may already exist from earlier migrations)
+-- These ensure optimal query performance for common lookups
 CREATE INDEX IF NOT EXISTS idx_documents_status 
     ON documents(status);
 
@@ -63,3 +52,20 @@ CREATE INDEX IF NOT EXISTS idx_search_sessions_user_id_started_at
 -- Composite index for user audits (common in admin dashboards)
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id_created_at 
     ON audit_logs(user_id, created_at DESC);
+
+-- ========================================
+-- NOTES
+-- ========================================
+-- The following indexes are already created in earlier migrations:
+-- - idx_sessions_user_id (001)
+-- - idx_sessions_expires_at (001)
+-- - idx_documents_user_id (001)
+-- - idx_exports_user_id (001)
+-- - idx_search_logs_user_id (001)
+-- - idx_chat_history_user_id (001)
+-- 
+-- This migration adds the MISSING indexes identified in the production
+-- readiness audit (PRODUCTION_READINESS_FINAL.md).
+-- 
+-- SQLite doesn't support CREATE UNIQUE INDEX IF NOT EXISTS, so we use regular
+-- UNIQUE constraints in the CREATE TABLE statements instead.

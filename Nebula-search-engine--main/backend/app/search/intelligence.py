@@ -293,14 +293,26 @@ class SearchAnalytics:
         # Use DB-backed aggregation when available
         if self.db is not None:
             try:
-                rows = await self.db.fetchall(
-                    "SELECT query, COUNT(*) as cnt "
-                    "FROM search_logs "
-                    "WHERE searched_at >= datetime('now', ?) "
-                    "AND is_deleted = FALSE "
-                    "GROUP BY query ORDER BY cnt DESC LIMIT ?",
-                    (f"-{hours} hours", limit),
-                )
+                from app.config import get_settings
+                settings = get_settings()
+                if settings.uses_postgres:
+                    rows = await self.db.fetchall(
+                        "SELECT query, COUNT(*) as cnt "
+                        "FROM search_logs "
+                        "WHERE searched_at >= CURRENT_TIMESTAMP - $1::interval "
+                        "AND is_deleted = FALSE "
+                        "GROUP BY query ORDER BY cnt DESC LIMIT $2",
+                        (f"{hours} hours", limit),
+                    )
+                else:
+                    rows = await self.db.fetchall(
+                        "SELECT query, COUNT(*) as cnt "
+                        "FROM search_logs "
+                        "WHERE searched_at >= datetime('now', ?) "
+                        "AND is_deleted = FALSE "
+                        "GROUP BY query ORDER BY cnt DESC LIMIT ?",
+                        (f"-{hours} hours", limit),
+                    )
                 if rows:
                     trending = [{"query": r["query"], "count": r["cnt"], "growth": 0.0}
                                 for r in rows]

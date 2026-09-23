@@ -99,29 +99,56 @@ class AnalyticsRepository:
 
     async def get_popular_queries(self, limit: int = 10, days: int = 30) -> list[dict]:
         """Get popular queries with counts."""
-        rows = await self._db.fetchall(
-            """SELECT query, COUNT(*) as count 
-            FROM search_events 
-            WHERE created_at >= datetime('now', ?)
-            GROUP BY query 
-            ORDER BY count DESC 
-            LIMIT ?""",
-            (f"-{days} days", limit),
-        )
+        from app.config import get_settings
+        settings = get_settings()
+        if settings.uses_postgres:
+            rows = await self._db.fetchall(
+                """SELECT query, COUNT(*) as count 
+                FROM search_events 
+                WHERE created_at >= CURRENT_TIMESTAMP - $1::interval
+                GROUP BY query 
+                ORDER BY count DESC 
+                LIMIT $2""",
+                (f"{days} days", limit),
+            )
+        else:
+            rows = await self._db.fetchall(
+                """SELECT query, COUNT(*) as count 
+                FROM search_events 
+                WHERE created_at >= datetime('now', ?)
+                GROUP BY query 
+                ORDER BY count DESC 
+                LIMIT ?""",
+                (f"-{days} days", limit),
+            )
         return [dict(row) for row in rows]
 
     async def get_zero_result_queries(self, limit: int = 10, days: int = 30) -> list[dict]:
         """Get queries that returned zero results."""
-        rows = await self._db.fetchall(
-            """SELECT query, COUNT(*) as count 
-            FROM search_events 
-            WHERE results_count = 0 
-            AND created_at >= datetime('now', ?)
-            GROUP BY query 
-            ORDER BY count DESC 
-            LIMIT ?""",
-            (f"-{days} days", limit),
-        )
+        from app.config import get_settings
+        settings = get_settings()
+        if settings.uses_postgres:
+            rows = await self._db.fetchall(
+                """SELECT query, COUNT(*) as count 
+                FROM search_events 
+                WHERE results_count = 0 
+                AND created_at >= CURRENT_TIMESTAMP - $1::interval
+                GROUP BY query 
+                ORDER BY count DESC 
+                LIMIT $2""",
+                (f"{days} days", limit),
+            )
+        else:
+            rows = await self._db.fetchall(
+                """SELECT query, COUNT(*) as count 
+                FROM search_events 
+                WHERE results_count = 0 
+                AND created_at >= datetime('now', ?)
+                GROUP BY query 
+                ORDER BY count DESC 
+                LIMIT ?""",
+                (f"-{days} days", limit),
+            )
         return [dict(row) for row in rows]
 
     async def get_response_time_stats(self, days: int = 7) -> dict[str, float]:
@@ -151,22 +178,43 @@ class AnalyticsRepository:
 
     async def get_query_trends(self, period: str = "daily", days: int = 30) -> list[dict]:
         """Get query trends over time."""
-        date_format = "%Y-%m-%d"
-        if period == "hourly":
-            date_format = "%Y-%m-%d %H:00:00"
-        
-        rows = await self._db.fetchall(
-            f"""SELECT  # nosec B608: date_format and values are processed, not raw user input
-                strftime('{date_format}', created_at) as date,
-                COUNT(*) as queries,
-                COUNT(DISTINCT user_id) as unique_users,
-                SUM(CASE WHEN results_count = 0 THEN 1 ELSE 0 END) as zero_results
-            FROM search_events 
-            WHERE created_at >= datetime('now', ?)
-            GROUP BY strftime('{date_format}', created_at)
-            ORDER BY date ASC""",
-            (f"-{days} days",),
-        )
+        # Strict whitelist: period -> static SQL fragments.
+        # We never interpolate user-provided strings into SQL directly.
+        _SQL_BY_PERIOD: dict[str, tuple[str, str]] = {
+            "daily": (
+                "%Y-%m-%d",
+                """
+                SELECT
+                    strftime('%Y-%m-%d', created_at) AS date,
+                    COUNT(*) AS queries,
+                    COUNT(DISTINCT user_id) AS unique_users,
+                    SUM(CASE WHEN results_count = 0 THEN 1 ELSE 0 END) AS zero_results
+                FROM search_events
+                WHERE created_at >= datetime('now', ?)
+                GROUP BY strftime('%Y-%m-%d', created_at)
+                ORDER BY date ASC
+                """,
+            ),
+            "hourly": (
+                "%Y-%m-%d %H:00:00",
+                """
+                SELECT
+                    strftime('%Y-%m-%d %H:00:00', created_at) AS date,
+                    COUNT(*) AS queries,
+                    COUNT(DISTINCT user_id) AS unique_users,
+                    SUM(CASE WHEN results_count = 0 THEN 1 ELSE 0 END) AS zero_results
+                FROM search_events
+                WHERE created_at >= datetime('now', ?)
+                GROUP BY strftime('%Y-%m-%d %H:00:00', created_at)
+                ORDER BY date ASC
+                """,
+            ),
+        }
+        if period not in _SQL_BY_PERIOD:
+            raise ValueError(f"Unknown trend period: {period!r}")
+        _, sql = _SQL_BY_PERIOD[period]
+
+        rows = await self._db.fetchall(sql, (f"-{int(days)} days",))
         return [dict(row) for row in rows]
 
     async def get_dashboard_overview(self, period: str = "24h") -> dict[str, Any]:
