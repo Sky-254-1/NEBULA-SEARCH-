@@ -199,7 +199,7 @@ STORAGE_ROOT=../storage
 
 ## 7. Deployment
 
-Existing Docker and K8s configs preserved under `docker/` and `Nebula-search-engine--main/infrastructure/k8s/`.
+Existing Docker and K8s configs preserved under `docker/` and `infrastructure/k8s/`.
 
 ### Production checklist
 

@@ -1,5 +1,5 @@
 import subprocess, sys, os, shutil
-os.chdir(r"c:\Users\KNP LIBRARY\Downloads\Nebula Search\Nebula-search-engine--main\backend")
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 for root, dirs, files in os.walk("app"):
     for d in list(dirs):
         if d == "__pycache__":

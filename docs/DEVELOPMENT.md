@@ -36,8 +36,8 @@ This guide covers setting up a development environment and understanding the cod
 
 ```bash
 # Clone repository
-git clone https://github.com/Sky-254-1/Nebula-search-engine-.git
-cd Nebula-search-engine--main
+git clone https://github.com/Sky-254-1/NEBULA-SEARCH-.git
+cd NEBULA-SEARCH-
 
 # Start development environment
 bash scripts/quick-start.sh
@@ -87,7 +87,7 @@ npm run dev
 ## Project Structure
 
 ```
-Nebula-search-engine--main/
+.
 ├── backend/
 │   ├── app/
 │   │   ├── __init__.py

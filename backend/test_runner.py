@@ -3,7 +3,7 @@ import sys
 import os
 
 # Change to backend directory
-os.chdir(r"c:\Users\KNP LIBRARY\Downloads\Nebula Search\Nebula-search-engine--main\backend")
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ".")
 
 import pytest
