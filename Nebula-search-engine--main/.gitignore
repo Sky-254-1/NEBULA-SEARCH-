@@ -119,6 +119,11 @@ htmlcov/
 lcov-report/
 lcov.info
 frontend/coverage/
+*_coverage.txt
+*_coverage_*.txt
+frontend/frontend_coverage.txt
+frontend/build.err
+frontend/npm-install.err
 
 # Jupyter
 .ipynb_checkpoints

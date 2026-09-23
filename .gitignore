@@ -64,6 +64,8 @@ lcov-report/
 lcov.info
 coverage_*.txt
 coverage-run*.txt
+*_coverage.txt
+*_coverage_*.txt
 frontend/coverage/
 full_test_results.txt
 full_test_output.txt
@@ -86,6 +88,10 @@ test_output*.txt
 documents_output.txt
 test_ranking*.txt
 test_ranking_output*.txt
+Nebula-search-engine--main/frontend/*_test_output.txt
+Nebula-search-engine--main/frontend/frontend_coverage.txt
+Nebula-search-engine--main/frontend/build.err
+Nebula-search-engine--main/frontend/npm-install.err
 
 # Large binary / local storage.
 *.db
