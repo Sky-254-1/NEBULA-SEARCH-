@@ -1,2 +1,0 @@
-Test result: FAILED
-Exit code: 1
