@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Nebula Search Documentation
+    url: https://github.com/Sky-254-1/NEBULA-SEARCH-/blob/main/docs/
+    about: Read the project documentation, setup, and API guides.
+  - name: Security Report
+    url: https://github.com/Sky-254-1/NEBULA-SEARCH-/security/advisories/new
+    about: Report a security vulnerability responsibly via the GitHub Security Advisories page.

@@ -41,7 +41,7 @@ jobs:
         echo "changelog=$CHANGELOG_ESCAPED" >> $GITHUB_OUTPUT
 
     - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ github.ref_name }}
         name: Release ${{ github.ref_name }}
@@ -89,7 +89,7 @@ jobs:
     if: always()
     steps:
     - name: Notify Slack
-      uses: slackapi/slack-github-action@v1
+      uses: slackapi/slack-github-action@v1.27.0
       with:
         webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
         payload: |
