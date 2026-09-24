@@ -62,11 +62,50 @@ jobs:
         REDIS_URL: redis://localhost:6379/0
 
     - name: Run Playwright E2E tests
-      run: |
-        cd frontend
-        npm run test:e2e
       env:
-        PLAYWRIGHT_BASE_URL: http://localhost:8000
+        E2E_BASE_URL: http://127.0.0.1:5173
+        E2E_API_URL: http://127.0.0.1:8000
+        JWT_SECRET: e2e-test-jwt-secret-key-min-32-chars-long!
+        APP_ENV: testing
+        DATABASE_URL: postgresql://nebula:nebula_test@localhost:5432/nebula_test
+        RATE_LIMIT_PER_MINUTE: '10000'
+        SIGNUP_RATE_LIMIT: '10000'
+        LOGIN_RATE_LIMIT: '10000'
+        REFRESH_RATE_LIMIT: '10000'
+      run: |
+        # Install root Playwright deps
+        npm ci --no-audit --no-fund
+
+        # Start backend server in background
+        cd backend
+        pip install -r requirements.txt
+        python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > backend_e2e.log 2>&1 &
+        BACKEND_PID=$!
+        cd ..
+
+        # Start frontend dev server in background
+        cd frontend
+        npm ci --no-audit --no-fund
+        npm run dev -- --host 127.0.0.1 --port 5173 > frontend_e2e.log 2>&1 &
+        FRONTEND_PID=$!
+        cd ..
+
+        # Wait for both servers to respond
+        echo "Waiting for backend (8000)..."
+        for i in $(seq 1 60); do curl -sf http://127.0.0.1:8000/health >/dev/null && break; sleep 2; done
+        echo "Waiting for frontend (5173)..."
+        for i in $(seq 1 60); do curl -sf http://127.0.0.1:5173/ >/dev/null && break; sleep 2; done
+
+        # Install Playwright browsers and run tests from repo root
+        npx playwright install --with-deps chromium
+        npx playwright test --config=tests/e2e/playwright.config.ts --project=chromium
+        RC=$?
+
+        # Cleanup background processes
+        kill $FRONTEND_PID $BACKEND_PID 2>/dev/null || true
+        wait $FRONTEND_PID $BACKEND_PID 2>/dev/null || true
+
+        exit $RC
 
     - name: Upload test results
       uses: actions/upload-artifact@v4

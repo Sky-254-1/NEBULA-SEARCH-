@@ -80,7 +80,7 @@ jobs:
 
     - name: Notify Slack
       if: always()
-      uses: slackapi/slack-github-action@v1
+      uses: slackapi/slack-github-action@v1.27.0
       with:
         webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
         payload: |
