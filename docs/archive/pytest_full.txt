@@ -1,0 +1,980 @@
+﻿EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE [ 22%]
+EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE [ 44%]
+EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE [ 66%]
+EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE [ 88%]
+EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE                                     [100%]
+=================================== ERRORS ====================================
+_____ ERROR at setup of TestAnalyticsRepository.test_record_search_event ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestAnalyticsRepository.test_record_click_event ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestAnalyticsRepository.test_record_response_time _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestAnalyticsRepository.test_get_popular_queries ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___ ERROR at setup of TestAnalyticsRepository.test_get_zero_result_queries ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___ ERROR at setup of TestAnalyticsRepository.test_get_response_time_stats ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestAnalyticsRepository.test_get_query_trends _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestAnalyticsRepository.test_get_dashboard_overview ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestAnalyticsRepository.test_get_user_analytics ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestAnalyticsRepository.test_get_click_analytics ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__ ERROR at setup of TestAnalyticsRepository.test_get_search_quality_metrics __
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestAnalyticsService.test_record_search __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestAnalyticsService.test_get_dashboard __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________ ERROR at setup of TestAnalyticsService.test_get_popular ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestAnalyticsMetrics.test_record_search_query _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestAnalyticsMetrics.test_record_click_event ________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestAutocomplete.test_autocomplete_requires_query _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestAutocomplete.test_autocomplete_query_too_short _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestAutocomplete.test_autocomplete_query_too_long _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestAutocomplete.test_autocomplete_basic __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestAutocomplete.test_autocomplete_case_insensitive ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestAutocomplete.test_autocomplete_empty_query _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestAutocomplete.test_autocomplete_whitespace_query ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestRecentSearches.test_get_recent_requires_auth ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestRecentSearches.test_get_recent_empty __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestRecentSearches.test_clear_recent_requires_auth _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________ ERROR at setup of TestRecentSearches.test_clear_recent ____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____________ ERROR at setup of TestPopularQueries.test_get_popular ____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestPopularQueries.test_get_popular_with_limit _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___ ERROR at setup of TestPopularQueries.test_get_popular_limit_validation ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestNormalization.test_normalize_lowercase _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___ ERROR at setup of TestNormalization.test_normalize_removes_punctuation ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___ ERROR at setup of TestNormalization.test_normalize_collapses_whitespace ___
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_ ERROR at setup of TestNormalization.test_normalize_removes_control_characters _
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_ ERROR at setup of TestNormalization.test_normalize_empty_after_normalization _
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestAPIVersioning.test_versioned_endpoint_v1 ________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestAPIVersioning.test_versioned_endpoint_v2 ________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___ ERROR at setup of TestAPIVersioning.test_unversioned_endpoint_rejected ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestAPIVersioning.test_version_agnostic_endpoints _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestRateLimiting.test_rate_limit_headers_present ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestRateLimiting.test_rate_limit_exceeded _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestResponseStandardization.test_request_id_header _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__ ERROR at setup of TestResponseStandardization.test_error_response_format ___
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________ ERROR at setup of TestPagination.test_pagination_params ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestPagination.test_pagination_response_creation ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____________ ERROR at setup of TestFiltering.test_filter_parsing _____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____________ ERROR at setup of TestFiltering.test_multiple_filters ____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestFiltering.test_filter_sql_generation __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______________ ERROR at setup of TestFiltering.test_sort_parsing ______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestFiltering.test_sort_sql_generation ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestFiltering.test_invalid_field_rejection _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___ ERROR at setup of TestMonitoring.test_metrics_collector_initialization ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____________ ERROR at setup of TestMonitoring.test_record_request _____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestWebhooks.test_webhook_service_initialization ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____________ ERROR at setup of TestWebhooks.test_create_webhook ______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______________ ERROR at setup of TestWebhooks.test_list_webhooks ______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestSecurity.test_csrf_protection_exists __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestSecurity.test_security_headers_middleware _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________ ERROR at setup of TestSecurity.test_request_size_limit ____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestCaching.test_cache_service_initialization _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____________ ERROR at setup of TestCaching.test_cache_operations _____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestAuthentication.test_jwt_token_creation _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestAuthentication.test_password_hashing __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestAuthentication.test_brute_force_protection _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestSchemas.test_auth_request_validation __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestSchemas.test_webhook_create_validation _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestBM25Engine.test_bm25_basic_scoring ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestBM25Engine.test_bm25_field_weights ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestBM25Engine.test_bm25_phrase_matching __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____________ ERROR at setup of TestBM25Engine.test_bm25_stop_words ____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestBM25Engine.test_bm25_empty_document __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestSemanticEngine.test_semantic_cosine_similarity _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestSemanticEngine.test_semantic_search __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___ ERROR at setup of TestSemanticEngine.test_semantic_embedding_extraction ___
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____________ ERROR at setup of TestFusionEngine.test_linear_fusion ____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____________ ERROR at setup of TestFusionEngine.test_rrf_fusion ______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestDeduplicator.test_deduplicate_by_id __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestDeduplicator.test_deduplicate_by_url __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestIntentDetector.test_detect_question_intent _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestIntentDetector.test_detect_keyword_intent _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestIntentDetector.test_detect_natural_language ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestIntentDetector.test_detect_phrase_intent ________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestIntentDetector.test_get_search_strategy ________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________ ERROR at setup of TestMetadataBooster.test_title_boost ____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestMetadataBooster.test_multiple_boosts __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestScoreNormalizer.test_minmax_normalization _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestScoreNormalizer.test_zscore_normalization _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestScoreNormalizer.test_softmax_normalization _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestFilterEngine.test_filter_by_file_type _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestFilterEngine.test_filter_by_language __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___ ERROR at setup of TestScoringEngine.test_score_document_all_components ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestScoringEngine.test_score_with_intent __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestExplanationGenerator.test_explain_result ________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestExplanationGenerator.test_explain_search ________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________ ERROR at setup of TestHybridMetrics.test_record_search ____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____________ ERROR at setup of TestHybridMetrics.test_get_summary _____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestHybridMetrics.test_get_top_queries ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________ ERROR at setup of TestHybridConfig.test_default_config ____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________ ERROR at setup of TestHybridConfig.test_config_from_env ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________ ERROR at setup of TestHybridConfig.test_config_to_dict ____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___ ERROR at setup of TestHybridSearchIntegration.test_full_search_pipeline ___
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___ ERROR at setup of TestHybridSearchIntegration.test_search_with_filters ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestHashing.test_calculate_string_hash ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_ ERROR at setup of TestHashing.test_calculate_string_hash_different_content __
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestHashing.test_calculate_metadata_hash __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________ ERROR at setup of TestHashing.test_calculate_chunk_hash ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestHashing.test_calculate_vector_hash ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______________ ERROR at setup of TestHashing.test_compare_hashes ______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestHashing.test_verify_file_integrity ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestChangeDetector.test_detect_new_document ________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestChangeDetector.test_detect_unchanged_document _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestChangeDetector.test_detect_modified_document ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestChangeDetector.test_detect_deleted_document ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestChangeDetector.test_detect_metadata_only_change ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestDiffEngine.test_compute_diff_no_changes ________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestDiffEngine.test_compute_diff_with_changes _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestDiffEngine.test_compute_diff_metadata_changed _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestDocumentScanner.test_scan_new_document _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestDocumentScanner.test_scan_unchanged_document ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestDocumentScanner.test_scan_deleted_document _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__ ERROR at setup of TestIncrementalSynchronizer.test_synchronize_new_chunks __
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_ ERROR at setup of TestIncrementalSynchronizer.test_synchronize_with_removed_chunks _
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestMetadataSynchronizer.test_sync_metadata_changes ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__ ERROR at setup of TestMetadataSynchronizer.test_sync_metadata_no_changes ___
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestIndexTracker.test_initialize_document _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____________ ERROR at setup of TestIndexTracker.test_needs_reindex ____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestCleanupService.test_cleanup_dry_run __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestCleanupService.test_remove_document_data ________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestEventManager.test_publish_and_subscribe ________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____________ ERROR at setup of TestEventManager.test_event_history ____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestEventManager.test_metrics_collector __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____________ ERROR at setup of TestScheduler.test_add_and_get_task ____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestScheduler.test_enable_disable_task ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____________ ERROR at setup of TestScheduler.test_get_all_tasks ______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestIncrementalService.test_reindex_new_document ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________ ERROR at setup of TestIncrementalService.test_scan_all ____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestIntegration.test_full_reindex_pipeline _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestIntegration.test_incremental_vs_full_reindex ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestEdgeCases.test_hash_result_data_structure _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestEdgeCases.test_document_change_defaults ________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestEdgeCases.test_sync_result_defaults __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestEdgeCases.test_metadata_tracker_history ________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________ ERROR at setup of TestEdgeCases.test_file_watcher_state ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______________ ERROR at setup of TestConfig.test_default_config _______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______________ ERROR at setup of TestConfig.test_priority_values ______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______________ ERROR at setup of TestQueue.test_enqueue_dequeue _______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____________ ERROR at setup of TestQueue.test_priority_ordering ______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____________________ ERROR at setup of TestQueue.test_peek ____________________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________________ ERROR at setup of TestQueue.test_remove ___________________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________________ ERROR at setup of TestQueue.test_pause_resume ________________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________________ ERROR at setup of TestQueue.test_clear ____________________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____________ ERROR at setup of TestProgress.test_create_progress _____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______________ ERROR at setup of TestProgress.test_update_status ______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______________ ERROR at setup of TestProgress.test_update_step _______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______________ ERROR at setup of TestProgress.test_complete_job _______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________________ ERROR at setup of TestProgress.test_fail_job _________________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______________ ERROR at setup of TestProgress.test_cancel_job ________________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____________ ERROR at setup of TestProgress.test_speed_calculation ____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____________ ERROR at setup of TestProgress.test_eta_calculation _____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestRetry.test_should_retry_transient_error ________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestRetry.test_should_not_retry_non_retryable _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestRetry.test_should_not_retry_after_max _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____________ ERROR at setup of TestRetry.test_exponential_backoff _____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestRetry.test_execute_with_retry_success _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestRetry.test_execute_with_retry_eventual_success _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____________ ERROR at setup of TestDeadLetterQueue.test_add_job ______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____________ ERROR at setup of TestDeadLetterQueue.test_list_jobs _____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______________ ERROR at setup of TestDeadLetterQueue.test_count _______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestHealthMonitor.test_register_worker ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestHealthMonitor.test_unregister_worker __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____________ ERROR at setup of TestHealthMonitor.test_heartbeat ______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________ ERROR at setup of TestHealthMonitor.test_update_status ____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestHealthMonitor.test_record_completion __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________ ERROR at setup of TestHealthMonitor.test_get_statistics ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestMetrics.test_record_indexed_document __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______________ ERROR at setup of TestMetrics.test_record_failure ______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______________ ERROR at setup of TestMetrics.test_record_retry _______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________ ERROR at setup of TestMetrics.test_record_cancellation ____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____________ ERROR at setup of TestMetrics.test_avg_indexing_time _____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________________ ERROR at setup of TestMetrics.test_reset ___________________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____________ ERROR at setup of TestScheduler.test_register_task ______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____________ ERROR at setup of TestScheduler.test_get_task_status _____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____________ ERROR at setup of TestScheduler.test_get_all_tasks ______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______________ ERROR at setup of TestWorker.test_worker_creation ______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____________ ERROR at setup of TestWorker.test_worker_start_stop _____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestWorker.test_worker_run_once_empty_queue ________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______________ ERROR at setup of TestTaskHelpers.test_chunk_text ______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________ ERROR at setup of TestTaskHelpers.test_chunk_empty_text ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________ ERROR at setup of TestTaskHelpers.test_detect_file_type ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestTaskHelpers.test_calculate_file_checksum ________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestIndexingIntegration.test_full_indexing_flow ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestIndexingIntegration.test_queue_persistence _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestIndexingIntegration.test_cancellation _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestDocumentsAPI.test_list_documents_unauthorized _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestDocumentsAPI.test_list_documents_authorized ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___ ERROR at setup of TestDocumentsAPI.test_list_documents_with_pagination ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestDocumentsAPI.test_upload_document_unauthorized _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestDocumentsAPI.test_upload_document_invalid_type _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestDocumentsAPI.test_delete_document_unauthorized _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestUsersAPI.test_get_profile_unauthorized _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestUsersAPI.test_get_profile_authorized __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestUsersAPI.test_update_profile_unauthorized _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestUsersAPI.test_get_preferences_unauthorized _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestUsersAPI.test_get_activity_unauthorized ________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_ ERROR at setup of TestNotificationsAPI.test_list_notifications_unauthorized _
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__ ERROR at setup of TestNotificationsAPI.test_list_notifications_authorized __
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_ ERROR at setup of TestNotificationsAPI.test_list_notifications_with_pagination _
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__ ERROR at setup of TestNotificationsAPI.test_get_unread_count_unauthorized __
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestNotificationsAPI.test_mark_as_read_unauthorized ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__ ERROR at setup of TestNotificationsAPI.test_get_preferences_unauthorized ___
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_ ERROR at setup of TestNotificationsAPI.test_update_preferences_unauthorized _
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestAnalyticsAPI.test_get_usage_stats_unauthorized _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestAnalyticsAPI.test_get_usage_stats_authorized ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__ ERROR at setup of TestAnalyticsAPI.test_get_search_analytics_unauthorized __
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_ ERROR at setup of TestAnalyticsAPI.test_get_performance_metrics_unauthorized _
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestAnalyticsAPI.test_export_analytics_unauthorized ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___ ERROR at setup of TestRecommendationsAPI.test_get_related_unauthorized ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestRecommendationsAPI.test_get_related_authorized _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_ ERROR at setup of TestRecommendationsAPI.test_get_personalized_unauthorized _
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_ ERROR at setup of TestRecommendationsAPI.test_get_similar_searches_unauthorized _
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestAdminAPI.test_list_users_unauthorized _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestAdminAPI.test_list_users_non_admin ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____________ ERROR at setup of TestAdminAPI.test_list_users_admin _____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestAdminAPI.test_get_system_stats_admin __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestAdminAPI.test_get_queue_stats_admin __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestAdminAPI.test_get_cache_stats_admin __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____________ ERROR at setup of TestAdminAPI.test_clear_cache_admin ____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestAdminAPI.test_get_audit_logs_admin ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_ ERROR at setup of TestPaginationIntegration.test_pagination_page_size_validation _
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_ ERROR at setup of TestPaginationIntegration.test_pagination_page_validation _
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_ ERROR at setup of TestPaginationIntegration.test_pagination_metadata_correctness _
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestSecurity.test_cors_headers_present ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestSecurity.test_security_headers_present _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________ ERROR at setup of TestSecurity.test_rate_limit_headers ____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestSecurity.test_invalid_token_rejected __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestSecurity.test_expired_token_rejected __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_ ERROR at setup of TestBackwardCompatibility.test_storage_documents_endpoint_still_works _
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_ ERROR at setup of TestBackwardCompatibility.test_storage_exports_endpoint_still_works _
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestRBACService.test_get_role_level_super_admin ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestRBACService.test_get_role_level_admin _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestRBACService.test_get_role_level_moderator _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestRBACService.test_get_role_level_user __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestRBACService.test_get_role_level_guest _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestRBACService.test_get_role_level_unknown ________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___ ERROR at setup of TestRBACService.test_super_admin_hierarchy_over_admin ___
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___ ERROR at setup of TestRBACService.test_super_admin_hierarchy_over_guest ___
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestRBACService.test_admin_hierarchy_over_user _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestRBACService.test_user_not_hierarchy_over_admin _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestRBACService.test_guest_not_hierarchy_over_user _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestRBACService.test_equal_role_hierarchy _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestRBACService.test_super_admin_inherits_all _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestRBACService.test_user_inherits_guest __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestRBACService.test_guest_inherits_none __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestRBACService.test_unknown_role_inherits_none ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___ ERROR at setup of TestRBACService.test_super_admin_can_access_anything ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__ ERROR at setup of TestRBACService.test_admin_can_access_normal_resources ___
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestRBACService.test_admin_cannot_access_restricted ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestRBACService.test_moderator_can_access_allowed _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__ ERROR at setup of TestRBACService.test_moderator_cannot_access_disallowed __
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_ ERROR at setup of TestRBACService.test_moderator_cannot_access_disallowed_action _
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestRBACService.test_user_can_access_allowed ________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestRBACService.test_user_cannot_access_restricted _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestRBACService.test_guest_can_access_allowed _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestRBACService.test_guest_cannot_access_other _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestRBACService.test_unknown_role_denied __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestRBACService.test_super_admin_permissions_all ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestRBACService.test_admin_permissions ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestRBACService.test_moderator_permissions _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________ ERROR at setup of TestRBACService.test_user_permissions ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestRBACService.test_guest_permissions ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___ ERROR at setup of TestRBACService.test_get_permissions_with_additional ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestRBACService.test_unknown_role_permissions _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestRBACService.test_super_admin_check_any _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestRBACService.test_admin_check_allowed __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestRBACService.test_admin_check_denied __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestRBACService.test_user_check_allowed __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestRBACService.test_user_check_denied ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestRBACService.test_guest_check_allowed __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestRBACService.test_guest_check_denied __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___ ERROR at setup of TestRBACService.test_check_with_explicit_permissions ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestRBACService.test_require_admin_convenience _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestRBACService.test_require_any_permission_success ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestRBACService.test_require_any_permission_failure ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___ ERROR at setup of TestRBACService.test_require_all_permissions_success ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___ ERROR at setup of TestRBACService.test_require_all_permissions_failure ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestLevenshteinDistance.test_identical_strings _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestLevenshteinDistance.test_single_substitution ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestLevenshteinDistance.test_single_insertion _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestLevenshteinDistance.test_single_deletion ________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestLevenshteinDistance.test_transposition _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestLevenshteinDistance.test_max_distance_bound ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestLevenshteinDistance.test_max_distance_bounding _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestLevenshteinDistance.test_unicode_safe _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestLevenshteinDistance.test_empty_strings _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___ ERROR at setup of TestLevenshteinDistance.test_length_difference_gt_max ___
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____________ ERROR at setup of TestNormalizeText.test_lowercase ______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+________ ERROR at setup of TestNormalizeText.test_collapse_whitespace _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________ ERROR at setup of TestNormalizeText.test_strip_accents ____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestNormalizeText.test_remove_control_characters ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____________ ERROR at setup of TestNormalizeText.test_unicode_nfc _____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestSpellAPI.test_spell_endpoint_requires_query ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestSpellAPI.test_spell_query_too_long ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestSpellAPI.test_spell_basic_response_shape ________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestSpellAPI.test_spell_already_correct __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___________ ERROR at setup of TestSpellAPI.test_spell_unicode_input ___________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____________ ERROR at setup of TestSpellAPI.test_spell_empty_query ____________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______________ ERROR at setup of TestSpellAPI.test_spell_numbers ______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______________ ERROR at setup of TestSpellAPI.test_spell_symbols ______________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestSpellAPI.test_spell_did_you_mean_when_changed _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__ ERROR at setup of TestSpellSuggestionsAPI.test_suggestions_requires_query __
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+___ ERROR at setup of TestSpellSuggestionsAPI.test_suggestions_returns_list ___
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestSpellRebuildAPI.test_rebuild_requires_auth _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_ ERROR at setup of TestSpellRebuildAPI.test_rebuild_without_token_returns_401 _
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+______ ERROR at setup of TestGetSuggestions.test_get_suggestions_success ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+____ ERROR at setup of TestGetSuggestions.test_get_suggestions_empty_query ____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestGetSuggestions.test_get_suggestions_too_long ______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_ ERROR at setup of TestGetSuggestions.test_get_suggestions_limit_validation __
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_ ERROR at setup of TestGetSuggestions.test_get_suggestions_with_special_characters _
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_________ ERROR at setup of TestGetTrending.test_get_trending_success _________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_______ ERROR at setup of TestGetTrending.test_get_trending_empty_query _______
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__________ ERROR at setup of TestGetRelated.test_get_related_success __________
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestRebuildSuggestions.test_rebuild_requires_auth _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+_____ ERROR at setup of TestRebuildSuggestions.test_rebuild_admin_success _____
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+__ ERROR at setup of TestRebuildSuggestions.test_rebuild_non_admin_forbidden __
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+=========================== short test summary info ===========================
+ERROR tests/test_analytics.py::TestAnalyticsRepository::test_record_search_event
+ERROR tests/test_analytics.py::TestAnalyticsRepository::test_record_click_event
+ERROR tests/test_analytics.py::TestAnalyticsRepository::test_record_response_time
+ERROR tests/test_analytics.py::TestAnalyticsRepository::test_get_popular_queries
+ERROR tests/test_analytics.py::TestAnalyticsRepository::test_get_zero_result_queries
+ERROR tests/test_analytics.py::TestAnalyticsRepository::test_get_response_time_stats
+ERROR tests/test_analytics.py::TestAnalyticsRepository::test_get_query_trends
+ERROR tests/test_analytics.py::TestAnalyticsRepository::test_get_dashboard_overview
+ERROR tests/test_analytics.py::TestAnalyticsRepository::test_get_user_analytics
+ERROR tests/test_analytics.py::TestAnalyticsRepository::test_get_click_analytics
+ERROR tests/test_analytics.py::TestAnalyticsRepository::test_get_search_quality_metrics
+ERROR tests/test_analytics.py::TestAnalyticsService::test_record_search - Per...
+ERROR tests/test_analytics.py::TestAnalyticsService::test_get_dashboard - Per...
+ERROR tests/test_analytics.py::TestAnalyticsService::test_get_popular - Permi...
+ERROR tests/test_analytics.py::TestAnalyticsMetrics::test_record_search_query
+ERROR tests/test_analytics.py::TestAnalyticsMetrics::test_record_click_event
+ERROR tests/test_autocomplete.py::TestAutocomplete::test_autocomplete_requires_query
+ERROR tests/test_autocomplete.py::TestAutocomplete::test_autocomplete_query_too_short
+ERROR tests/test_autocomplete.py::TestAutocomplete::test_autocomplete_query_too_long
+ERROR tests/test_autocomplete.py::TestAutocomplete::test_autocomplete_basic
+ERROR tests/test_autocomplete.py::TestAutocomplete::test_autocomplete_case_insensitive
+ERROR tests/test_autocomplete.py::TestAutocomplete::test_autocomplete_empty_query
+ERROR tests/test_autocomplete.py::TestAutocomplete::test_autocomplete_whitespace_query
+ERROR tests/test_autocomplete.py::TestRecentSearches::test_get_recent_requires_auth
+ERROR tests/test_autocomplete.py::TestRecentSearches::test_get_recent_empty
+ERROR tests/test_autocomplete.py::TestRecentSearches::test_clear_recent_requires_auth
+ERROR tests/test_autocomplete.py::TestRecentSearches::test_clear_recent - Per...
+ERROR tests/test_autocomplete.py::TestPopularQueries::test_get_popular - Perm...
+ERROR tests/test_autocomplete.py::TestPopularQueries::test_get_popular_with_limit
+ERROR tests/test_autocomplete.py::TestPopularQueries::test_get_popular_limit_validation
+ERROR tests/test_autocomplete.py::TestNormalization::test_normalize_lowercase
+ERROR tests/test_autocomplete.py::TestNormalization::test_normalize_removes_punctuation
+ERROR tests/test_autocomplete.py::TestNormalization::test_normalize_collapses_whitespace
+ERROR tests/test_autocomplete.py::TestNormalization::test_normalize_removes_control_characters
+ERROR tests/test_autocomplete.py::TestNormalization::test_normalize_empty_after_normalization
+ERROR tests/test_enterprise_api.py::TestAPIVersioning::test_versioned_endpoint_v1
+ERROR tests/test_enterprise_api.py::TestAPIVersioning::test_versioned_endpoint_v2
+ERROR tests/test_enterprise_api.py::TestAPIVersioning::test_unversioned_endpoint_rejected
+ERROR tests/test_enterprise_api.py::TestAPIVersioning::test_version_agnostic_endpoints
+ERROR tests/test_enterprise_api.py::TestRateLimiting::test_rate_limit_headers_present
+ERROR tests/test_enterprise_api.py::TestRateLimiting::test_rate_limit_exceeded
+ERROR tests/test_enterprise_api.py::TestResponseStandardization::test_request_id_header
+ERROR tests/test_enterprise_api.py::TestResponseStandardization::test_error_response_format
+ERROR tests/test_enterprise_api.py::TestPagination::test_pagination_params - ...
+ERROR tests/test_enterprise_api.py::TestPagination::test_pagination_response_creation
+ERROR tests/test_enterprise_api.py::TestFiltering::test_filter_parsing - Perm...
+ERROR tests/test_enterprise_api.py::TestFiltering::test_multiple_filters - Pe...
+ERROR tests/test_enterprise_api.py::TestFiltering::test_filter_sql_generation
+ERROR tests/test_enterprise_api.py::TestFiltering::test_sort_parsing - Permis...
+ERROR tests/test_enterprise_api.py::TestFiltering::test_sort_sql_generation
+ERROR tests/test_enterprise_api.py::TestFiltering::test_invalid_field_rejection
+ERROR tests/test_enterprise_api.py::TestMonitoring::test_metrics_collector_initialization
+ERROR tests/test_enterprise_api.py::TestMonitoring::test_record_request - Per...
+ERROR tests/test_enterprise_api.py::TestWebhooks::test_webhook_service_initialization
+ERROR tests/test_enterprise_api.py::TestWebhooks::test_create_webhook - Permi...
+ERROR tests/test_enterprise_api.py::TestWebhooks::test_list_webhooks - Permis...
+ERROR tests/test_enterprise_api.py::TestSecurity::test_csrf_protection_exists
+ERROR tests/test_enterprise_api.py::TestSecurity::test_security_headers_middleware
+ERROR tests/test_enterprise_api.py::TestSecurity::test_request_size_limit - P...
+ERROR tests/test_enterprise_api.py::TestCaching::test_cache_service_initialization
+ERROR tests/test_enterprise_api.py::TestCaching::test_cache_operations - Perm...
+ERROR tests/test_enterprise_api.py::TestAuthentication::test_jwt_token_creation
+ERROR tests/test_enterprise_api.py::TestAuthentication::test_password_hashing
+ERROR tests/test_enterprise_api.py::TestAuthentication::test_brute_force_protection
+ERROR tests/test_enterprise_api.py::TestSchemas::test_auth_request_validation
+ERROR tests/test_enterprise_api.py::TestSchemas::test_webhook_create_validation
+ERROR tests/test_hybrid_search.py::TestBM25Engine::test_bm25_basic_scoring - ...
+ERROR tests/test_hybrid_search.py::TestBM25Engine::test_bm25_field_weights - ...
+ERROR tests/test_hybrid_search.py::TestBM25Engine::test_bm25_phrase_matching
+ERROR tests/test_hybrid_search.py::TestBM25Engine::test_bm25_stop_words - Per...
+ERROR tests/test_hybrid_search.py::TestBM25Engine::test_bm25_empty_document
+ERROR tests/test_hybrid_search.py::TestSemanticEngine::test_semantic_cosine_similarity
+ERROR tests/test_hybrid_search.py::TestSemanticEngine::test_semantic_search
+ERROR tests/test_hybrid_search.py::TestSemanticEngine::test_semantic_embedding_extraction
+ERROR tests/test_hybrid_search.py::TestFusionEngine::test_linear_fusion - Per...
+ERROR tests/test_hybrid_search.py::TestFusionEngine::test_rrf_fusion - Permis...
+ERROR tests/test_hybrid_search.py::TestDeduplicator::test_deduplicate_by_id
+ERROR tests/test_hybrid_search.py::TestDeduplicator::test_deduplicate_by_url
+ERROR tests/test_hybrid_search.py::TestIntentDetector::test_detect_question_intent
+ERROR tests/test_hybrid_search.py::TestIntentDetector::test_detect_keyword_intent
+ERROR tests/test_hybrid_search.py::TestIntentDetector::test_detect_natural_language
+ERROR tests/test_hybrid_search.py::TestIntentDetector::test_detect_phrase_intent
+ERROR tests/test_hybrid_search.py::TestIntentDetector::test_get_search_strategy
+ERROR tests/test_hybrid_search.py::TestMetadataBooster::test_title_boost - Pe...
+ERROR tests/test_hybrid_search.py::TestMetadataBooster::test_multiple_boosts
+ERROR tests/test_hybrid_search.py::TestScoreNormalizer::test_minmax_normalization
+ERROR tests/test_hybrid_search.py::TestScoreNormalizer::test_zscore_normalization
+ERROR tests/test_hybrid_search.py::TestScoreNormalizer::test_softmax_normalization
+ERROR tests/test_hybrid_search.py::TestFilterEngine::test_filter_by_file_type
+ERROR tests/test_hybrid_search.py::TestFilterEngine::test_filter_by_language
+ERROR tests/test_hybrid_search.py::TestScoringEngine::test_score_document_all_components
+ERROR tests/test_hybrid_search.py::TestScoringEngine::test_score_with_intent
+ERROR tests/test_hybrid_search.py::TestExplanationGenerator::test_explain_result
+ERROR tests/test_hybrid_search.py::TestExplanationGenerator::test_explain_search
+ERROR tests/test_hybrid_search.py::TestHybridMetrics::test_record_search - Pe...
+ERROR tests/test_hybrid_search.py::TestHybridMetrics::test_get_summary - Perm...
+ERROR tests/test_hybrid_search.py::TestHybridMetrics::test_get_top_queries - ...
+ERROR tests/test_hybrid_search.py::TestHybridConfig::test_default_config - Pe...
+ERROR tests/test_hybrid_search.py::TestHybridConfig::test_config_from_env - P...
+ERROR tests/test_hybrid_search.py::TestHybridConfig::test_config_to_dict - Pe...
+ERROR tests/test_hybrid_search.py::TestHybridSearchIntegration::test_full_search_pipeline
+ERROR tests/test_hybrid_search.py::TestHybridSearchIntegration::test_search_with_filters
+ERROR tests/test_incremental.py::TestHashing::test_calculate_string_hash - Pe...
+ERROR tests/test_incremental.py::TestHashing::test_calculate_string_hash_different_content
+ERROR tests/test_incremental.py::TestHashing::test_calculate_metadata_hash - ...
+ERROR tests/test_incremental.py::TestHashing::test_calculate_chunk_hash - Per...
+ERROR tests/test_incremental.py::TestHashing::test_calculate_vector_hash - Pe...
+ERROR tests/test_incremental.py::TestHashing::test_compare_hashes - Permissio...
+ERROR tests/test_incremental.py::TestHashing::test_verify_file_integrity - Pe...
+ERROR tests/test_incremental.py::TestChangeDetector::test_detect_new_document
+ERROR tests/test_incremental.py::TestChangeDetector::test_detect_unchanged_document
+ERROR tests/test_incremental.py::TestChangeDetector::test_detect_modified_document
+ERROR tests/test_incremental.py::TestChangeDetector::test_detect_deleted_document
+ERROR tests/test_incremental.py::TestChangeDetector::test_detect_metadata_only_change
+ERROR tests/test_incremental.py::TestDiffEngine::test_compute_diff_no_changes
+ERROR tests/test_incremental.py::TestDiffEngine::test_compute_diff_with_changes
+ERROR tests/test_incremental.py::TestDiffEngine::test_compute_diff_metadata_changed
+ERROR tests/test_incremental.py::TestDocumentScanner::test_scan_new_document
+ERROR tests/test_incremental.py::TestDocumentScanner::test_scan_unchanged_document
+ERROR tests/test_incremental.py::TestDocumentScanner::test_scan_deleted_document
+ERROR tests/test_incremental.py::TestIncrementalSynchronizer::test_synchronize_new_chunks
+ERROR tests/test_incremental.py::TestIncrementalSynchronizer::test_synchronize_with_removed_chunks
+ERROR tests/test_incremental.py::TestMetadataSynchronizer::test_sync_metadata_changes
+ERROR tests/test_incremental.py::TestMetadataSynchronizer::test_sync_metadata_no_changes
+ERROR tests/test_incremental.py::TestIndexTracker::test_initialize_document
+ERROR tests/test_incremental.py::TestIndexTracker::test_needs_reindex - Permi...
+ERROR tests/test_incremental.py::TestCleanupService::test_cleanup_dry_run - P...
+ERROR tests/test_incremental.py::TestCleanupService::test_remove_document_data
+ERROR tests/test_incremental.py::TestEventManager::test_publish_and_subscribe
+ERROR tests/test_incremental.py::TestEventManager::test_event_history - Permi...
+ERROR tests/test_incremental.py::TestEventManager::test_metrics_collector - P...
+ERROR tests/test_incremental.py::TestScheduler::test_add_and_get_task - Permi...
+ERROR tests/test_incremental.py::TestScheduler::test_enable_disable_task - Pe...
+ERROR tests/test_incremental.py::TestScheduler::test_get_all_tasks - Permissi...
+ERROR tests/test_incremental.py::TestIncrementalService::test_reindex_new_document
+ERROR tests/test_incremental.py::TestIncrementalService::test_scan_all - Perm...
+ERROR tests/test_incremental.py::TestIntegration::test_full_reindex_pipeline
+ERROR tests/test_incremental.py::TestIntegration::test_incremental_vs_full_reindex
+ERROR tests/test_incremental.py::TestEdgeCases::test_hash_result_data_structure
+ERROR tests/test_incremental.py::TestEdgeCases::test_document_change_defaults
+ERROR tests/test_incremental.py::TestEdgeCases::test_sync_result_defaults - P...
+ERROR tests/test_incremental.py::TestEdgeCases::test_metadata_tracker_history
+ERROR tests/test_incremental.py::TestEdgeCases::test_file_watcher_state - Per...
+ERROR tests/test_indexing.py::TestConfig::test_default_config - PermissionErr...
+ERROR tests/test_indexing.py::TestConfig::test_priority_values - PermissionEr...
+ERROR tests/test_indexing.py::TestQueue::test_enqueue_dequeue - PermissionErr...
+ERROR tests/test_indexing.py::TestQueue::test_priority_ordering - PermissionE...
+ERROR tests/test_indexing.py::TestQueue::test_peek - PermissionError: [WinErr...
+ERROR tests/test_indexing.py::TestQueue::test_remove - PermissionError: [WinE...
+ERROR tests/test_indexing.py::TestQueue::test_pause_resume - PermissionError:...
+ERROR tests/test_indexing.py::TestQueue::test_clear - PermissionError: [WinEr...
+ERROR tests/test_indexing.py::TestProgress::test_create_progress - Permission...
+ERROR tests/test_indexing.py::TestProgress::test_update_status - PermissionEr...
+ERROR tests/test_indexing.py::TestProgress::test_update_step - PermissionErro...
+ERROR tests/test_indexing.py::TestProgress::test_complete_job - PermissionErr...
+ERROR tests/test_indexing.py::TestProgress::test_fail_job - PermissionError: ...
+ERROR tests/test_indexing.py::TestProgress::test_cancel_job - PermissionError...
+ERROR tests/test_indexing.py::TestProgress::test_speed_calculation - Permissi...
+ERROR tests/test_indexing.py::TestProgress::test_eta_calculation - Permission...
+ERROR tests/test_indexing.py::TestRetry::test_should_retry_transient_error - ...
+ERROR tests/test_indexing.py::TestRetry::test_should_not_retry_non_retryable
+ERROR tests/test_indexing.py::TestRetry::test_should_not_retry_after_max - Pe...
+ERROR tests/test_indexing.py::TestRetry::test_exponential_backoff - Permissio...
+ERROR tests/test_indexing.py::TestRetry::test_execute_with_retry_success - Pe...
+ERROR tests/test_indexing.py::TestRetry::test_execute_with_retry_eventual_success
+ERROR tests/test_indexing.py::TestDeadLetterQueue::test_add_job - PermissionE...
+ERROR tests/test_indexing.py::TestDeadLetterQueue::test_list_jobs - Permissio...
+ERROR tests/test_indexing.py::TestDeadLetterQueue::test_count - PermissionErr...
+ERROR tests/test_indexing.py::TestHealthMonitor::test_register_worker - Permi...
+ERROR tests/test_indexing.py::TestHealthMonitor::test_unregister_worker - Per...
+ERROR tests/test_indexing.py::TestHealthMonitor::test_heartbeat - PermissionE...
+ERROR tests/test_indexing.py::TestHealthMonitor::test_update_status - Permiss...
+ERROR tests/test_indexing.py::TestHealthMonitor::test_record_completion - Per...
+ERROR tests/test_indexing.py::TestHealthMonitor::test_get_statistics - Permis...
+ERROR tests/test_indexing.py::TestMetrics::test_record_indexed_document - Per...
+ERROR tests/test_indexing.py::TestMetrics::test_record_failure - PermissionEr...
+ERROR tests/test_indexing.py::TestMetrics::test_record_retry - PermissionErro...
+ERROR tests/test_indexing.py::TestMetrics::test_record_cancellation - Permiss...
+ERROR tests/test_indexing.py::TestMetrics::test_avg_indexing_time - Permissio...
+ERROR tests/test_indexing.py::TestMetrics::test_reset - PermissionError: [Win...
+ERROR tests/test_indexing.py::TestScheduler::test_register_task - PermissionE...
+ERROR tests/test_indexing.py::TestScheduler::test_get_task_status - Permissio...
+ERROR tests/test_indexing.py::TestScheduler::test_get_all_tasks - PermissionE...
+ERROR tests/test_indexing.py::TestWorker::test_worker_creation - PermissionEr...
+ERROR tests/test_indexing.py::TestWorker::test_worker_start_stop - Permission...
+ERROR tests/test_indexing.py::TestWorker::test_worker_run_once_empty_queue - ...
+ERROR tests/test_indexing.py::TestTaskHelpers::test_chunk_text - PermissionEr...
+ERROR tests/test_indexing.py::TestTaskHelpers::test_chunk_empty_text - Permis...
+ERROR tests/test_indexing.py::TestTaskHelpers::test_detect_file_type - Permis...
+ERROR tests/test_indexing.py::TestTaskHelpers::test_calculate_file_checksum
+ERROR tests/test_indexing.py::TestIndexingIntegration::test_full_indexing_flow
+ERROR tests/test_indexing.py::TestIndexingIntegration::test_queue_persistence
+ERROR tests/test_indexing.py::TestIndexingIntegration::test_cancellation - Pe...
+ERROR tests/test_new_api_domains.py::TestDocumentsAPI::test_list_documents_unauthorized
+ERROR tests/test_new_api_domains.py::TestDocumentsAPI::test_list_documents_authorized
+ERROR tests/test_new_api_domains.py::TestDocumentsAPI::test_list_documents_with_pagination
+ERROR tests/test_new_api_domains.py::TestDocumentsAPI::test_upload_document_unauthorized
+ERROR tests/test_new_api_domains.py::TestDocumentsAPI::test_upload_document_invalid_type
+ERROR tests/test_new_api_domains.py::TestDocumentsAPI::test_delete_document_unauthorized
+ERROR tests/test_new_api_domains.py::TestUsersAPI::test_get_profile_unauthorized
+ERROR tests/test_new_api_domains.py::TestUsersAPI::test_get_profile_authorized
+ERROR tests/test_new_api_domains.py::TestUsersAPI::test_update_profile_unauthorized
+ERROR tests/test_new_api_domains.py::TestUsersAPI::test_get_preferences_unauthorized
+ERROR tests/test_new_api_domains.py::TestUsersAPI::test_get_activity_unauthorized
+ERROR tests/test_new_api_domains.py::TestNotificationsAPI::test_list_notifications_unauthorized
+ERROR tests/test_new_api_domains.py::TestNotificationsAPI::test_list_notifications_authorized
+ERROR tests/test_new_api_domains.py::TestNotificationsAPI::test_list_notifications_with_pagination
+ERROR tests/test_new_api_domains.py::TestNotificationsAPI::test_get_unread_count_unauthorized
+ERROR tests/test_new_api_domains.py::TestNotificationsAPI::test_mark_as_read_unauthorized
+ERROR tests/test_new_api_domains.py::TestNotificationsAPI::test_get_preferences_unauthorized
+ERROR tests/test_new_api_domains.py::TestNotificationsAPI::test_update_preferences_unauthorized
+ERROR tests/test_new_api_domains.py::TestAnalyticsAPI::test_get_usage_stats_unauthorized
+ERROR tests/test_new_api_domains.py::TestAnalyticsAPI::test_get_usage_stats_authorized
+ERROR tests/test_new_api_domains.py::TestAnalyticsAPI::test_get_search_analytics_unauthorized
+ERROR tests/test_new_api_domains.py::TestAnalyticsAPI::test_get_performance_metrics_unauthorized
+ERROR tests/test_new_api_domains.py::TestAnalyticsAPI::test_export_analytics_unauthorized
+ERROR tests/test_new_api_domains.py::TestRecommendationsAPI::test_get_related_unauthorized
+ERROR tests/test_new_api_domains.py::TestRecommendationsAPI::test_get_related_authorized
+ERROR tests/test_new_api_domains.py::TestRecommendationsAPI::test_get_personalized_unauthorized
+ERROR tests/test_new_api_domains.py::TestRecommendationsAPI::test_get_similar_searches_unauthorized
+ERROR tests/test_new_api_domains.py::TestAdminAPI::test_list_users_unauthorized
+ERROR tests/test_new_api_domains.py::TestAdminAPI::test_list_users_non_admin
+ERROR tests/test_new_api_domains.py::TestAdminAPI::test_list_users_admin - Pe...
+ERROR tests/test_new_api_domains.py::TestAdminAPI::test_get_system_stats_admin
+ERROR tests/test_new_api_domains.py::TestAdminAPI::test_get_queue_stats_admin
+ERROR tests/test_new_api_domains.py::TestAdminAPI::test_get_cache_stats_admin
+ERROR tests/test_new_api_domains.py::TestAdminAPI::test_clear_cache_admin - P...
+ERROR tests/test_new_api_domains.py::TestAdminAPI::test_get_audit_logs_admin
+ERROR tests/test_new_api_domains.py::TestPaginationIntegration::test_pagination_page_size_validation
+ERROR tests/test_new_api_domains.py::TestPaginationIntegration::test_pagination_page_validation
+ERROR tests/test_new_api_domains.py::TestPaginationIntegration::test_pagination_metadata_correctness
+ERROR tests/test_new_api_domains.py::TestSecurity::test_cors_headers_present
+ERROR tests/test_new_api_domains.py::TestSecurity::test_security_headers_present
+ERROR tests/test_new_api_domains.py::TestSecurity::test_rate_limit_headers - ...
+ERROR tests/test_new_api_domains.py::TestSecurity::test_invalid_token_rejected
+ERROR tests/test_new_api_domains.py::TestSecurity::test_expired_token_rejected
+ERROR tests/test_new_api_domains.py::TestBackwardCompatibility::test_storage_documents_endpoint_still_works
+ERROR tests/test_new_api_domains.py::TestBackwardCompatibility::test_storage_exports_endpoint_still_works
+ERROR tests/test_rbac.py::TestRBACService::test_get_role_level_super_admin - ...
+ERROR tests/test_rbac.py::TestRBACService::test_get_role_level_admin - Permis...
+ERROR tests/test_rbac.py::TestRBACService::test_get_role_level_moderator - Pe...
+ERROR tests/test_rbac.py::TestRBACService::test_get_role_level_user - Permiss...
+ERROR tests/test_rbac.py::TestRBACService::test_get_role_level_guest - Permis...
+ERROR tests/test_rbac.py::TestRBACService::test_get_role_level_unknown - Perm...
+ERROR tests/test_rbac.py::TestRBACService::test_super_admin_hierarchy_over_admin
+ERROR tests/test_rbac.py::TestRBACService::test_super_admin_hierarchy_over_guest
+ERROR tests/test_rbac.py::TestRBACService::test_admin_hierarchy_over_user - P...
+ERROR tests/test_rbac.py::TestRBACService::test_user_not_hierarchy_over_admin
+ERROR tests/test_rbac.py::TestRBACService::test_guest_not_hierarchy_over_user
+ERROR tests/test_rbac.py::TestRBACService::test_equal_role_hierarchy - Permis...
+ERROR tests/test_rbac.py::TestRBACService::test_super_admin_inherits_all - Pe...
+ERROR tests/test_rbac.py::TestRBACService::test_user_inherits_guest - Permiss...
+ERROR tests/test_rbac.py::TestRBACService::test_guest_inherits_none - Permiss...
+ERROR tests/test_rbac.py::TestRBACService::test_unknown_role_inherits_none - ...
+ERROR tests/test_rbac.py::TestRBACService::test_super_admin_can_access_anything
+ERROR tests/test_rbac.py::TestRBACService::test_admin_can_access_normal_resources
+ERROR tests/test_rbac.py::TestRBACService::test_admin_cannot_access_restricted
+ERROR tests/test_rbac.py::TestRBACService::test_moderator_can_access_allowed
+ERROR tests/test_rbac.py::TestRBACService::test_moderator_cannot_access_disallowed
+ERROR tests/test_rbac.py::TestRBACService::test_moderator_cannot_access_disallowed_action
+ERROR tests/test_rbac.py::TestRBACService::test_user_can_access_allowed - Per...
+ERROR tests/test_rbac.py::TestRBACService::test_user_cannot_access_restricted
+ERROR tests/test_rbac.py::TestRBACService::test_guest_can_access_allowed - Pe...
+ERROR tests/test_rbac.py::TestRBACService::test_guest_cannot_access_other - P...
+ERROR tests/test_rbac.py::TestRBACService::test_unknown_role_denied - Permiss...
+ERROR tests/test_rbac.py::TestRBACService::test_super_admin_permissions_all
+ERROR tests/test_rbac.py::TestRBACService::test_admin_permissions - Permissio...
+ERROR tests/test_rbac.py::TestRBACService::test_moderator_permissions - Permi...
+ERROR tests/test_rbac.py::TestRBACService::test_user_permissions - Permission...
+ERROR tests/test_rbac.py::TestRBACService::test_guest_permissions - Permissio...
+ERROR tests/test_rbac.py::TestRBACService::test_get_permissions_with_additional
+ERROR tests/test_rbac.py::TestRBACService::test_unknown_role_permissions - Pe...
+ERROR tests/test_rbac.py::TestRBACService::test_super_admin_check_any - Permi...
+ERROR tests/test_rbac.py::TestRBACService::test_admin_check_allowed - Permiss...
+ERROR tests/test_rbac.py::TestRBACService::test_admin_check_denied - Permissi...
+ERROR tests/test_rbac.py::TestRBACService::test_user_check_allowed - Permissi...
+ERROR tests/test_rbac.py::TestRBACService::test_user_check_denied - Permissio...
+ERROR tests/test_rbac.py::TestRBACService::test_guest_check_allowed - Permiss...
+ERROR tests/test_rbac.py::TestRBACService::test_guest_check_denied - Permissi...
+ERROR tests/test_rbac.py::TestRBACService::test_check_with_explicit_permissions
+ERROR tests/test_rbac.py::TestRBACService::test_require_admin_convenience - P...
+ERROR tests/test_rbac.py::TestRBACService::test_require_any_permission_success
+ERROR tests/test_rbac.py::TestRBACService::test_require_any_permission_failure
+ERROR tests/test_rbac.py::TestRBACService::test_require_all_permissions_success
+ERROR tests/test_rbac.py::TestRBACService::test_require_all_permissions_failure
+ERROR tests/test_spell.py::TestLevenshteinDistance::test_identical_strings - ...
+ERROR tests/test_spell.py::TestLevenshteinDistance::test_single_substitution
+ERROR tests/test_spell.py::TestLevenshteinDistance::test_single_insertion - P...
+ERROR tests/test_spell.py::TestLevenshteinDistance::test_single_deletion - Pe...
+ERROR tests/test_spell.py::TestLevenshteinDistance::test_transposition - Perm...
+ERROR tests/test_spell.py::TestLevenshteinDistance::test_max_distance_bound
+ERROR tests/test_spell.py::TestLevenshteinDistance::test_max_distance_bounding
+ERROR tests/test_spell.py::TestLevenshteinDistance::test_unicode_safe - Permi...
+ERROR tests/test_spell.py::TestLevenshteinDistance::test_empty_strings - Perm...
+ERROR tests/test_spell.py::TestLevenshteinDistance::test_length_difference_gt_max
+ERROR tests/test_spell.py::TestNormalizeText::test_lowercase - PermissionErro...
+ERROR tests/test_spell.py::TestNormalizeText::test_collapse_whitespace - Perm...
+ERROR tests/test_spell.py::TestNormalizeText::test_strip_accents - Permission...
+ERROR tests/test_spell.py::TestNormalizeText::test_remove_control_characters
+ERROR tests/test_spell.py::TestNormalizeText::test_unicode_nfc - PermissionEr...
+ERROR tests/test_spell.py::TestSpellAPI::test_spell_endpoint_requires_query
+ERROR tests/test_spell.py::TestSpellAPI::test_spell_query_too_long - Permissi...
+ERROR tests/test_spell.py::TestSpellAPI::test_spell_basic_response_shape - Pe...
+ERROR tests/test_spell.py::TestSpellAPI::test_spell_already_correct - Permiss...
+ERROR tests/test_spell.py::TestSpellAPI::test_spell_unicode_input - Permissio...
+ERROR tests/test_spell.py::TestSpellAPI::test_spell_empty_query - PermissionE...
+ERROR tests/test_spell.py::TestSpellAPI::test_spell_numbers - PermissionError...
+ERROR tests/test_spell.py::TestSpellAPI::test_spell_symbols - PermissionError...
+ERROR tests/test_spell.py::TestSpellAPI::test_spell_did_you_mean_when_changed
+ERROR tests/test_spell.py::TestSpellSuggestionsAPI::test_suggestions_requires_query
+ERROR tests/test_spell.py::TestSpellSuggestionsAPI::test_suggestions_returns_list
+ERROR tests/test_spell.py::TestSpellRebuildAPI::test_rebuild_requires_auth - ...
+ERROR tests/test_spell.py::TestSpellRebuildAPI::test_rebuild_without_token_returns_401
+ERROR tests/test_suggestions.py::TestGetSuggestions::test_get_suggestions_success
+ERROR tests/test_suggestions.py::TestGetSuggestions::test_get_suggestions_empty_query
+ERROR tests/test_suggestions.py::TestGetSuggestions::test_get_suggestions_too_long
+ERROR tests/test_suggestions.py::TestGetSuggestions::test_get_suggestions_limit_validation
+ERROR tests/test_suggestions.py::TestGetSuggestions::test_get_suggestions_with_special_characters
+ERROR tests/test_suggestions.py::TestGetTrending::test_get_trending_success
+ERROR tests/test_suggestions.py::TestGetTrending::test_get_trending_empty_query
+ERROR tests/test_suggestions.py::TestGetRelated::test_get_related_success - P...
+ERROR tests/test_suggestions.py::TestRebuildSuggestions::test_rebuild_requires_auth
+ERROR tests/test_suggestions.py::TestRebuildSuggestions::test_rebuild_admin_success
+ERROR tests/test_suggestions.py::TestRebuildSuggestions::test_rebuild_non_admin_forbidden
+324 errors in 1.14s

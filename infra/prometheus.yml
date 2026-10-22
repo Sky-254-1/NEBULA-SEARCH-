@@ -1,0 +1,64 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: nebula-production
+    region: default
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Load rules file for alerts
+rule_files:
+  - /etc/prometheus/alerts/*.yml
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Nebula Backend
+  - job_name: "nebula-backend"
+    static_configs:
+      - targets: ["backend:8000"]
+    metrics_path: "/metrics"
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "backend-${1}"
+
+  # Postgres metrics (requires pg_exporter or postgres_exporter)
+  - job_name: "postgres"
+    static_configs:
+      - targets: ["postgres:9187"]
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Redis metrics (requires redis_exporter)
+  - job_name: "redis"
+    static_configs:
+      - targets: ["redis:9121"]
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Node Exporter for system metrics
+  - job_name: "node"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Nginx metrics (requires nginx-prometheus-exporter or nginx with nginx-module-vts)
+  - job_name: "nginx"
+    static_configs:
+      - targets: ["nginx:9113"]
+    scrape_interval: 30s
+    scrape_timeout: 10s

@@ -1,0 +1,38 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nebula-ingress
+  namespace: nebula
+  labels:
+    app.kubernetes.io/name: nebula-ingress
+    app.kubernetes.io/part-of: nebula
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    cert-manager.io/cluster-issuer: nebula-letsencrypt
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - nebula.example.com
+      secretName: nebula-tls  # Auto-provisioned by cert-manager via cluster-issuer.yaml
+  rules:
+    - host: nebula.example.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: nebula-backend
+                port:
+                  number: 8000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nebula-frontend
+                port:
+                  number: 80

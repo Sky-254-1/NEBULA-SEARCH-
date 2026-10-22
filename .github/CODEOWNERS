@@ -1,0 +1,27 @@
+# CODEOWNERS
+# Default owners for everything
+* @Sky-254-1
+
+# Backend
+/backend/ @Sky-254-1
+/backend/app/ @Sky-254-1
+/backend/tests/ @Sky-254-1
+
+# Frontend
+/frontend/ @Sky-254-1
+/frontend/src/ @Sky-254-1
+/frontend/tests/ @Sky-254-1
+
+# Mobile
+/mobile/ @Sky-254-1
+/mobile/android/ @Sky-254-1
+/mobile/ios/ @Sky-254-1
+
+# Infrastructure
+/infra/ @Sky-254-1
+/.github/workflows/ @Sky-254-1
+/docker-compose*.yml @Sky-254-1
+
+# Documentation
+/docs/ @Sky-254-1
+*.md @Sky-254-1

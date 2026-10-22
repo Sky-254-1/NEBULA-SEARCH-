@@ -1,0 +1,44 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: nebula-backend-pdb
+  namespace: nebula
+  labels:
+    app.kubernetes.io/name: nebula-backend
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: nebula
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nebula-backend
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: nebula-frontend-pdb
+  namespace: nebula
+  labels:
+    app.kubernetes.io/name: nebula-frontend
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: nebula
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nebula-frontend
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: nebula-worker-pdb
+  namespace: nebula
+  labels:
+    app.kubernetes.io/name: nebula-vector-worker
+    app.kubernetes.io/component: worker
+    app.kubernetes.io/part-of: nebula
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nebula-vector-worker

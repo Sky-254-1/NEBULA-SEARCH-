@@ -1,0 +1,62 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+rule_files:
+  - "alert-rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+scrape_configs:
+  - job_name: "nebula-backend"
+    static_configs:
+      - targets: ["backend:8000"]
+        labels:
+          app: nebula
+          service: backend
+    metrics_path: /metrics
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    scheme: http
+
+  - job_name: "postgres-exporter"
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+        labels:
+          app: nebula
+          service: postgres
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  - job_name: "redis-exporter"
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+        labels:
+          app: nebula
+          service: redis
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+        labels:
+          app: nebula
+          service: node
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  - job_name: "alertmanager"
+    static_configs:
+      - targets: ["alertmanager:9093"]
+        labels:
+          app: nebula
+          service: alertmanager
+    metrics_path: /metrics
+    scrape_interval: 15s
+    scrape_timeout: 10s

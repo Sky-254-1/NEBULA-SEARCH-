@@ -1,0 +1,39 @@
+name: Branch Protection Check
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Check for required status checks
+      run: |
+        echo "Branch protection requires:"
+        echo "  - CI (ci.yml) must pass"
+        echo "  - CodeQL must pass"
+        echo "  - No merge conflicts"
+        echo ""
+        echo "This workflow ensures PRs can be merged safely."
+
+    - name: Validate PR title
+      uses: amannn/action-semantic-pull-request@v5
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        types: |
+          feat
+          fix
+          docs
+          style
+          refactor
+          perf
+          test
+          build
+          ci
+          chore
+          revert

@@ -1,0 +1,27 @@
+﻿.............................................E                           [100%]
+=================================== ERRORS ====================================
+_ ERROR at teardown of TestBackwardCompatibility.test_storage_exports_endpoint_still_works _
+tests\conftest.py:44: in init_test_database
+    os.remove(db_path)
+E   PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'test_nebula.db'
+---------------------------- Captured stderr call -----------------------------
+2026-07-22 09:02:09,596 DEBUG [asyncio] Using proactor: IocpProactor
+2026-07-22 09:02:09,610 DEBUG [aiosqlite] executing <function connect.<locals>.connector at 0x000001DB2A2A8B40>
+2026-07-22 09:02:09,616 DEBUG [aiosqlite] operation <function connect.<locals>.connector at 0x000001DB2A2A8B40> completed
+2026-07-22 09:02:09,616 DEBUG [aiosqlite] executing functools.partial(<built-in method close of sqlite3.Connection object at 0x000001DB2A288D60>)
+2026-07-22 09:02:09,617 DEBUG [aiosqlite] operation functools.partial(<built-in method close of sqlite3.Connection object at 0x000001DB2A288D60>) completed
+2026-07-22 09:02:09,617 DEBUG [aiosqlite] executing <function Connection.stop.<locals>.close_and_stop at 0x000001DB2A157950>
+2026-07-22 09:02:09,617 DEBUG [aiosqlite] operation <function Connection.stop.<locals>.close_and_stop at 0x000001DB2A157950> completed
+2026-07-22 09:02:09,620 INFO [httpx] HTTP Request: GET http://testserver/api/v1/storage/exports "HTTP/1.1 200 OK"
+------------------------------ Captured log call ------------------------------
+DEBUG    asyncio:proactor_events.py:633 Using proactor: IocpProactor
+DEBUG    aiosqlite:core.py:62 executing <function connect.<locals>.connector at 0x000001DB2A2A8B40>
+DEBUG    aiosqlite:core.py:67 operation <function connect.<locals>.connector at 0x000001DB2A2A8B40> completed
+DEBUG    aiosqlite:core.py:62 executing functools.partial(<built-in method close of sqlite3.Connection object at 0x000001DB2A288D60>)
+DEBUG    aiosqlite:core.py:67 operation functools.partial(<built-in method close of sqlite3.Connection object at 0x000001DB2A288D60>) completed
+DEBUG    aiosqlite:core.py:62 executing <function Connection.stop.<locals>.close_and_stop at 0x000001DB2A157950>
+DEBUG    aiosqlite:core.py:67 operation <function Connection.stop.<locals>.close_and_stop at 0x000001DB2A157950> completed
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/v1/storage/exports "HTTP/1.1 200 OK"
+=========================== short test summary info ===========================
+ERROR tests/test_new_api_domains.py::TestBackwardCompatibility::test_storage_exports_endpoint_still_works
+45 passed, 1 error in 3.72s

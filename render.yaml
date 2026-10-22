@@ -1,0 +1,107 @@
+services:
+  - type: web
+    name: nebula-backend
+    runtime: python
+    plan: standard
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && gunicorn app.main:app -c gunicorn.conf.py
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nebula-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: nebula-redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: PYTHONPATH
+        value: /opt/render/project/src/backend
+      - key: WORKERS_PER_CORE
+        value: "1"
+      - key: MAX_WORKERS
+        value: "2"
+      - key: LOG_LEVEL
+        value: info
+      - key: STORAGE_ROOT
+        value: /opt/render/project/src/backend/storage
+      - key: CORS_ORIGINS
+        value: https://.vercel.app,http://localhost:5173,http://localhost:3000
+        sync: false
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: AUTH_COOKIE_MODE
+        value: "true"
+      - key: LOG_JSON_FORMAT
+        value: "true"
+    disk:
+      name: nebula-storage
+      mountPath: /opt/render/project/src/backend/storage
+      sizeGB: 20
+    healthCheckPath: /health
+    autoDeploy: yes
+    numInstances: 1
+
+  - type: redis
+    name: nebula-redis
+    plan: standard
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
+
+  - type: worker
+    name: nebula-index-worker
+    runtime: python
+    plan: standard
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && PYTHONPATH=. python -m vector.worker
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nebula-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: nebula-redis
+          property: connectionString
+      - key: PYTHONPATH
+        value: /opt/render/project/src/backend
+    disk:
+      name: nebula-worker-storage
+      mountPath: /opt/render/project/src/backend/storage
+      sizeGB: 20
+    autoDeploy: yes
+    numInstances: 1
+
+  - type: cron
+    name: nebula-daily-tasks
+    runtime: python
+    schedule: "0 3 * * *"
+    buildCommand: cd backend && pip install -r requirements.txt
+    command: cd backend && PYTHONPATH=. python -m app.incremental.scheduler
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nebula-db
+          property: connectionString
+      - key: PYTHONPATH
+        value: /opt/render/project/src/backend
+
+databases:
+  - name: nebula-db
+    plan: standard
+    postgresMajorVersion: "16"
+    databaseName: nebula
+    user: nebula
+    diskSizeGB: 20
+    ipAllowList: []

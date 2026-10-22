@@ -1,0 +1,163 @@
+# Nebula Search Engine - Helm Values
+# Override these values for your deployment environment
+
+# Global settings
+global:
+  environment: production
+  imageRegistry: ""
+  imageTag: latest
+
+# Backend service configuration
+backend:
+  replicaCount: 2
+  image:
+    repository: nebula/backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8000
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  storage:
+    size: 5Gi
+    storageClass: standard
+  env:
+    APP_ENV: production
+    LOG_LEVEL: INFO
+    LOG_JSON_FORMAT: "true"
+    CORS_ORIGINS: "https://nebula.example.com"
+
+# Frontend service configuration
+frontend:
+  replicaCount: 2
+  image:
+    repository: nebula/frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+
+# Vector worker configuration
+vectorWorker:
+  replicaCount: 1
+  image:
+    repository: nebula/vector-worker
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 80
+
+# PostgreSQL configuration
+postgresql:
+  enabled: true
+  auth:
+    database: nebula
+    username: nebula
+    password: ""
+    existingSecret: nebula-secrets
+    secretKeys:
+      adminPasswordKey: postgres-password
+      userPasswordKey: password
+  primary:
+    persistence:
+      size: 10Gi
+    resources:
+      requests:
+        cpu: 500m
+        memory: 512Mi
+
+# Redis configuration
+redis:
+  enabled: true
+  auth:
+    password: ""
+    existingSecret: nebula-secrets
+    existingSecretPasswordKey: redis-password
+  master:
+    persistence:
+      size: 5Gi
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: nginx
+  host: nebula.example.com
+  tls:
+    enabled: true
+    secretName: nebula-tls
+    clusterIssuer: nebula-letsencrypt
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+
+# Monitoring stack
+monitoring:
+  enabled: true
+  prometheus:
+    retention: 7d
+    storage: 10Gi
+  grafana:
+    adminPassword: admin
+    storage: 5Gi
+  loki:
+    retention: 7d
+    storage: 20Gi
+
+# Backup configuration
+backup:
+  enabled: true
+  schedule: "0 2 * * *"
+  retention: 30
+  storage: 20Gi
+  s3:
+    bucket: nebula-backups
+    region: us-east-1
+
+# Resource quotas
+resourceQuotas:
+  enabled: true
+  hard:
+    requests.cpu: "4"
+    requests.memory: "8Gi"
+    limits.cpu: "8"
+    limits.memory: "16Gi"
+    persistentvolumeclaims: "10"

@@ -1,0 +1,48 @@
+global:
+  resolve_timeout: 5m
+  # Slack webhook for alert notifications (optional)
+  # slack_api_url: 'https://hooks.slack.com/services/xxx/xxx/xxx'
+  # Email configuration (optional)
+  # smtp_smarthost: 'smtp.gmail.com:587'
+  # smtp_from: 'alerts@nebula-search.com'
+  # smtp_auth_username: 'alerts@nebula-search.com'
+  # smtp_auth_password: 'password'
+
+route:
+  group_by: ['alertname', 'severity', 'job']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: 'default'
+  routes:
+    - receiver: 'critical'
+      match:
+        severity: critical
+      repeat_interval: 15m
+    - receiver: 'warning'
+      match:
+        severity: warning
+      repeat_interval: 1h
+
+receivers:
+  - name: 'default'
+    webhook_configs:
+      - url: 'http://nebula-webhook:8000/api/v1/webhooks/alertmanager'
+        send_resolved: true
+
+  - name: 'critical'
+    webhook_configs:
+      - url: 'http://nebula-webhook:8000/api/v1/webhooks/alertmanager'
+        send_resolved: true
+
+  - name: 'warning'
+    webhook_configs:
+      - url: 'http://nebula-webhook:8000/api/v1/webhooks/alertmanager'
+        send_resolved: true
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'job']

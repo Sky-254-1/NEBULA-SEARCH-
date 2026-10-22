@@ -1,0 +1,26 @@
+apiVersion: v2
+name: nebula
+description: Nebula Search Engine - A private, AI-powered hybrid search engine
+type: application
+version: 1.1.0
+appVersion: "1.1.0"
+keywords:
+  - search
+  - ai
+  - hybrid-search
+  - vector-search
+home: https://github.com/Sky-254-1/Nebula-search-engine-
+sources:
+  - https://github.com/Sky-254-1/Nebula-search-engine-
+maintainers:
+  - name: Nebula Team
+    email: team@nebula-search.com
+dependencies:
+  - name: postgresql
+    version: "~12.0"
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: redis
+    version: "~18.0"
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled

@@ -1,0 +1,107 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nebula-redis
+  labels:
+    app: nebula
+    component: cache
+spec:
+  selector:
+    app: nebula
+    component: cache
+  ports:
+  - port: 6379
+    targetPort: 6379
+    name: redis
+  clusterIP: None
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nebula-elasticsearch
+  labels:
+    app: nebula
+    component: elasticsearch
+spec:
+  selector:
+    app: nebula
+    component: elasticsearch
+  ports:
+  - port: 9200
+    targetPort: 9200
+    name: http
+  - port: 9300
+    targetPort: 9300
+    name: transport
+  clusterIP: None
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nebula-rabbitmq
+  labels:
+    app: nebula
+    component: rabbitmq
+spec:
+  selector:
+    app: nebula
+    component: rabbitmq
+  ports:
+  - port: 5672
+    targetPort: 5672
+    name: amqp
+  - port: 15672
+    targetPort: 15672
+    name: management
+  clusterIP: None
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nebula-kafka
+  labels:
+    app: nebula
+    component: kafka
+spec:
+  selector:
+    app: nebula
+    component: kafka
+  ports:
+  - port: 9092
+    targetPort: 9092
+    name: kafka
+  clusterIP: None
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nebula-prometheus
+  labels:
+    app: nebula
+    component: prometheus
+spec:
+  selector:
+    app: nebula
+    component: prometheus
+  ports:
+  - port: 9090
+    targetPort: 9090
+    name: http
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nebula-grafana
+  labels:
+    app: nebula
+    component: grafana
+spec:
+  selector:
+    app: nebula
+    component: grafana
+  ports:
+  - port: 3000
+    targetPort: 3000
+    name: http
+  type: ClusterIP

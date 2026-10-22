@@ -1,0 +1,87 @@
+groups:
+  - name: nebula_alerts
+    interval: 15s
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          (sum by (endpoint) (rate(nebula_http_requests_total{status=~"5.."}[5m]))
+           /
+           sum by (endpoint) (rate(nebula_http_requests_total[5m]))) * 100 > 5
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate on {{ $labels.endpoint }}"
+          description: "Error rate is {{ humanizePercentage $value }} on endpoint {{ $labels.endpoint }} (threshold: 5%)"
+
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.99, sum by (le, endpoint) (rate(nebula_http_request_duration_seconds_bucket[5m]))) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High p99 latency on {{ $labels.endpoint }}"
+          description: "p99 latency is {{ humanizeDuration $value }} on endpoint {{ $labels.endpoint }} (threshold: 500ms)"
+
+      - alert: HighCPU
+        expr: |
+          (1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ humanizePercentage $value }} on instance {{ $labels.instance }} (threshold: 80%)"
+
+      - alert: HighMemory
+        expr: |
+          (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ humanizePercentage $value }} on instance {{ $labels.instance }} (threshold: 90%)"
+
+      - alert: SearchEngineDown
+        expr: |
+          absent(up{service="backend"}) == 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Nebula Search Engine is down"
+          description: "The backend service has been unresponsive for over 1 minute."
+
+      - alert: DatabaseDown
+        expr: |
+          absent(up{service="postgres"}) == 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "The database exporter has been unresponsive for over 1 minute."
+
+      - alert: RedisDown
+        expr: |
+          absent(up{service="redis"}) == 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis cache is down"
+          description: "The Redis exporter has been unresponsive for over 1 minute."
+
+      - alert: HighRateLimitRejection
+        expr: |
+          (sum by (endpoint) (rate(nebula_http_requests_total{status="429"}[5m]))
+           /
+           sum by (endpoint) (rate(nebula_http_requests_total[5m]))) * 100 > 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High rate-limit rejection on {{ $labels.endpoint }}"
+          description: "Rate-limit rejections are {{ humanizePercentage $value }} on endpoint {{ $labels.endpoint }} (threshold: 10%)"

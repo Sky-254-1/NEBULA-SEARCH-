@@ -1,0 +1,61 @@
+appId: com.nebula.search
+productName: Nebula Search
+copyright: Copyright © 2024 Nebula Search
+
+directories:
+  output: dist
+  buildResources: build
+
+files:
+  - build/**/*
+  - node_modules/**/*
+  - main.js
+  - preload.js
+  - package.json
+
+mac:
+  category: public.app-category.search
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  identity: null
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  publisherName: Nebula Search
+
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+  category: Network
+  desktop:
+    - com.nebula.search.desktop
+
+publish:
+  provider: github
+  owner: your-github-username
+  repo: Nebula-search-engine-
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: Nebula Search
+  uninstallDisplayName: Nebula Search

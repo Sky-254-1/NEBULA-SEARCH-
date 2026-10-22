@@ -1,0 +1,129 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nebula-postgres
+  labels:
+    app: nebula
+    component: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nebula
+      component: database
+  template:
+    metadata:
+      labels:
+        app: nebula
+        component: database
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        fsGroup: 999
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: nebula-secrets
+              key: postgres-user
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: nebula-secrets
+              key: postgres-password
+        - name: POSTGRES_DB
+          value: nebula
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1"
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        - name: postgres-config
+          mountPath: /docker-entrypoint-initdb.d
+          readOnly: true
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - nebula
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - nebula
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: postgres-data
+        persistentVolumeClaim:
+          claimName: nebula-postgres-pvc
+      - name: postgres-config
+        configMap:
+          name: nebula-postgres-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nebula-postgres
+  labels:
+    app: nebula
+    component: database
+spec:
+  selector:
+    app: nebula
+    component: database
+  ports:
+  - port: 5432
+    targetPort: 5432
+    name: postgres
+  clusterIP: None
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nebula-postgres-config
+  labels:
+    app: nebula
+    component: database
+data:
+  initdb.sql: |
+    -- Database initialization
+    CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nebula-postgres-pvc
+  labels:
+    app: nebula
+    component: database
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard

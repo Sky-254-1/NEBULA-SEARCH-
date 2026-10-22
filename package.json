@@ -1,0 +1,44 @@
+{
+  "name": "nebula-search-engine",
+  "version": "1.1.0",
+  "private": true,
+  "scripts": {
+    "e2e": "playwright test --config=tests/e2e/playwright.config.ts",
+    "e2e:ui": "playwright test --config=tests/e2e/playwright.config.ts --ui",
+    "e2e:headed": "playwright test --config=tests/e2e/playwright.config.ts --headed",
+    "e2e:report": "playwright show-report tests/e2e/playwright-report",
+    "e2e:install": "playwright install chromium",
+    "vector:worker": "cd backend && python -m vector.worker",
+    "vector:index": "cd backend && python -c \"import asyncio; from vector.worker import process_job; print('Use vector:worker for queue processing')\"",
+    "mobile:install": "cd mobile && npm install",
+    "mobile:sync": "cd mobile && npx cap sync",
+    "mobile:android": "cd mobile && npx cap open android",
+    "mobile:ios": "cd mobile && npx cap open ios",
+    "mobile:build:web": "cd frontend && npm run build && cd ../mobile && npx cap copy"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^20.17.0",
+    "@vitest/coverage-v8": "^4.1.10",
+    "playwright": "^1.61.1",
+    "typescript": "^5.7.0"
+  },
+  "description": "<div align=\"center\">",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sky-254-1/NEBULA-SEARCH-.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Sky-254-1/NEBULA-SEARCH-/issues"
+  },
+  "homepage": "https://github.com/Sky-254-1/NEBULA-SEARCH-#readme"
+}

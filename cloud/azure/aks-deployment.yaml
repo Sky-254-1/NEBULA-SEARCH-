@@ -1,0 +1,170 @@
+# Azure AKS Deployment Configuration for Nebula Search
+
+# 1. Create AKS Cluster
+# az group create --name nebula-rg --location eastus
+# az aks create \
+#   --resource-group nebula-rg \
+#   --name nebula-search \
+#   --node-count 3 \
+#   --enable-cluster-autoscaler \
+#   --min-count 2 \
+#   --max-count 10 \
+#   --node-vm-size Standard_DS2_v2 \
+#   --enable-managed-identity \
+#   --network-plugin azure
+
+# 2. Install Azure File CSI Driver for persistent volumes
+# helm repo add azurefile-csi-driver https://kubernetes.github.io/azurefile-csi-driver
+# helm install azurefile-csi-driver azurefile-csi-driver/azurefile-csi-driver
+
+# 3. Install Prometheus Operator
+# helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+# helm install prometheus prometheus-community/kube-prometheus-stack
+
+# 4. Apply Kubernetes manifests from kubernetes/ directory
+# kubectl apply -f kubernetes/configs/
+# kubectl apply -f kubernetes/deployments/
+# kubectl apply -f kubernetes/services/
+
+---
+# Azure-specific Ingress for load balancing
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nebula-ingress
+  labels:
+    app: nebula
+  annotations:
+    kubernetes.io/ingress.class: azure/application-gateway
+    appgw.ingress.kubernetes.io/cookie-based-affinity: "true"
+    appgw.ingress.kubernetes.io/request-timeout: "60"
+    appgw.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  rules:
+  - host: nebula-search.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nebula-nginx
+            port:
+              number: 443
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: nebula-nginx
+            port:
+              number: 443
+
+---
+# Azure Disk Storage Class for persistent volumes
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nebula-storage
+  labels:
+    app: nebula
+provisioner: disk.csi.azure.com
+parameters:
+  skuname: Premium_LRS
+  kind: Managed
+  maxShares: "1"
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
+allowedTopologies:
+- matchLabelExpressions:
+  - key: topologies.kubernetes.io/zone
+    values:
+    - eastus-1
+    - eastus-2
+    - eastus-3
+
+---
+# Azure Monitor Agent (DaemonSet for log collection)
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nebula-azure-monitor
+  labels:
+    app: nebula
+    component: logging
+spec:
+  selector:
+    matchLabels:
+      app: nebula
+      component: logging
+  template:
+    metadata:
+      labels:
+        app: nebula
+        component: logging
+    spec:
+      containers:
+      - name: azure-monitor-agent
+        image: mcr.microsoft.com/azurediagnostics/azuremonitoragent:latest
+        command: ["azmonitoragent"]
+        args: ["--config"]
+        volumeMounts:
+        - name: config
+          mountPath: /etc/azmon/config
+        - name: varlog
+          mountPath: /var/log
+        securityContext:
+          runAsUser: 0
+      volumes:
+      - name: config
+        configMap:
+          name: azure-monitor-config
+      - name: varlog
+        hostPath:
+          path: /var/log
+
+---
+# Azure Monitor ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: azure-monitor-config
+data:
+  config.yaml: |
+    metrics:
+      enabled: true
+      collectionInterval: 60
+    logs:
+      enabled: true
+      collectionInterval: 60
+      logFiles:
+      - path: /var/log/nginx/nebula-access.log
+      - path: /var/log/nginx/nebula-error.log
+      - path: /app/logs/*.log
+
+---
+# Azure Key Vault FlexVolume (for secrets - optional)
+# apiVersion: v1
+# kind: Pod
+# metadata:
+#   name: nebula-pod
+# spec:
+#   containers:
+#   - name: nebula-container
+#     image: nebula-backend:latest
+#     env:
+#     - name: DATABASE_URL
+#       valueFrom:
+#         secretKeyRef:
+#           name: nebula-secrets
+#           key: database-url
+#     volumeMounts:
+#     - name: keyvault
+#       mountPath: /etc/keyvault
+#       readOnly: true
+#   volumes:
+#   - name: keyvault
+#     csi:
+#       driver: secrets-store.csi.k8s.io
+#       readOnly: true
+#       volumeAttributes:
+#         secretProviderClass: nebula-secret-provider

@@ -1,0 +1,65 @@
+app = "nebula-search"
+kill_signal = "SIGTERM"
+kill_timeout = 60
+
+[build]
+  builder = "dockerfile"
+  dockerfile = "docker/Dockerfile.prod"
+  target = "runtime"
+  ignorefile = ".dockerignore"
+
+[deploy]
+  release_command = "python -m app.database.migrate upgrade head || python -c \"from app.database import init_db; import asyncio; asyncio.run(init_db())\""
+  strategy = "rolling"
+
+[[services]]
+  internal_port = 8000
+  processes = ["app"]
+  protocol = "tcp"
+
+  [[services.ports]]
+    handlers = ["http"]
+    force_https = true
+    port = "80"
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = "443"
+
+  [[services.tcp_checks]]
+    grace_period = "30s"
+    interval = "15s"
+    restart_limit = 6
+    timeout = "5s"
+
+  [[services.http_checks]]
+    grace_period = "30s"
+    interval = "15s"
+    method = "get"
+    path = "/health"
+    protocol = "http"
+    restart_limit = 6
+    timeout = "5s"
+    tls_skip_verify = false
+
+  [[services.concurrency]]
+    hard_limit = 500
+    soft_limit = 250
+    type = "requests"
+
+[env]
+  APP_ENV = "production"
+  PYTHONPATH = "/app"
+  LOG_LEVEL = "info"
+  WORKERS_PER_CORE = "2"
+  MAX_WORKERS = "4"
+  USE_GUNICORN = "1"
+
+[[statics]]
+  guest_path = "/app/static"
+  url_prefix = "/static"
+
+[[mounts]]
+  destination = "/app/storage"
+  source = "nebula_storage"
+  processes = ["app"]

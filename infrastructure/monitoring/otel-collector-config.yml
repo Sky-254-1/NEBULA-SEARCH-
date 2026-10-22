@@ -1,0 +1,129 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+        max_recv_msg_size_mib: 16
+        max_concurrent_streams: 100
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - "http://*"
+            - "https://*"
+          allowed_headers:
+            - "content-type"
+            - "x-forwarded-for"
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+    send_batch_max_size: 2048
+
+  attributes:
+    actions:
+      - key: service.name
+        value: nebula
+        action: upsert
+      - key: environment
+        value: production
+        action: upsert
+      - key: deployment.environment
+        value: production
+        action: upsert
+
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+  filter:
+    error_mode: ignore
+    metrics:
+      exclude:
+        match_type: regexp
+        metric_names:
+          - "otelcol_process_.*"
+
+exporters:
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    namespace: nebula
+    const_labels:
+      source: otel
+    resource_to_telemetry_conversion:
+      enabled: true
+    enable_open_metrics: true
+    add_metric_suffixes: false
+
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+    tls:
+      insecure: true
+    tenant: nebula
+    labels:
+      attributes:
+        - service.name
+        - service.namespace
+        - environment
+        - deployment.environment
+
+  logging:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  pprof:
+    endpoint: 0.0.0.0:1777
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+service:
+  extensions:
+    - health_check
+    - pprof
+    - zpages
+
+  pipelines:
+    traces:
+      receivers:
+        - otlp
+      processors:
+        - memory_limiter
+        - attributes
+        - batch
+      exporters:
+        - otlp/jaeger
+        - logging
+
+    metrics:
+      receivers:
+        - otlp
+      processors:
+        - memory_limiter
+        - attributes
+        - filter
+        - batch
+      exporters:
+        - prometheus
+        - logging
+
+    logs:
+      receivers:
+        - otlp
+      processors:
+        - memory_limiter
+        - attributes
+        - batch
+      exporters:
+        - loki
+        - logging

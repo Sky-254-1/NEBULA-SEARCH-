@@ -1,0 +1,134 @@
+.voice-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.voice-search-btn {
+  background: transparent;
+  border: 2px solid rgba(var(--color-accent-rgb), 0.5);
+  color: inherit;
+  cursor: pointer;
+  padding: 0.75rem;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  line-height: 1;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  position: relative;
+}
+
+.voice-search-btn:hover:not(:disabled) {
+  background: rgba(var(--color-accent-rgb), 0.1);
+  border-color: rgba(var(--color-accent-rgb), 0.7);
+  transform: scale(1.05);
+}
+
+.voice-search-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.voice-search-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.voice-search-btn.recording {
+  background: rgba(var(--color-error-rgb), 0.2);
+  border-color: rgba(var(--color-error-rgb), 0.7);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.voice-search-btn.recording:hover {
+  background: rgba(var(--color-error-rgb), 0.3);
+  border-color: rgba(var(--color-error-rgb), 0.9);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(var(--color-error-rgb), 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(var(--color-error-rgb), 0);
+  }
+}
+
+.voice-icon-recording {
+  animation: scale-pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes scale-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+.voice-spinner {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.voice-status {
+  color: var(--color-accent, #8b5cf6);
+  font-size: 0.875rem;
+  font-weight: 500;
+  animation: fade-in 0.3s ease;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.voice-error {
+  color: var(--color-error, #ef4444);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Accessibility */
+.voice-search-btn:focus-visible {
+  outline: 2px solid var(--color-accent, #8b5cf6);
+  outline-offset: 3px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: light) {
+  .voice-search-btn {
+    border-color: rgba(var(--color-accent-rgb), 0.6);
+  }
+  
+  .voice-search-btn:hover:not(:disabled) {
+    background: rgba(var(--color-accent-rgb), 0.15);
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .voice-search-btn {
+    width: 3rem;
+    height: 3rem;
+    padding: 0.625rem;
+    font-size: 1.25rem;
+  }
+}

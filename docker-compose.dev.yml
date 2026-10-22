@@ -1,0 +1,62 @@
+services:
+  # Development overrides
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+      target: development
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/vector:/app/vector
+      - ./backend/tests:/app/tests
+      - ./backend/static:/app/static
+      - ./backend/storage:/app/storage
+    environment:
+      - APP_ENV=development
+      - LOG_LEVEL=debug
+      - RELOAD=true
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile.dev
+      target: development
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/package.json:/app/package.json
+      - ./frontend/vite.config.ts:/app/vite.config.ts
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:8000
+    ports:
+      - "3000:3000"
+    command: npm run dev
+
+  postgres:
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=nebula
+      - POSTGRES_PASSWORD=dev_password
+      - POSTGRES_DB=nebula
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  elasticsearch:
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+
+  minio:
+    ports:
+      - "9000:9000"
+      - "9001:9001"

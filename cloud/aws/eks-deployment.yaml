@@ -1,0 +1,178 @@
+# AWS EKS Deployment Configuration for Nebula Search
+# This file should be applied after creating the EKS cluster
+
+# 1. Create EKS Cluster with eksctl
+# eksctl create cluster \
+#   --name nebula-search \
+#   --version 1.30 \
+#   --region us-east-1 \
+#   --nodegroup-name standard-workers \
+#   --node-type t3.large \
+#   --nodes 3 \
+#   --nodes-min 2 \
+#   --nodes-max 10 \
+#   --managed
+
+# 2. Install AWS Load Balancer Controller
+# helm repo add eks https://aws.github.io/eks-charts
+# helm install aws-lb-controller eks/aws-load-balancer-controller \
+#   -n kube-system \
+#   --set clusterName=nebula-search \
+#   --set serviceAccount.create=false \
+#   --set serviceAccount.name=aws-load-balancer-controller
+
+# 3. Install cert-manager for SSL certificates
+# kubectl apply -f https://cert-manager.io/docs/installation/manifests/cert-manager.yaml
+
+# 4. Install Prometheus Operator
+# helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+# helm install prometheus prometheus-community/kube-prometheus-stack
+
+# 5. Apply Kubernetes manifests from kubernetes/ directory
+# kubectl apply -f kubernetes/configs/
+# kubectl apply -f kubernetes/deployments/
+# kubectl apply -f kubernetes/services/
+
+---
+# EKS-specific Ingress for load balancing
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nebula-ingress
+  labels:
+    app: nebula
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-port: "80"
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:123456789012:certificate/your-certificate-id
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS-1-2-2017-01
+    alb.ingress.kubernetes.io/success-codes: "200-399"
+spec:
+  rules:
+  - host: nebula-search.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nebula-nginx
+            port:
+              number: 443
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: nebula-nginx
+            port:
+              number: 443
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nebula-nginx
+            port:
+              number: 80
+
+---
+# AWS EBS Storage Class for persistent volumes
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nebula-storage
+  labels:
+    app: nebula
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+  encrypted: "true"
+  iops: "3000"
+  throughput: "125"
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
+
+---
+# AWS CloudWatch Logs Agent (DaemonSet for log collection)
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nebula-cloudwatch-logs
+  labels:
+    app: nebula
+    component: logging
+spec:
+  selector:
+    matchLabels:
+      app: nebula
+      component: logging
+  template:
+    metadata:
+      labels:
+        app: nebula
+        component: logging
+    spec:
+      containers:
+      - name: cloudwatch-logs
+        image: amazon/aws-cloudwatch-agent:latest
+        volumeMounts:
+        - name: cwagentconfig
+          mountPath: /etc/cloudwatch-agent
+        - name: logdir
+          mountPath: /var/log
+          readOnly: true
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+        securityContext:
+          runAsUser: 0
+      volumes:
+      - name: cwagentconfig
+        configMap:
+          name: cwagentconfig
+      - name: logdir
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cwagentconfig
+data:
+  cwagentconfig.json: |
+    {
+      "logs": {
+        "logs_collected": {
+          "files": {
+            "collect_list": [
+              {
+                "file_path": "/var/log/nginx/nebula-access.log",
+                "log_group_name": "/nebula/nginx/access"
+              },
+              {
+                "file_path": "/var/log/nginx/nebula-error.log",
+                "log_group_name": "/nebula/nginx/error"
+              },
+              {
+                "file_path": "/app/logs/*.log",
+                "log_group_name": "/nebula/backend"
+              }
+            ]
+          }
+        }
+      }
+    }
+
+---
+# AWS EBS CSI Driver Setup
+# Apply this after installing the EBS CSI driver:
+# kubectl apply -k "github.com/kubernetes-sigs/aws-ebs-csi-driver/deploy/kubernetes/overlays/stable/?ref=master"

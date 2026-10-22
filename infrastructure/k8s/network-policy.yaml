@@ -1,0 +1,106 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: nebula-network-policy
+  namespace: nebula
+  labels:
+    app.kubernetes.io/name: nebula-network-policy
+    app.kubernetes.io/part-of: nebula
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow ingress from the ingress controller on port 80 (frontend) and 8000 (backend)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 8000
+    # Allow frontend to talk to backend
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: frontend
+      ports:
+        - protocol: TCP
+          port: 8000
+    # Allow backend and worker to talk to postgres
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: backend
+      ports:
+        - protocol: TCP
+          port: 5432
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: worker
+      ports:
+        - protocol: TCP
+          port: 5432
+    # Allow backend and worker to talk to redis
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: backend
+      ports:
+        - protocol: TCP
+          port: 6379
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: worker
+      ports:
+        - protocol: TCP
+          port: 6379
+    # Allow health check probes from kube-system (nodes)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: TCP
+          port: 8000
+        - protocol: TCP
+          port: 80
+  egress:
+    # Allow all egress to DNS (port 53)
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Allow backend/worker to reach postgres
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: nebula-postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+    # Allow backend/worker to reach redis
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: nebula-redis
+      ports:
+        - protocol: TCP
+          port: 6379
+    # Allow backend to reach external APIs (AI providers, search APIs)
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/component: backend
+      ports:
+        - protocol: TCP
+          port: 443

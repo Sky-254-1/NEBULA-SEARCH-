@@ -1,0 +1,18 @@
+{
+  "workspaceId": "877bdc72-ad3f-4b5b-89cd-b78f1da98a38",
+  "workspaceName": "kevin Onkeo's Workspace",
+  "collections": [
+    {
+      "id": "fe81eb5a-53c5-477c-a422-21bbd714ed8b",
+      "uid": "55828163-fe81eb5a-53c5-477c-a422-21bbd714ed8b",
+      "name": "Nebula Search Engine API"
+    }
+  ],
+  "environments": [
+    {
+      "id": "0a022b18-accb-4ad1-befb-65a79ed48318",
+      "uid": "55828163-0a022b18-accb-4ad1-befb-65a79ed48318",
+      "name": "Nebula Local"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+// Pages exports
+export { LandingPage } from './LandingPage';
+export { LoginPage } from './LoginPage';
+export { RegisterPage } from './RegisterPage';
+export { ForgotPasswordPage } from './ForgotPasswordPage';
+export { EmailVerificationPage } from './EmailVerificationPage';
+export { MFAPage } from './MFAPage';
+export { DashboardPage } from './DashboardPage';
+export { SearchPage } from './SearchPage';
+export { AIChatPage } from './AIChatPage';
+export { DocumentsPage } from './DocumentsPage';
+export { HistoryPage } from './HistoryPage';
+export { AnalyticsPage } from './AnalyticsPage';
+export { SettingsPage } from './SettingsPage';
+export { NotificationsPage } from './NotificationsPage';
+export { ProfilePage } from './ProfilePage';
+export { OfflineLibraryPage } from './OfflineLibraryPage';
+export { SavedSearchesPage } from './SavedSearchesPage';
+export { DocumentViewerPage } from './DocumentViewerPage';
+export { ResetPasswordPage } from './ResetPasswordPage';
+export { default as AdminDashboard } from './AdminDashboard';
+export { ResearchHubPage } from './ResearchHubPage';

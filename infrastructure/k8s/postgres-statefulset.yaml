@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nebula-postgres
+  namespace: nebula
+  labels:
+    app.kubernetes.io/name: nebula-postgres
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: nebula
+spec:
+  serviceName: nebula-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nebula-postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nebula-postgres
+        app.kubernetes.io/component: database
+        app.kubernetes.io/part-of: nebula
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_USER
+              value: "nebula"
+            - name: POSTGRES_DB
+              value: "nebula"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nebula-secrets
+                  key: DB_PASSWORD
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "nebula"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "nebula"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+              subPath: nebula
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: nebula-postgres-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nebula-postgres-pvc
+  namespace: nebula
+  labels:
+    app.kubernetes.io/name: nebula-postgres
+    app.kubernetes.io/part-of: nebula
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard

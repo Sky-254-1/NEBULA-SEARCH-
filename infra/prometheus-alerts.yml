@@ -1,0 +1,141 @@
+groups:
+  - name: nebula-backend
+    interval: 30s
+    rules:
+      # High error rate
+      - alert: HighErrorRate
+        expr: |
+          (sum(rate(nebula_http_requests_total{status=~"5.."}[5m])) 
+           / 
+           sum(rate(nebula_http_requests_total[5m]))) * 100 > 5
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High HTTP error rate ({{ $value | humanizePercentage }})"
+          description: "Error rate is above 5% for the last 2 minutes."
+
+      # High latency
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(nebula_http_request_duration_seconds_bucket[5m])) by (le)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High p95 latency ({{ $value }}s)"
+          description: "p95 response time is above 2 seconds for 5 minutes."
+
+      # Service down
+      - alert: ServiceDown
+        expr: up{job="nebula-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Nebula backend is down"
+          description: "The backend service has been unreachable for 1 minute."
+
+      # High active requests
+      - alert: HighActiveRequests
+        expr: nebula_http_active_requests > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High active requests ({{ $value }})"
+          description: "More than 100 concurrent requests for 5 minutes."
+
+      # Cache hit rate low
+      - alert: LowCacheHitRate
+        expr: |
+          (nebula_cache_hits_total / (nebula_cache_hits_total + nebula_cache_misses_total)) * 100 < 50
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low cache hit rate ({{ $value | humanizePercentage }})"
+          description: "Cache hit rate is below 50% for 10 minutes."
+
+      # Database pool exhaustion
+      - alert: DatabasePoolExhaustion
+        expr: nebula_db_pool_size > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Database pool near capacity ({{ $value }})"
+          description: "Database connection pool is over 80% capacity."
+
+  - name: nebula-search
+    interval: 30s
+    rules:
+      # Zero result queries spike
+      - alert: ZeroResultQueriesSpike
+        expr: |
+          rate(nebula_zero_result_queries_total[5m]) > 
+          (avg(rate(nebula_zero_result_queries_total[1h])) * 2)
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Spike in zero-result queries"
+          description: "Zero-result query rate has doubled compared to the hourly average."
+
+      # Search latency degradation
+      - alert: SearchLatencyDegradation
+        expr: nebula_average_search_latency_seconds > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Search latency degradation ({{ $value }}s)"
+          description: "Average search latency is above 5 seconds."
+
+      # Dashboard generation slow
+      - alert: SlowDashboardGeneration
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(nebula_dashboard_generation_time_seconds_bucket[5m])) by (le)
+          ) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow dashboard generation ({{ $value }}s)"
+          description: "p95 dashboard generation time is above 10 seconds."
+
+  - name: nebula-infrastructure
+    interval: 30s
+    rules:
+      # Disk space
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low disk space ({{ $value | humanizePercentage }} free)"
+          description: "Less than 10% disk space remaining."
+
+      # Memory pressure
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage ({{ $value | humanizePercentage }})"
+          description: "Memory usage is above 90%."
+
+      # CPU pressure
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage ({{ $value | humanizePercentage }})"
+          description: "CPU usage is above 80% for 10 minutes."

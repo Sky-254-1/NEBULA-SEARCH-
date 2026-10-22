@@ -1,0 +1,218 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nebula-worker
+  labels:
+    app: nebula
+    component: worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nebula
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: nebula
+        component: worker
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: worker
+        image: nebula-backend:latest
+        command: ["python", "-m", "vector.worker"]
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: nebula-secrets
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: nebula-secrets
+              key: redis-url
+        - name: ELASTICSEARCH_URL
+          valueFrom:
+            secretKeyRef:
+              name: nebula-secrets
+              key: elasticsearch-url
+        - name: RABBITMQ_URL
+          valueFrom:
+            secretKeyRef:
+              name: nebula-secrets
+              key: rabbitmq-url
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            secretKeyRef:
+              name: nebula-secrets
+              key: kafka-bootstrap-servers
+        - name: APP_ENV
+          value: "production"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: PYTHONPATH
+          value: "/app"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "1Gi"
+            cpu: "1"
+        volumeMounts:
+        - name: backend-storage
+          mountPath: /app/storage
+        - name: worker-logs
+          mountPath: /app/logs
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 1000
+      volumes:
+      - name: backend-storage
+        emptyDir: {}
+      - name: worker-logs
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nebula-worker
+  labels:
+    app: nebula
+    component: worker
+spec:
+  selector:
+    app: nebula
+    component: worker
+  ports:
+  - port: 8000
+    targetPort: 8000
+    name: http
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: nebula-worker-hpa
+  labels:
+    app: nebula
+    component: worker
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: nebula-worker
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: nebula-indexing-cronjob
+  labels:
+    app: nebula
+    component: worker
+spec:
+  schedule: "0 3 * * *"  # Run daily at 3 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: indexer
+            image: nebula-backend:latest
+            command: ["python", "-m", "app.crawler.scheduler", "--full-index"]
+            env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: nebula-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: nebula-secrets
+                  key: redis-url
+            - name: ELASTICSEARCH_URL
+              valueFrom:
+                secretKeyRef:
+                  name: nebula-secrets
+                  key: elasticsearch-url
+            - name: APP_ENV
+              value: "production"
+            - name: LOG_LEVEL
+              value: "INFO"
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "200m"
+              limits:
+                memory: "1Gi"
+                cpu: "1"
+          restartPolicy: OnFailure
+      backoffLimit: 3
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: nebula-optimization-cronjob
+  labels:
+    app: nebula
+    component: worker
+spec:
+  schedule: "0 4 * * 0"  # Run weekly on Sunday at 4 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: optimizer
+            image: nebula-backend:latest
+            command: ["python", "-m", "vector.worker", "--optimize-index"]
+            env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: nebula-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: nebula-secrets
+                  key: redis-url
+            - name: APP_ENV
+              value: "production"
+            - name: LOG_LEVEL
+              value: "INFO"
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "200m"
+              limits:
+                memory: "1Gi"
+                cpu: "1"
+          restartPolicy: OnFailure
+      backoffLimit: 3

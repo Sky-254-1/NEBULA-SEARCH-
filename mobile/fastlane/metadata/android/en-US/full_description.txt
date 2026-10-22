@@ -1,0 +1,22 @@
+Nebula Search is a private, AI-powered search engine designed for speed, privacy, and offline access.
+
+KEY FEATURES:
+• Privacy-First: Your searches stay private. No tracking, no profiling.
+• AI-Powered Results: Smart suggestions and semantic understanding.
+• Offline Mode: Search your saved content without internet.
+• Cross-Platform: Seamless sync across mobile, desktop, and web.
+• Fast & Lightweight: Optimized for performance on any device.
+• Multiple Search Sources: Wikipedia, Brave, Bing, DuckDuckGo, and more.
+• Voice Search: Search hands-free with speech input.
+• Dark Mode: Easy on the eyes, day or night.
+
+TECHNICAL HIGHLIGHTS:
+• End-to-end encryption for sensitive data
+• Advanced caching for offline access
+• Real-time sync across devices
+• Secure authentication with MFA/WebAuthn
+• Open-source and community-driven
+
+Whether you're researching, learning, or just exploring — Nebula Search gives you control, speed, and intelligence in one beautiful app.
+
+Download now and experience search the way it should be.

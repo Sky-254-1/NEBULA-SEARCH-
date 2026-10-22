@@ -1,0 +1,68 @@
+<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark cosmic background -->
+  <rect width="192" height="192" rx="45" fill="#0b0c10"/>
+  
+  <!-- Gradient -->
+  <defs>
+    <linearGradient id="brandGradient" x1="30" y1="30" x2="162" y2="162" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7c5cfc"/>
+      <stop offset="0.5" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#6366f1"/>
+    </linearGradient>
+    
+    <radialGradient id="nodeGradient" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(96 96) scale(20)">
+      <stop stop-color="#7c5cfc"/>
+      <stop offset="0.5" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#6366f1"/>
+    </radialGradient>
+    
+    <filter id="neuralGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Central node -->
+  <circle cx="96" cy="96" r="16" fill="url(#nodeGradient)" filter="url(#neuralGlow)"/>
+  
+  <!-- Ring nodes -->
+  <circle cx="96" cy="40" r="10" fill="url(#nodeGradient)"/>
+  <circle cx="152" cy="68" r="9" fill="url(#nodeGradient)"/>
+  <circle cx="152" cy="124" r="9" fill="url(#nodeGradient)"/>
+  <circle cx="96" cy="152" r="10" fill="url(#nodeGradient)"/>
+  <circle cx="40" cy="124" r="9" fill="url(#nodeGradient)"/>
+  <circle cx="40" cy="68" r="9" fill="url(#nodeGradient)"/>
+  
+  <!-- Central secondary nodes -->
+  <circle cx="96" cy="68" r="8" fill="url(#nodeGradient)" opacity="0.8"/>
+  <circle cx="124" cy="96" r="8" fill="url(#nodeGradient)" opacity="0.8"/>
+  <circle cx="96" cy="124" r="8" fill="url(#nodeGradient)" opacity="0.8"/>
+  <circle cx="68" cy="96" r="8" fill="url(#nodeGradient)" opacity="0.8"/>
+  
+  <!-- Connections -->
+  <g stroke="url(#brandGradient)" stroke-width="2" stroke-linecap="round" opacity="0.7">
+    <!-- Central connections -->
+    <path d="M96 96 L96 68"/>
+    <path d="M96 96 L124 96"/>
+    <path d="M96 96 L96 124"/>
+    <path d="M96 96 L68 96"/>
+    
+    <!-- Ring connections -->
+    <path d="M96 40 L96 68"/>
+    <path d="M152 68 L124 96"/>
+    <path d="M152 124 L124 96"/>
+    <path d="M96 152 L96 124"/>
+    <path d="M68 152 L96 124"/>
+    <path d="M40 124 L68 96"/>
+    <path d="M40 68 L68 96"/>
+  </g>
+  
+  <!-- Lens circle -->
+  <circle cx="96" cy="96" r="60" stroke="url(#brandGradient)" stroke-width="2" opacity="0.4" fill="none"/>
+  
+  <!-- Magnifying glass handle (45-degree) -->
+  <path d="M158 158 L182 182" stroke="url(#brandGradient)" stroke-width="4" stroke-linecap="round" opacity="0.8"/>
+</svg>
