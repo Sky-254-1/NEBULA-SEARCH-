@@ -14,33 +14,67 @@ load_dotenv()
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
+INSECURE_PLACEHOLDER_SECRETS = {
+    "your-secret-key-here-change-in-production",
+    "your-jwt-secret-here-change-in-production",
+    "your-encryption-key-here",
+    "change-this-to-a-random-secret-in-production",
+    "replace-with-a-secure-random-secret-at-least-32-chars-long",
+    "replace-with-a-secure-random-secret",
+    "replace-with-a-secure-database-password",
+    "change-me",
+    "changeme",
+    "secret",
+    "your-secret-key",
+}
+
+
 def _resolve_jwt_secret() -> str:
-    secret = os.getenv("JWT_SECRET", "")
+    secret = os.getenv("JWT_SECRET", "").strip()
+    is_prod = os.getenv("APP_ENV", "development").lower() == "production"
     if secret:
-        if os.getenv("APP_ENV", "development") == "production" and len(secret) < 32:
-            raise ValueError(
-                "JWT_SECRET must be at least 32 characters in production. "
-                f"Current length: {len(secret)} characters."
-            )
+        if is_prod:
+            if len(secret) < 32:
+                raise ValueError(
+                    "JWT_SECRET must be at least 32 characters in production. "
+                    f"Current length: {len(secret)} characters."
+                )
+            if secret in INSECURE_PLACEHOLDER_SECRETS or any(
+                ph in secret.lower() for ph in ["placeholder", "replace-with", "change-this", "your-secret"]
+            ):
+                raise ValueError(
+                    "JWT_SECRET cannot use an insecure placeholder value in production."
+                )
         return secret
-    generated = secrets.token_hex(32)
-    if os.getenv("APP_ENV", "development") == "production":
-        print(
-            "WARNING: JWT_SECRET is not set in production. "
-            "Tokens will be invalidated on restart.",
-            file=sys.stderr,
+    if is_prod:
+        raise ValueError(
+            "JWT_SECRET environment variable is required in production. "
+            "Silent fallback to ephemeral signing keys is disabled."
         )
-    return generated
+    return secrets.token_hex(32)
 
 
 def _resolve_encryption_key() -> bytes:
-    raw = os.getenv("ENCRYPTION_KEY", "")
+    raw = os.getenv("ENCRYPTION_KEY", "").strip()
+    is_prod = os.getenv("APP_ENV", "development").lower() == "production"
     if raw:
+        if is_prod:
+            if len(raw) < 32:
+                raise ValueError(
+                    "ENCRYPTION_KEY must be at least 32 characters in production. "
+                    f"Current length: {len(raw)} characters."
+                )
+            if raw in INSECURE_PLACEHOLDER_SECRETS or any(
+                ph in raw.lower() for ph in ["placeholder", "replace-with", "change-this", "your-encryption"]
+            ):
+                raise ValueError(
+                    "ENCRYPTION_KEY cannot use an insecure placeholder value in production."
+                )
         return raw.encode("utf-8")
-    if os.getenv("APP_ENV", "development") == "production":
+    if is_prod:
         print(
             "WARNING: ENCRYPTION_KEY is not set in production. "
-            "Data at rest will use a derived key.",
+            "Data at rest will use an ephemeral key; set ENCRYPTION_KEY for persistent encryption.",
             file=sys.stderr,
         )
     return secrets.token_bytes(32)

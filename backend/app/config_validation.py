@@ -76,13 +76,29 @@ class ConfigValidator:
 
     def validate_security(self):
         """Validate security settings."""
+        insecure_placeholders = {
+            "change-me",
+            "changeme",
+            "secret",
+            "your-secret-key",
+            "your-secret-key-here-change-in-production",
+            "your-jwt-secret-here-change-in-production",
+            "your-encryption-key-here",
+            "change-this-to-a-random-secret-in-production",
+            "replace-with-a-secure-random-secret-at-least-32-chars-long",
+            "replace-with-a-secure-random-secret",
+        }
+
         # JWT Secret
         if not self.settings.jwt_secret:
             self.errors.append("JWT_SECRET is required")
         elif len(self.settings.jwt_secret) < 32:
             self.errors.append("JWT_SECRET must be at least 32 characters")
-        elif self.settings.is_production and self.settings.jwt_secret in ["change-me", "secret", "your-secret-key"]:
-            self.errors.append("JWT_SECRET must be changed from default value in production")
+        elif self.settings.is_production and (
+            self.settings.jwt_secret in insecure_placeholders
+            or any(ph in self.settings.jwt_secret.lower() for ph in ["placeholder", "replace-with", "change-this", "your-secret"])
+        ):
+            self.errors.append("JWT_SECRET must be changed from default/placeholder value in production")
 
         # CORS origins in production
         if self.settings.is_production:
@@ -93,7 +109,18 @@ class ConfigValidator:
                 self.warnings.append("CORS_ORIGINS contains localhost in production")
 
         # Encryption key
-        if hasattr(self.settings, 'encryption_key') and not self.settings.encryption_key:
+        raw_encryption_key = os.getenv("ENCRYPTION_KEY", "").strip()
+        if self.settings.is_production:
+            if not raw_encryption_key:
+                self.errors.append("ENCRYPTION_KEY environment variable is required in production")
+            elif len(raw_encryption_key) < 32:
+                self.errors.append("ENCRYPTION_KEY must be at least 32 characters in production")
+            elif (
+                raw_encryption_key in insecure_placeholders
+                or any(ph in raw_encryption_key.lower() for ph in ["placeholder", "replace-with", "change-this", "your-encryption"])
+            ):
+                self.errors.append("ENCRYPTION_KEY must be changed from default/placeholder value in production")
+        elif hasattr(self.settings, 'encryption_key') and not self.settings.encryption_key:
             self.warnings.append("ENCRYPTION_KEY is not set (encrypted features will be disabled)")
 
     def validate_database(self):

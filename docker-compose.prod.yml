@@ -94,7 +94,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-nebula}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-nebula}
       REDIS_URL: redis://redis:6379/0
       ELASTICSEARCH_URL: http://elasticsearch:9200
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-nebula}:${RABBITMQ_PASSWORD:-change_me}@rabbitmq:5672/
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-nebula}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       APP_ENV: production
       CORS_ORIGINS: ${CORS_ORIGINS:-https://nebula-search.example.com}
@@ -152,7 +152,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-nebula}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-nebula}
       REDIS_URL: redis://redis:6379/0
       ELASTICSEARCH_URL: http://elasticsearch:9200
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-nebula}:${RABBITMQ_PASSWORD:-change_me}@rabbitmq:5672/
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-nebula}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       APP_ENV: production
       STORAGE_ROOT: /app/storage
@@ -198,7 +198,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-nebula}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-nebula}
       REDIS_URL: redis://redis:6379/0
       ELASTICSEARCH_URL: http://elasticsearch:9200
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-nebula}:${RABBITMQ_PASSWORD:-change_me}@rabbitmq:5672/
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-nebula}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       APP_ENV: production
       JWT_SECRET: ${JWT_SECRET}
@@ -448,7 +448,7 @@ services:
     container_name: nebula-rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-nebula}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-change_me}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     ports:
       - "${RABBITMQ_PORT:-5672}:5672"
       - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"

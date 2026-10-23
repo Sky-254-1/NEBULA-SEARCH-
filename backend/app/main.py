@@ -290,6 +290,10 @@ async def _validate_configuration() -> None:
     if result.errors:
         for error in result.errors:
             logger.error("Configuration error: %s", error)
+        if settings.is_production:
+            raise RuntimeError(
+                f"Startup aborted due to configuration errors in production: {'; '.join(result.errors)}"
+            )
     
     if result.warnings:
         for warning in result.warnings:

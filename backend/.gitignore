@@ -2,6 +2,10 @@
 __pycache__/
 *.pyc
 .env
+.env.*
+*.env
+*.env.*
+!.env.example
 nebula.db
 test_nebula.db
 *.db-journal

@@ -40,10 +40,16 @@ wheels/
 test_nebula.db
 nebula.db
 debug_migration.db
-# Keep the intentional template env files
+.env.*
+.env.development
+.env.production
+*.env
+*.env.*
+# Explicitly allow safe templates only
 !.env.example
-!.env.development
-!.env.production
+!**/.env.example
+!backend/.env.example
+!frontend/.env.example
 
 # ---------------------------------------------------------------------
 # OS / editor clutter
@@ -149,7 +155,6 @@ out/
 # Docker / compose override
 # ---------------------------------------------------------------------
 docker-compose.override.yml
-.dockerignore
 
 # ---------------------------------------------------------------------
 # Build output caches / storage scratch space
