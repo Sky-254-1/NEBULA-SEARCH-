@@ -90,8 +90,8 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
     2. On state-changing methods (POST / PUT / DELETE / PATCH) the caller must
        mirror the cookie value in the ``X-CSRF-Token`` header.  The middleware
        verifies the two values match using a constant-time comparison.
-    3. Pure API clients authenticating with ``Authorization: Bearer …`` are
-       exempt — CSRF is a browser/cookie vector.
+    3. Pure API clients authenticating with ``Authorization: Bearer â€¦`` are
+       exempt â€” CSRF is a browser/cookie vector.
 
     This pattern is stateless: no tokens are stored server-side.
 
@@ -184,20 +184,33 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
         if auth_header.startswith("Bearer "):
             return await call_next(request)
 
-        # Fast-path 4: no auth header AND no cookie -> not a browser session;
-        # defer to the auth layer which will return 401, rather than a 403.
-        has_cookie_auth = bool(request.cookies)
-        if not auth_header and not has_cookie_auth:
+        # Fast-path 4: if there are no cookies *and* no Authorization header,
+        # this cannot be a cookie-authenticated browser session, so CSRF does not
+        # apply — let the auth middleware return 401 for missing credentials.
+        # IMPORTANT: we only bypass when cookies dict is truly empty.  A request
+        # that carries *any* cookie (even a CSRF cookie) must go through the
+        # double-submit check below so an attacker cannot strip only the auth
+        # cookie and still slip through.
+        has_any_cookie = bool(request.cookies)
+        if not auth_header and not has_any_cookie:
             return await call_next(request)
 
         # --- Perform double-submit check ---
         cookie_token = request.cookies.get(_CSRF_COOKIE_NAME, "")
         header_token = request.headers.get(_CSRF_HEADER_NAME, "")
 
-        if not cookie_token or not header_token:
+        # If the CSRF cookie is missing but the request has other cookies,
+        # the browser should have received a CSRF cookie already — reject.
+        if not cookie_token:
             return JSONResponse(
                 status_code=403,
-                content={"detail": "CSRF token missing (cookie + header required)"},
+                content={"detail": "CSRF cookie missing — ensure your client reads the csrf_token cookie and echoes it in X-CSRF-Token"},
+            )
+
+        if not header_token:
+            return JSONResponse(
+                status_code=403,
+                content={"detail": "X-CSRF-Token header missing"},
             )
 
         if not _constant_time_equal(cookie_token, header_token):
@@ -244,14 +257,26 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
 
 
 class IPWhitelistMiddleware(BaseHTTPMiddleware):
-    """Optional IP whitelist — blocks requests from non-allowed IPs."""
+    """Optional IP whitelist — restricts access to administrative endpoints.
 
-    def __init__(self, app, allowed_ips: Optional[list[str]] = None):
+    Only applies to routes under `admin_prefix` (default: `/api/v1/admin`).
+    Public routes (search, auth, health, etc.) are never blocked by this middleware.
+    """
+
+    def __init__(
+        self,
+        app,
+        allowed_ips: Optional[list[str]] = None,
+        admin_prefix: str = "/api/v1/admin",
+    ):
         super().__init__(app)
         self.allowed_ips = allowed_ips or []
+        self.admin_prefix = admin_prefix
 
     async def dispatch(self, request: Request, call_next) -> Response:
         if not self.allowed_ips:
+            return await call_next(request)
+        if not request.url.path.startswith(self.admin_prefix):
             return await call_next(request)
         client_ip = request.client.host if request.client else "unknown"
         if client_ip not in self.allowed_ips:

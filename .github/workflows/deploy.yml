@@ -129,6 +129,11 @@ jobs:
         kubectl apply -f infra/kubernetes/deployment.yaml
         kubectl rollout status deployment/nebula-backend -n nebula --timeout=5m
 
+    - name: Clean up Kubernetes credentials
+      if: always()
+      run: |
+        rm -f kubeconfig
+
   notify:
     runs-on: ubuntu-latest
     needs: build-and-push

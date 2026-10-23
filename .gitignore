@@ -32,6 +32,8 @@ wheels/
 # Environment / secrets
 # ---------------------------------------------------------------------
 .env
+.env.development
+.env.production
 .env.local
 .env.*.local
 *.db
@@ -40,10 +42,11 @@ wheels/
 test_nebula.db
 nebula.db
 debug_migration.db
-# Keep the intentional template env files
+# Keep only the sanitised template — NEVER commit real env files
 !.env.example
-!.env.development
-!.env.production
+# .env.development and .env.production contain real credentials; never commit them.
+# .env.development
+# .env.production
 
 # ---------------------------------------------------------------------
 # OS / editor clutter

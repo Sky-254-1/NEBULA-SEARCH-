@@ -236,6 +236,9 @@ async def vector_stats(email: str = Depends(get_current_user), db=Depends(get_db
     }
 
 
+MAX_EXPORT_ROWS = 10_000
+
+
 @router.post("/export")
 async def export_vectors(email: str = Depends(get_current_user), db=Depends(get_db)):
     user_id = await _user_id(db, email)
@@ -246,6 +249,11 @@ async def export_vectors(email: str = Depends(get_current_user), db=Depends(get_
     settings = get_settings()
     chunks = ChunkRepository(db)
     rows = await chunks.list_for_user(user_id)
+    total_count = len(rows)
+    is_truncated = total_count > MAX_EXPORT_ROWS
+    if is_truncated:
+        rows = rows[:MAX_EXPORT_ROWS]
+
     export_dir = settings.storage_exports / str(user_id)
     export_dir.mkdir(parents=True, exist_ok=True)
     filename = f"vectors_{uuid.uuid4().hex}.json"
@@ -253,4 +261,10 @@ async def export_vectors(email: str = Depends(get_current_user), db=Depends(get_
     dest.write_text(json.dumps(rows, indent=2), encoding="utf-8")
     exports = ExportRepository(db)
     export_id = await exports.create(user_id, "vectors", str(dest))
-    return {"export_id": export_id, "path": str(dest), "chunk_count": len(rows)}
+    return {
+        "export_id": export_id,
+        "path": str(dest),
+        "chunk_count": len(rows),
+        "total_available": total_count,
+        "truncated": is_truncated,
+    }

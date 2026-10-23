@@ -1,5 +1,5 @@
-"""
-Nebula Search Engine — Backend API
+﻿"""
+Nebula Search Engine â€” Backend API
 A private, online and offline-capable, AI-powered, hybrid search engine.
 
 Run:
@@ -71,7 +71,7 @@ from app.services.queue import job_queue
 settings = get_settings()
 
 # ---------------------------------------------------------------------------
-# Structured logging — JSON in production, human-readable otherwise
+# Structured logging â€” JSON in production, human-readable otherwise
 # ---------------------------------------------------------------------------
 
 _LOG_FORMAT_JSON = settings.log_json_format
@@ -347,7 +347,7 @@ try:
     _HAS_PROMETHEUS = True
 except ImportError:
     _HAS_PROMETHEUS = False
-    logger.debug("prometheus_client not available — metrics disabled")
+    logger.debug("prometheus_client not available â€” metrics disabled")
 
 
 # ---------------------------------------------------------------------------
@@ -459,13 +459,16 @@ async def lifespan(app: FastAPI):
 # Application
 # ---------------------------------------------------------------------------
 
+# In production, hide interactive API docs unless explicitly opted in.
+_hide_docs = settings.is_production and os.getenv("HIDE_API_DOCS", "true").lower() != "false"
+
 app = FastAPI(
     title="Nebula Search API",
     description="A private, AI-powered, hybrid search engine backend.",
     version="1.1.0",
     lifespan=lifespan,
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url=None if _hide_docs else "/docs",
+    redoc_url=None if _hide_docs else "/redoc",
     openapi_tags=[
         {"name": "Health", "description": "Health check endpoints"},
         {"name": "Auth", "description": "Authentication and authorization"},
@@ -566,8 +569,32 @@ app.include_router(research_router)  # Research hub - projects, notes, bookmarks
 
 
 @app.get("/metrics", include_in_schema=False)
-async def metrics():
-    """Prometheus metrics endpoint."""
+async def metrics(request: Request):
+    """Prometheus metrics endpoint — protected by METRICS_TOKEN env var.
+
+    Set METRICS_TOKEN to a long random string in your environment.
+    Pass it as a Bearer token: Authorization: Bearer <token>
+    or as a query param: ?token=<token>
+    If METRICS_TOKEN is not set, the endpoint is disabled entirely.
+    """
+    token = os.getenv("METRICS_TOKEN", "")
+    if not token:
+        # Metrics disabled unless METRICS_TOKEN is configured
+        return JSONResponse(status_code=404, content={"detail": "Not found"})
+
+    # Accept token via Authorization header or ?token= query param
+    auth_header = request.headers.get("Authorization", "")
+    query_token = request.query_params.get("token", "")
+    provided = ""
+    if auth_header.startswith("Bearer "):
+        provided = auth_header[7:]
+    elif query_token:
+        provided = query_token
+
+    import hmac as _hmac
+    if not provided or not _hmac.compare_digest(provided.encode(), token.encode()):
+        return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
+
     if not _HAS_PROMETHEUS:
         return PlainTextResponse(
             "prometheus_client not installed", status_code=501
@@ -617,7 +644,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 
 async def _shutdown(sig: signal.Signals):
-    logger.info("Received signal %s — shutting down", sig.name)
+    logger.info("Received signal %s â€” shutting down", sig.name)
     # The lifespan context manager handles cleanup; we just need to stop accepting.
     for existing in asyncio.all_tasks():
         if existing is not asyncio.current_task():

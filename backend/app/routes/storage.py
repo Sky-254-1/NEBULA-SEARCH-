@@ -1,4 +1,4 @@
-"""Storage routes: documents, settings, exports."""
+﻿"""Storage routes: documents, settings, exports."""
 
 import json
 import uuid
@@ -30,8 +30,8 @@ from app.utils.pagination import PaginationParams
 router = APIRouter(prefix="/api/v1/storage", tags=["Storage"])
 settings = get_settings()
 
-MAX_UPLOAD_BYTES = 10 * 1024 * 1024
-ALLOWED_EXTENSIONS = {".txt", ".md", ".json", ".csv", ".pdf", ".html", ".htm", ".docx"}
+# Re-use the validated upload logic from the documents route (single source of truth)
+from app.routes.documents import _validate_upload, MAX_UPLOAD_BYTES
 
 
 async def _user_id(db, email: str) -> int:
@@ -68,13 +68,10 @@ async def upload_document(
     db=Depends(get_db),
 ):
     user_id = await _user_id(db, email)
-    ext = Path(file.filename or "").suffix.lower()
-    if ext not in ALLOWED_EXTENSIONS:
-        raise HTTPException(status_code=400, detail=f"File type not allowed: {ext}")
-
+    original_filename = file.filename or "upload"
     content = await file.read()
-    if len(content) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="File too large (max 10MB)")
+    _validate_upload(original_filename, content)  # validates extension + MIME + size
+    ext = Path(original_filename).suffix.lower()
 
     upload_dir = settings.storage_uploads / str(user_id)
     upload_dir.mkdir(parents=True, exist_ok=True)
@@ -83,7 +80,7 @@ async def upload_document(
     dest.write_bytes(content)
 
     docs = DocumentRepository(db)
-    doc_id = await docs.create(user_id, file.filename or safe_name, file.content_type, str(dest))
+    doc_id = await docs.create(user_id, original_filename, file.content_type, str(dest))
 
     await job_queue.enqueue("index_document", {"document_id": doc_id, "user_id": user_id})
 
