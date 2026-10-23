@@ -158,7 +158,16 @@ export const LoginPage: React.FC = () => {
     if (!validateForm()) return;
     
     try {
-      await login(formData.email, formData.password);
+      const res = await login(formData.email, formData.password);
+      if (res && (res as any).mfa_required) {
+        navigate('/mfa', {
+          state: {
+            temp_token: (res as any).mfa_pending_token,
+            mfa_pending_token: (res as any).mfa_pending_token,
+          },
+        });
+        return;
+      }
       toast.success('Login successful!');
       navigate('/dashboard');
     } catch (error) {

@@ -169,10 +169,17 @@ def configure_openapi(app: FastAPI):
             # Add examples to AuthResponse
             if "AuthResponse" in openapi_schema["components"]["schemas"]:
                 openapi_schema["components"]["schemas"]["AuthResponse"]["example"] = {
+                    "mfa_required": False,
                     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",  # nosec
                     "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",  # nosec
                     "token_type": "bearer",  # nosec
                     "expires_in": 1800
+                }
+            if "MFAChallengeResponse" in openapi_schema["components"]["schemas"]:
+                openapi_schema["components"]["schemas"]["MFAChallengeResponse"]["example"] = {
+                    "mfa_required": True,
+                    "mfa_pending_token": "mfa_pending_token_sample_string_32chars",
+                    "message": "MFA verification required"
                 }
         
         app.openapi_schema = openapi_schema

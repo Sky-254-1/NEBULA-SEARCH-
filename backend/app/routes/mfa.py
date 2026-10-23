@@ -1,12 +1,14 @@
 """Multi-Factor Authentication routes."""
 
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from app.database import get_db
 from app.database.repositories.audit import AuditRepository
 from app.database.repositories.user import UserRepository
 from app.config import get_settings
+from app.models.schemas import AuthResponse, MFALoginVerifyRequest
+from app.routes.auth import _set_auth_cookies
 from app.services.auth import get_current_user
 from app.services.mfa import MFAService, enroll_mfa, verify_mfa_token
 
@@ -250,20 +252,35 @@ async def regenerate_backup_codes(
     }
 
 
-@router.post("/verify-login")
+@router.post("/verify-login", response_model=AuthResponse)
 async def verify_mfa_login(
     request: Request,
-    mfa_pending_token: str,
-    token: str,
-    db=Depends(get_db)
+    response: Response,
+    body: MFALoginVerifyRequest | None = None,
+    mfa_pending_token: str | None = None,
+    token: str | None = None,
+    db=Depends(get_db),
 ):
     """Complete MFA verification during login and issue real auth tokens."""
     from app.services.cache import cache_service
     from app.services.auth import create_access_token, create_refresh_token, hash_token
     from app.database.repositories.session import SessionRepository
 
+    # Resolve pending token and TOTP verification code from JSON body or query params
+    resolved_pending_token = (
+        (body.mfa_pending_token or body.temp_token) if body else None
+    ) or mfa_pending_token
+    resolved_totp_token = (
+        (body.token or body.code) if body else None
+    ) or token
+
+    if not resolved_pending_token:
+        raise HTTPException(status_code=400, detail="Missing MFA pending token")
+    if not resolved_totp_token:
+        raise HTTPException(status_code=400, detail="Missing verification code")
+
     # Get pending session
-    pending_data = await cache_service.get(f"mfa_pending:{mfa_pending_token}")
+    pending_data = await cache_service.get(f"mfa_pending:{resolved_pending_token}")
     if not pending_data:
         raise HTTPException(status_code=400, detail="MFA session expired. Please log in again.")
 
@@ -278,13 +295,13 @@ async def verify_mfa_login(
         raise HTTPException(status_code=400, detail="MFA not properly configured")
 
     # Verify TOTP token or backup code
-    is_valid, error = verify_mfa_token(mfa_secret, token)
+    is_valid, error = verify_mfa_token(mfa_secret, resolved_totp_token)
 
     # Try backup code if TOTP fails
     if not is_valid:
         backup_codes = user.get("mfa_backup_codes", [])
         for i, backup_hash in enumerate(backup_codes):
-            if MFAService.verify_backup_code(token, backup_hash):
+            if MFAService.verify_backup_code(resolved_totp_token, backup_hash):
                 backup_codes.pop(i)
                 await users.update_mfa_backup_codes(user["id"], backup_codes)
                 is_valid = True
@@ -294,7 +311,7 @@ async def verify_mfa_login(
         raise HTTPException(status_code=400, detail=error or "Invalid verification code")
 
     # Clear pending token
-    await cache_service.delete(f"mfa_pending:{mfa_pending_token}")
+    await cache_service.delete(f"mfa_pending:{resolved_pending_token}")
 
     # Issue real tokens
     from datetime import datetime, timedelta, timezone
@@ -326,8 +343,9 @@ async def verify_mfa_login(
             user_agent=request.headers.get("user-agent"),
         )
 
-    from app.models.schemas import AuthResponse
+    _set_auth_cookies(response, access_token, refresh_token)
     return AuthResponse(
+        mfa_required=False,
         access_token=access_token,
         refresh_token=refresh_token,
         expires_in=settings.jwt_expiry_minutes * 60,

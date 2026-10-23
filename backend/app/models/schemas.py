@@ -1,7 +1,7 @@
 """Pydantic schemas for request/response validation."""
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Annotated, Any, Literal, Optional, Union
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -50,11 +50,41 @@ class AuthRequest(BaseModel):
 
 
 class AuthResponse(BaseModel):
-    """Authentication response."""
+    """Authentication response with tokens for successful login / refresh."""
+    mfa_required: Literal[False] = False
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
     expires_in: int  # seconds
+
+
+# Alias for explicit clarity
+AuthSuccessResponse = AuthResponse
+
+
+class MFAChallengeResponse(BaseModel):
+    """MFA challenge response required before issuing tokens."""
+    mfa_required: Literal[True] = True
+    mfa_pending_token: str
+    message: str = "MFA verification required"
+
+
+# Alias for compatibility
+MFARequiredResponse = MFAChallengeResponse
+
+
+LoginResponse = Annotated[
+    Union[AuthResponse, MFAChallengeResponse],
+    Field(discriminator="mfa_required"),
+]
+
+
+class MFALoginVerifyRequest(BaseModel):
+    """Request payload to complete MFA verification during login."""
+    mfa_pending_token: Optional[str] = None
+    temp_token: Optional[str] = None
+    token: Optional[str] = None
+    code: Optional[str] = None
 
 
 class RefreshRequest(BaseModel):

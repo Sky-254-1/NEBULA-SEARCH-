@@ -11,7 +11,13 @@ from app.database.repositories.audit import AuditRepository
 from app.database.repositories.session import SessionRepository
 from app.database.repositories.user import UserRepository
 from app.middleware.rate_limit import limit_login, limit_refresh, limit_signup
-from app.models.schemas import AuthRequest, AuthResponse, RefreshRequest
+from app.models.schemas import (
+    AuthRequest,
+    AuthResponse,
+    LoginResponse,
+    MFAChallengeResponse,
+    RefreshRequest,
+)
 from app.config import get_settings
 from app.services.auth import (
     check_brute_force,
@@ -95,7 +101,7 @@ async def signup(request: Request, body: AuthRequest, db=Depends(get_db)):
     return {"message": "User created successfully. Please check your email to verify your account."}
 
 
-@router.post("/login", response_model=AuthResponse, dependencies=[Depends(limit_login)])
+@router.post("/login", response_model=LoginResponse, dependencies=[Depends(limit_login)])
 async def login(request: Request, response: Response, body: AuthRequest, db=Depends(get_db)):
     ip = request.client.host if request.client else "unknown"
     await check_brute_force(ip, str(body.email))
@@ -129,11 +135,11 @@ async def login(request: Request, response: Response, body: AuthRequest, db=Depe
             {"email": str(body.email), "user_id": row["id"], "role": row["role"]},
             ttl=300,  # 5 minutes to complete MFA
         )
-        return {
-            "mfa_required": True,
-            "mfa_pending_token": mfa_pending_token,
-            "message": "MFA verification required",
-        }
+        return MFAChallengeResponse(
+            mfa_required=True,
+            mfa_pending_token=mfa_pending_token,
+            message="MFA verification required",
+        )
 
     # Update last login
     await users.update_last_login(row["id"])
@@ -165,6 +171,7 @@ async def login(request: Request, response: Response, body: AuthRequest, db=Depe
 
     _set_auth_cookies(response, access_token, refresh_token)
     return AuthResponse(
+        mfa_required=False,
         access_token=access_token,
         refresh_token=refresh_token,
         expires_in=settings.jwt_expiry_minutes * 60,

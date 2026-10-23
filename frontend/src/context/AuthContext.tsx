@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { apiClient } from '@/api/client';
-import { UserInfo, AuthResponse } from '@/types';
+import { UserInfo, AuthResponse, LoginResponse } from '@/types';
 
 interface GuestUser {
   email: string;
@@ -25,7 +25,7 @@ interface AuthContextType {
     maxDocumentsPerDay: number;
     maxAIChatsPerDay: number;
   };
-  login: (email: string, password: string) => Promise<AuthResponse>;
+  login: (email: string, password: string) => Promise<LoginResponse>;
   signup: (email: string, password: string) => Promise<void>;
   loginAsGuest: () => Promise<void>;
   logout: () => Promise<void>;
@@ -126,10 +126,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const login = async (email: string, password: string): Promise<AuthResponse> => {
+  const login = async (email: string, password: string): Promise<LoginResponse> => {
     const response = await apiClient.login(email, password);
-    await refreshUser();
-    await registerPushToken();
+    if (!response.mfa_required && 'access_token' in response) {
+      await refreshUser();
+      await registerPushToken();
+    }
     return response;
   };
 

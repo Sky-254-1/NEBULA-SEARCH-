@@ -18,10 +18,16 @@ export const MFAPage: React.FC = () => {
     }
     setIsLoading(true);
     try {
-      const response = await fetch('/api/v1/auth/mfa/verify', {
+      const pendingToken = (location.state as any)?.mfa_pending_token || (location.state as any)?.temp_token;
+      const response = await fetch('/api/v1/auth/mfa/verify-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, temp_token: (location.state as any)?.temp_token }),
+        body: JSON.stringify({
+          code,
+          token: code,
+          temp_token: pendingToken,
+          mfa_pending_token: pendingToken,
+        }),
       });
       if (response.ok) {
         const data = await response.json();

@@ -11,11 +11,20 @@ export interface AuthRequest {
 }
 
 export interface AuthResponse {
+  mfa_required?: false;
   access_token: string;
   refresh_token: string;
   token_type: string;
   expires_in: number;
 }
+
+export interface MFAChallengeResponse {
+  mfa_required: true;
+  mfa_pending_token: string;
+  message: string;
+}
+
+export type LoginResponse = AuthResponse | MFAChallengeResponse;
 
 export interface RefreshRequest {
   refresh_token?: string;

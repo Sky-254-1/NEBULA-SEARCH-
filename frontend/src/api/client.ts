@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
-import { AuthResponse, APIError } from '@/types';
+import { AuthResponse, APIError, LoginResponse } from '@/types';
 
 // ============================================
 // API Client Configuration
@@ -247,15 +247,27 @@ class APIClient {
     return this.refreshTokenPromise;
   }
 
-  public async login(email: string, password: string): Promise<AuthResponse> {
-    const response = await this.client.post<AuthResponse>('/auth/login', {
+  public async login(email: string, password: string): Promise<LoginResponse> {
+    const response = await this.client.post<LoginResponse>('/auth/login', {
       email,
       password,
     });
     
+    if (!response.data.mfa_required && 'access_token' in response.data && response.data.access_token) {
+      this.setTokens(response.data.access_token, response.data.refresh_token);
+    }
+    
+    return response.data;
+  }
+
+  public async verifyMfaLogin(mfaPendingToken: string, code: string): Promise<AuthResponse> {
+    const response = await this.client.post<AuthResponse>('/auth/mfa/verify-login', {
+      mfa_pending_token: mfaPendingToken,
+      token: code,
+    });
+
     const { access_token, refresh_token } = response.data;
     this.setTokens(access_token, refresh_token);
-    
     return response.data;
   }
 

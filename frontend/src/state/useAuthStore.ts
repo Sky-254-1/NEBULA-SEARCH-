@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { UserInfo, AuthResponse } from '@/types';
+import { UserInfo, AuthResponse, LoginResponse } from '@/types';
 import { authApi } from '@/api/auth';
 
 interface AuthState {
@@ -13,7 +13,7 @@ interface AuthState {
 }
 
 interface AuthActions {
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<LoginResponse | void>;
   signup: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   logoutAll: () => Promise<void>;
@@ -40,17 +40,22 @@ export const useAuthStore = create<AuthStore>()(
       login: async (email: string, password: string) => {
         try {
           set({ isLoading: true, error: null });
-          const response: AuthResponse = await authApi.login({ email, password });
+          const response = await authApi.login({ email, password });
+          if ((response as any)?.mfa_required) {
+            set({ isLoading: false });
+            return response;
+          }
           
           set({
-            accessToken: response.access_token,
-            refreshToken: response.refresh_token,
+            accessToken: (response as any).access_token,
+            refreshToken: (response as any).refresh_token,
             isAuthenticated: true,
             isLoading: false,
           });
 
           // Fetch actual user data
           await get().fetchCurrentUser();
+          return response;
         } catch (error) {
           set({
             error: error instanceof Error ? error.message : 'Login failed',
