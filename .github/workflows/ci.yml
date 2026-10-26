@@ -142,12 +142,68 @@ jobs:
           echo "Build artifacts verified successfully"
 
   # ============================================
+  # Security Scan
+  # ============================================
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for git log checks
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install --upgrade pip
+
+      - name: Run secret scanning script
+        run: |
+          chmod +x scripts/scan_secrets.py
+          python scripts/scan_secrets.py
+        env:
+          GITHUB_WORKSPACE: ${{ github.workspace }}
+
+      - name: Upload security scan report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-report
+          path: security-scan-report.json
+          retention-days: 30
+
+      - name: Check for critical findings
+        run: |
+          REPORT="security-scan-report.json"
+          if [ -f "$REPORT" ]; then
+            CRITICAL=$(python -c "import json; r=json.load(open('$REPORT')); print(r.get('summary', {}).get('critical', 0))" 2>/dev/null || echo 0)
+            HIGH=$(python -c "import json; r=json.load(open='$REPORT'); print(r.get('summary', {}).get('high', 0))" 2>/dev/null || echo 0)
+            
+            if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+              echo "❌ CRITICAL OR HIGH SEVERITY ISSUES DETECTED"
+              echo "Report: security-scan-report.json"
+              cat "$REPORT" | python -c "import sys,json; d=json.load(sys.stdin); [print(f\"{f['severity']}: {f.get('description', 'N/A')[:100]}\") for f in d.get('findings',[]) if f.get('severity') in ['CRITICAL','HIGH']]"
+              exit 1
+            else
+              echo "✅ No critical or high severity issues detected"
+              echo "Report available as artifact: security-scan-report"
+            fi
+          else
+            echo "⚠️ Security scan report not found"
+          fi
+
+  # ============================================
   # E2E Tests (End-to-End)
   # ============================================
   e2e:
     name: E2E Tests
     runs-on: ubuntu-latest
-    needs: [backend, frontend]
+    needs: [backend, frontend, security-scan]
     timeout-minutes: 30
 
     steps:

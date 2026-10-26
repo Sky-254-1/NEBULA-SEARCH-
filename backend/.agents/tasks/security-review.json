@@ -1,0 +1,22 @@
+{
+  "approved": false,
+  "findings": [
+    {
+      "label": "Incomplete ownership validation for storage files",
+      "description": "The worker validates database record ownership but doesn't verify the storage file path belongs to the same user, allowing potential access to other users' files."
+    },
+    {
+      "label": "Insecure file path resolution",
+      "description": "Path traversal check uses relative_to() without ensuring the base directory is absolute and resolved first, which could be bypassed with crafted paths."
+    },
+    {
+      "label": "Runtime errors not categorized",
+      "description": "Missing optional dependencies (pypdf, python-docx) raise RuntimeError that propagates as a generic processing error instead of being handled explicitly."
+    },
+    {
+      "label": "Queue re-enqueue loses retry context",
+      "description": "When jobs are re-enqueued on failure, the retry_count and delay metadata are added to a new payload rather than preserving the original job's context, potentially causing incorrect retry logic."
+    }
+  ],
+  "reviewDoc": "c:\\Users\\User\\Downloads\\NEBULA-SEARCH\\NEBULA-SEARCH--main\\backend\\.agents\\tasks\\security-review.md"
+}

@@ -1,0 +1,99 @@
+{
+  "verdict": "CHANGES_REQUESTED",
+  "findings": [
+    {
+      "id": "SEC-1",
+      "label": "Incomplete ownership validation for storage files",
+      "description": "The worker validates database record ownership but doesn't verify the storage file path belongs to the same user, allowing potential access to other users' files.",
+      "source": "security-review.json",
+      "reviewDoc": "c:\\Users\\User\\Downloads\\NEBULA-SEARCH\\NEBULA-SEARCH--main\\backend\\.agents\\tasks\\security-review.md"
+    },
+    {
+      "id": "SEC-2",
+      "label": "Insecure file path resolution",
+      "description": "Path traversal check uses relative_to() without ensuring the base directory is absolute and resolved first, which could be bypassed with crafted paths.",
+      "source": "security-review.json",
+      "reviewDoc": "c:\\Users\\User\\Downloads\\NEBULA-SEARCH\\NEBULA-SEARCH--main\\backend\\.agents\\tasks\\security-review.md"
+    },
+    {
+      "id": "SEC-3",
+      "label": "Runtime errors not categorized",
+      "description": "Missing optional dependencies (pypdf, python-docx) raise RuntimeError that propagates as a generic processing error instead of being handled explicitly.",
+      "source": "security-review.json",
+      "reviewDoc": "c:\\Users\\User\\Downloads\\NEBULA-SEARCH\\NEBULA-SEARCH--main\\backend\\.agents\\tasks\\security-review.md"
+    },
+    {
+      "id": "SEC-4",
+      "label": "Queue re-enqueue loses retry context",
+      "description": "When jobs are re-enqueued on failure, the retry_count and delay metadata are added to a new payload rather than preserving the original job's context, potentially causing incorrect retry logic.",
+      "source": "security-review.json",
+      "reviewDoc": "c:\\Users\\User\\Downloads\\NEBULA-SEARCH\\NEBULA-SEARCH--main\\backend\\.agents\\tasks\\security-review.md"
+    },
+    {
+      "id": "LOGIC-1",
+      "label": "Database connection never initialized in connect()",
+      "description": "The connect() method calls init_db() but never assigns a connection to self._db. Every call to _get_db() creates a new database connection instead of reusing one.",
+      "source": "logic-review.json",
+      "reviewDoc": "c:\\Users\\User\\Downloads\\NEBULA-SEARCH\\NEBULA-SEARCH--main\\backend\\.agents\\tasks\\logic-review.md"
+    },
+    {
+      "id": "LOGIC-2",
+      "label": "Unreachable code in count_all() and count_for_user()",
+      "description": "count_all() is missing a return statement entirely. count_for_user() has two return statements with the second being unreachable.",
+      "source": "logic-review.json",
+      "reviewDoc": "c:\\Users\\User\\Downloads\\NEBULA-SEARCH\\NEBULA-SEARCH--main\\backend\\.agents\\tasks\\logic-review.md"
+    },
+    {
+      "id": "LOGIC-3",
+      "label": "Missing job type validation",
+      "description": "The run() method processes any job without checking job[\"type\"] == \"index_document\".",
+      "source": "logic-review.json",
+      "reviewDoc": "c:\\Users\\User\\Downloads\\NEBULA-SEARCH\\NEBULA-SEARCH--main\\backend\\.agents\\tasks\\logic-review.md"
+    },
+    {
+      "id": "LOGIC-4",
+      "label": "Path traversal vulnerability in _sanitize_path",
+      "description": "_sanitize_path uses Path(storage_path).name which strips the directory path. Only the filename is used, losing the user-specific subdirectory.",
+      "source": "logic-review.json",
+      "reviewDoc": "c:\\Users\\User\\Downloads\\NEBULA-SEARCH\\NEBULA-SEARCH--main\\backend\\.agents\\tasks\\logic-review.md"
+    },
+    {
+      "id": "LOGIC-5",
+      "label": "Missing is_deleted column in database schema",
+      "description": "count_for_user() queries documents.is_deleted column that may not exist in schema.",
+      "source": "logic-review.json",
+      "reviewDoc": "c:\\Users\\User\\Downloads\\NEBULA-SEARCH\\NEBULA-SEARCH--main\\backend\\.agents\\tasks\\logic-review.md"
+    },
+    {
+      "id": "LOGIC-6",
+      "label": "Inconsistent database commit patterns",
+      "description": "_update_status() commits immediately, breaking transactional consistency when called multiple times in sequence.",
+      "source": "logic-review.json",
+      "reviewDoc": "c:\\Users\\User\\Downloads\\NEBULA-SEARCH\\NEBULA-SEARCH--main\\backend\\.agents\\tasks\\logic-review.md"
+    },
+    {
+      "id": "LOGIC-7",
+      "label": "Missing retry_count validation",
+      "description": "retry_count from job payload is used directly without validation.",
+      "source": "logic-review.json",
+      "reviewDoc": "c:\\Users\\User\\Downloads\\NEBULA-SEARCH\\NEBULA-SEARCH--main\\backend\\.agents\\tasks\\logic-review.md"
+    }
+  ],
+  "blockingFindings": [
+    "SEC-1",
+    "SEC-2",
+    "SEC-3",
+    "SEC-4",
+    "LOGIC-1",
+    "LOGIC-2",
+    "LOGIC-3",
+    "LOGIC-4",
+    "LOGIC-5",
+    "LOGIC-6",
+    "LOGIC-7"
+  ],
+  "reviewDocs": [
+    "c:\\Users\\User\\Downloads\\NEBULA-SEARCH\\NEBULA-SEARCH--main\\backend\\.agents\\tasks\\security-review.md",
+    "c:\\Users\\User\\Downloads\\NEBULA-SEARCH\\NEBULA-SEARCH--main\\backend\\.agents\\tasks\\logic-review.md"
+  ]
+}

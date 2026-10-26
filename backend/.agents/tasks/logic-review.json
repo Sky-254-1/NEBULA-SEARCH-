@@ -1,0 +1,83 @@
+{
+  "approved": false,
+  "findings": [
+    {
+      "id": 1,
+      "severity": "critical",
+      "file": "backend/app/workers/indexer.py",
+      "line": 39,
+      "title": "Database connection never initialized in connect()",
+      "description": "The connect() method calls init_db() but never assigns a connection to self._db. Every call to _get_db() creates a new database connection instead of reusing one.",
+      "evidence": "async def connect(self) -> None: await init_db() # Missing: self._db = await get_db()",
+      "consequence": "Resource exhaustion under load due to connection leaks",
+      "fix": "Add 'self._db = await get_db()' after await init_db() in connect()"
+    },
+    {
+      "id": 2,
+      "severity": "critical",
+      "file": "backend/app/database/repositories/document.py",
+      "line": 110,
+      "title": "Unreachable code in count_all() and count_for_user()",
+      "description": "count_all() is missing a return statement entirely. count_for_user() has two return statements with the second being unreachable.",
+      "evidence": "async def count_all(self) -> int: ... # No return statement\nasync def count_for_user(self, user_id: int) -> int: ... return int(row[\"cnt\"]) if row else 0\n    return int(row[\"count\"]) if row else 0",
+      "consequence": "count_all() returns None instead of integer; count_for_user() may return incorrect values",
+      "fix": "Add missing return statement to count_all() and remove unreachable return in count_for_user()"
+    },
+    {
+      "id": 3,
+      "severity": "high",
+      "file": "backend/app/workers/indexer.py",
+      "line": 259,
+      "title": "Missing job type validation",
+      "description": "The run() method processes any job without checking job[\"type\"] == \"index_document\".",
+      "evidence": "if job: await self._process_job(job) # No type check",
+      "consequence": "Worker processes any job type with indexing logic, potentially corrupting data",
+      "fix": "Add 'and job.get(\"type\") == \"index_document\"' to job filter"
+    },
+    {
+      "id": 4,
+      "severity": "high",
+      "file": "backend/app/workers/indexer.py",
+      "line": 94,
+      "title": "Path traversal vulnerability in _sanitize_path",
+      "description": "_sanitize_path uses Path(storage_path).name which strips the directory path. Only the filename is used, losing the user-specific subdirectory.",
+      "evidence": "resolved = base_dir / Path(storage_path).name # Only uses .name, discarding directory",
+      "consequence": "Workers read incorrect files or fail; documents from different users get mixed up",
+      "fix": "Use (base_dir / storage_path).resolve() and validate relative_to instead of using .name"
+    },
+    {
+      "id": 5,
+      "severity": "medium",
+      "file": "backend/app/database/repositories/document.py",
+      "line": 112,
+      "title": "Missing is_deleted column in database schema",
+      "description": "count_for_user() queries documents.is_deleted column that may not exist in schema.",
+      "evidence": "WHERE user_id = ? AND is_deleted = FALSE # Column not in documented schema",
+      "consequence": "Database query fails if migration not applied; soft-delete not implemented",
+      "fix": "Add is_deleted column via migration or remove from query"
+    },
+    {
+      "id": 6,
+      "severity": "medium",
+      "file": "backend/app/workers/indexer.py",
+      "line": 230,
+      "title": "Inconsistent database commit patterns",
+      "description": "_update_status() commits immediately, breaking transactional consistency when called multiple times in sequence.",
+      "evidence": "await db.commit() # Called inside _update_status() on lines 230, 237, 240",
+      "consequence": "Partial failures leave documents in inconsistent state; no rollback capability",
+      "fix": "Remove db.commit() from _update_status() and let _process_job() control transaction boundaries"
+    },
+    {
+      "id": 7,
+      "severity": "medium",
+      "file": "backend/app/workers/indexer.py",
+      "line": 286,
+      "title": "Missing retry_count validation",
+      "description": "retry_count from job payload is used directly without validation.",
+      "evidence": "retry_count = job.get(\"retry_count\", 0) # No validation for negative or extremely large values",
+      "consequence": "Malicious jobs could cause denial of service via resource exhaustion",
+      "fix": "Add retry_count = max(0, job.get(\"retry_count\", 0))"
+    }
+  ],
+  "reviewDoc": "backend/.agents/tasks/logic-review.md"
+}

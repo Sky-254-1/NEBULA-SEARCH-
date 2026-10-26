@@ -9,7 +9,12 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from app.config_validation import run_validations
+
 load_dotenv()
+
+# Run startup validations before creating settings
+run_validations()
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 

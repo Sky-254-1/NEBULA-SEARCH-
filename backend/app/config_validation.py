@@ -1,254 +1,671 @@
-"""
-Configuration validation for Nebula Search.
-Validates all required settings at startup to prevent runtime failures.
+"""Startup configuration validation.
+
+Validates required environment variables before application startup.
+Raises clear errors with variable names (never values) if required
+variables are missing or invalid.
 """
 
-import logging
 import os
-import secrets
-from dataclasses import dataclass
-from enum import Enum
-from typing import Optional
-
-logger = logging.getLogger(__name__)
+import sys
+from typing import List, Optional, Dict, Tuple
 
 
-class Environment(str, Enum):
-    DEVELOPMENT = "development"
-    STAGING = "staging"
-    PRODUCTION = "production"
+class ValidationError(Exception):
+    """Raised when environment validation fails."""
+    pass
 
 
-@dataclass
-class ConfigValidationResult:
-    """Result of configuration validation."""
-    is_valid: bool
-    errors: list[str]
-    warnings: list[str]
-
-    def __post_init__(self):
-        if self.errors is None:
-            self.errors = []
-        if self.warnings is None:
-            self.warnings = []
+def get_env_or_none(key: str) -> Optional[str]:
+    """Get environment variable or None if not set."""
+    return os.getenv(key)
 
 
-class ConfigValidator:
-    """Validates application configuration at startup."""
+def get_env_value(key: str) -> str:
+    """Get environment variable or empty string if not set."""
+    value = os.getenv(key)
+    return value if value is not None else ""
 
-    def __init__(self, settings):
-        self.settings = settings
-        self.errors: list[str] = []
-        self.warnings: list[str] = []
 
-    def validate_all(self) -> ConfigValidationResult:
-        """Run all validations and return result."""
-        self.validate_environment()
-        self.validate_security()
-        self.validate_database()
-        self.validate_redis()
-        self.validate_storage()
-        self.validate_external_services()
-        self.validate_performance()
-
-        return ConfigValidationResult(
-            is_valid=len(self.errors) == 0,
-            errors=self.errors,
-            warnings=self.warnings,
-        )
-
-    def validate_environment(self):
-        """Validate environment configuration."""
-        # Check if environment is set
-        if not self.settings.app_env:
-            self.errors.append("APP_ENV is not set")
-
-        # Validate environment value
-        try:
-            env = Environment(self.settings.app_env)
-        except ValueError:
-            self.errors.append(f"Invalid APP_ENV: {self.settings.app_env}")
-
-        # Production checks
-        if self.settings.is_production:
-            if self.settings.log_level.upper() == "DEBUG":
-                self.warnings.append("Log level is DEBUG in production (recommended: INFO or WARNING)")
-
-    def validate_security(self):
-        """Validate security settings."""
-        # JWT Secret
-        if not self.settings.jwt_secret:
-            self.errors.append("JWT_SECRET is required")
-        elif len(self.settings.jwt_secret) < 32:
-            self.errors.append("JWT_SECRET must be at least 32 characters")
-        elif self.settings.is_production and self.settings.jwt_secret in ["change-me", "secret", "your-secret-key"]:
-            self.errors.append("JWT_SECRET must be changed from default value in production")
-
-        # CORS origins in production
-        if self.settings.is_production:
-            cors_origins = self.settings.cors_origin_list
-            if not cors_origins or cors_origins == ["*"]:
-                self.errors.append("CORS_ORIGINS must be restricted in production (not '*')")
-            elif "localhost" in str(cors_origins) or "127.0.0.1" in str(cors_origins):
-                self.warnings.append("CORS_ORIGINS contains localhost in production")
-
-        # Encryption key
-        if hasattr(self.settings, 'encryption_key') and not self.settings.encryption_key:
-            self.warnings.append("ENCRYPTION_KEY is not set (encrypted features will be disabled)")
-
-    def validate_database(self):
-        """Validate database configuration."""
-        if not self.settings.database_url:
-            self.errors.append("DATABASE_URL is required")
+def validate_required_variables(required: List[str], app_env: str) -> List[str]:
+    """Validate that all required environment variables are set.
+    
+    Args:
+        required: List of required environment variable names
+        app_env: Current application environment (development/production)
+    
+    Returns:
+        List of missing variable names
+    
+    Raises:
+        ValidationError: If any required variable is missing in production
+    """
+    missing = []
+    
+    for var in required:
+        value = get_env_or_none(var)
+        if value is None or value == "":
+            missing.append(var)
+    
+    if missing:
+        if app_env == "production":
+            # In production, missing required variables are fatal
+            raise ValidationError(
+                f"Missing required environment variables in {app_env} mode: "
+                f"{', '.join(sorted(missing))}. "
+                "These must be set before starting the application."
+            )
         else:
-            # Check if PostgreSQL is configured
-            if not self.settings.database_url.startswith(("postgresql://", "postgres://")):
-                if self.settings.is_production:
-                    self.warnings.append("SQLite detected in production (PostgreSQL recommended)")
-
-            # Validate connection pool settings
-            if hasattr(self.settings, 'db_pool_size') and self.settings.db_pool_size < 5:
-                self.warnings.append(f"DB_POOL_SIZE is very low: {self.settings.db_pool_size}")
-
-    def validate_redis(self):
-        """Validate Redis configuration."""
-        if hasattr(self.settings, 'redis_url') and self.settings.redis_url:
-            # Redis is configured
-            if self.settings.is_production and "localhost" in self.settings.redis_url:
-                self.warnings.append("Redis URL points to localhost in production")
-
-    def validate_storage(self):
-        """Validate storage configuration."""
-        # Check storage backend
-        if hasattr(self.settings, 'storage_backend'):
-            valid_backends = ["local", "s3", "minio"]
-            if self.settings.storage_backend not in valid_backends:
-                self.errors.append(f"Invalid STORAGE_BACKEND: {self.settings.storage_backend}")
-
-            # S3 checks
-            if self.settings.storage_backend == "s3":
-                if not hasattr(self.settings, 'aws_access_key_id') or not self.settings.aws_access_key_id:
-                    self.errors.append("AWS_ACCESS_KEY_ID is required for S3 storage")
-                if not hasattr(self.settings, 'aws_secret_access_key') or not self.settings.aws_secret_access_key:
-                    self.errors.append("AWS_SECRET_ACCESS_KEY is required for S3 storage")
-                if not hasattr(self.settings, 's3_bucket') or not self.settings.s3_bucket:
-                    self.errors.append("S3_BUCKET is required for S3 storage")
-
-        # Check storage directories exist
-        storage_dirs = [
-            self.settings.storage_uploads,
-            self.settings.storage_cache,
-            self.settings.storage_vector,
-            self.settings.storage_indexes,
-        ]
-        for path in storage_dirs:
-            if not os.path.exists(path):
-                self.warnings.append(f"Storage directory does not exist: {path}")
-
-    def validate_external_services(self):
-        """Validate external service configuration."""
-        # Elasticsearch is optional but warn if URL is set but service might not be reachable
-        if hasattr(self.settings, 'elasticsearch_url') and self.settings.elasticsearch_url:
-            if "localhost" in self.settings.elasticsearch_url or "127.0.0.1" in self.settings.elasticsearch_url:
-                self.warnings.append("Elasticsearch URL points to localhost - ensure service is running")
-
-        # OpenAI API key
-        if hasattr(self.settings, 'openai_api_key') and not self.settings.openai_api_key:
-            self.warnings.append("OPENAI_API_KEY is not set (AI features will be limited)")
-
-        # Email configuration
-        if self.settings.smtp_host:
-            if not self.settings.smtp_username:
-                self.warnings.append("SMTP_USERNAME is not set (authentication may fail)")
-
-    def validate_performance(self):
-        """Validate performance settings."""
-        # Worker count
-        if hasattr(self.settings, 'max_workers'):
-            if self.settings.max_workers < 1:
-                self.errors.append("MAX_WORKERS must be at least 1")
-            elif self.settings.max_workers > 16:
-                self.warnings.append(f"MAX_WORKERS is very high: {self.settings.max_workers} (recommended: 2-8)")
-
-        # Rate limiting
-        if hasattr(self.settings, 'rate_limit_requests'):
-            if self.settings.rate_limit_requests < 10:
-                self.warnings.append(f"RATE_LIMIT_REQUESTS is very low: {self.settings.rate_limit_requests}")
-
-        # Session timeout
-        if hasattr(self.settings, 'session_timeout'):
-            if self.settings.session_timeout < 300:
-                self.warnings.append(f"SESSION_TIMEOUT is very low: {self.settings.session_timeout}s (recommended: 3600s)")
-
-    def generate_recommendations(self) -> list[str]:
-        """Generate configuration recommendations."""
-        recommendations = []
-
-        if self.settings.is_production:
-            # Production recommendations
-            if not hasattr(self.settings, 'sentry_dsn') or not self.settings.sentry_dsn:
-                recommendations.append("Set SENTRY_DSN for error tracking")
-
-            if not hasattr(self.settings, 'otel_exporter_otlp_endpoint') or not self.settings.otel_exporter_otlp_endpoint:
-                recommendations.append("Set OTEL_EXPORTER_OTLP_ENDPOINT for distributed tracing")
-
-            if not hasattr(self.settings, 'redis_url') or not self.settings.redis_url:
-                recommendations.append("Configure Redis for caching and session storage")
-
-            if not hasattr(self.settings, 'elasticsearch_url') or not self.settings.elasticsearch_url:
-                recommendations.append("Configure Elasticsearch for vector search capabilities")
-
-        return recommendations
+            # In development, return missing variables for warning
+            return missing
+    
+    return []
 
 
-def validate_config(settings) -> ConfigValidationResult:
+def validate_min_length(var_name: str, value: str, min_length: int, app_env: str) -> bool:
+    """Validate that a value meets minimum length requirements.
+    
+    Args:
+        var_name: Environment variable name (for error messages)
+        value: The value to validate
+        min_length: Minimum required length
+        app_env: Current application environment
+    
+    Returns:
+        True if validation failed (for tracking), False if passed
     """
-    Validate application configuration.
-    Returns validation result with errors and warnings.
+    if len(value) < min_length:
+        if app_env == "production":
+            raise ValidationError(
+                f"{var_name} must be at least {min_length} characters in production. "
+                f"Current length: {len(value)}. "
+                f"Generate a secure secret with: python -c 'import secrets; print(secrets.token_hex({min_length // 2}))'"
+            )
+        return True
+    return False
+
+
+def validate_not_placeholder(var_name: str, value: str, app_env: str) -> bool:
+    """Check if value is a placeholder that shouldn't be in production.
+    
+    Args:
+        var_name: Environment variable name
+        value: The value to check
+        app_env: Current application environment
+    
+    Returns:
+        True if placeholder detected (for tracking), False otherwise
     """
-    validator = ConfigValidator(settings)
-    result = validator.validate_all()
-
-    # Log results
-    if result.errors:
-        for error in result.errors:
-            logger.error("Configuration error: %s", error)
-
-    if result.warnings:
-        for warning in result.warnings:
-            logger.warning("Configuration warning: %s", warning)
-
-    recommendations = validator.generate_recommendations()
-    for rec in recommendations:
-        logger.info("Configuration recommendation: %s", rec)
-
-    return result
+    placeholders = [
+        "change-me", "your-", "-here", "placeholder", "example",
+        "sample", "dummy", "default-value"
+    ]
+    
+    is_placeholder = any(p in value.lower() for p in placeholders)
+    
+    if is_placeholder and app_env == "production":
+        raise ValidationError(
+            f"{var_name} appears to be using a placeholder value in production. "
+            "Replace with a secure, randomly generated value."
+        )
+    
+    return is_placeholder
 
 
-def generate_secure_secret(length: int = 32) -> str:
-    """Generate a cryptographically secure random secret."""
-    return secrets.token_urlsafe(length)
-
-
-def validate_jwt_secret(secret: Optional[str], is_production: bool = False) -> tuple[bool, str]:
+def validate_jwt_secret(value: str, app_env: str) -> None:
+    """Validate JWT_SECRET meets minimum requirements.
+    
+    Args:
+        value: The JWT_SECRET value
+        app_env: Current application environment
+    
+    Raises:
+        ValidationError: If JWT_SECRET is invalid
     """
-    Validate JWT secret strength.
-    Returns (is_valid, message).
+    var_name = "JWT_SECRET"
+    
+    # Check if set
+    if value == "":
+        if app_env == "production":
+            raise ValidationError(
+                f"{var_name} must be set in production. "
+                "Generate a secure secret with: python -c 'import secrets; print(secrets.token_hex(32))'"
+            )
+        return
+    
+    # Check length in production
+    validate_min_length(var_name, value, 32, app_env)
+    
+    # Check for placeholder in production
+    validate_not_placeholder(var_name, value, app_env)
+
+
+def validate_session_secret(value: str, app_env: str) -> None:
+    """Validate SESSION_SECRET meets minimum requirements.
+    
+    Args:
+        value: The SESSION_SECRET value
+        app_env: Current application environment
+    
+    Raises:
+        ValidationError: If SESSION_SECRET is invalid
     """
-    if not secret:
-        return False, "JWT_SECRET is not set"
+    var_name = "SESSION_SECRET"
+    
+    # Check if set
+    if value == "":
+        if app_env == "production":
+            raise ValidationError(
+                f"{var_name} must be set in production. "
+                "Generate a secure secret with: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+            )
+        return
+    
+    # Check length in production
+    validate_min_length(var_name, value, 32, app_env)
+    
+    # Check for placeholder in production
+    validate_not_placeholder(var_name, value, app_env)
 
-    if len(secret) < 32:
-        return False, f"JWT_SECRET is too short ({len(secret)} chars, minimum 32)"
 
-    if is_production:
-        weak_secrets = ["change-me", "secret", "your-secret-key", "changeme", "password"]
-        if secret.lower() in weak_secrets:
-            return False, "JWT_SECRET uses a common weak value"
+def validate_encryption_key(value: str, app_env: str) -> None:
+    """Validate ENCRYPTION_KEY meets minimum requirements.
+    
+    Args:
+        value: The ENCRYPTION_KEY value
+        app_env: Current application environment
+    
+    Raises:
+        ValidationError: If ENCRYPTION_KEY is invalid
+    """
+    var_name = "ENCRYPTION_KEY"
+    
+    # Check if set
+    if value == "":
+        if app_env == "production":
+            raise ValidationError(
+                f"{var_name} must be set in production. "
+                "Generate a secure key with: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+            )
+        return
+    
+    # Check length in production (32 bytes for AES-256)
+    validate_min_length(var_name, value, 32, app_env)
+    
+    # Check for placeholder in production
+    validate_not_placeholder(var_name, value, app_env)
 
-        # Check for sufficient entropy
-        unique_chars = len(set(secret))
-        if unique_chars < 16:
-            return False, f"JWT_SECRET has low entropy ({unique_chars} unique characters, minimum 16)"
 
-    return True, "JWT_SECRET is valid"
+def validate_database_url(value: str, app_env: str) -> bool:
+    """Validate DATABASE_URL format.
+    
+    Args:
+        value: The DATABASE_URL value
+        app_env: Current application environment
+    
+    Returns:
+        True if format appears invalid (for tracking), False otherwise
+    
+    Raises:
+        ValidationError: If DATABASE_URL is missing in production
+    """
+    var_name = "DATABASE_URL"
+    
+    # Check if set
+    if value == "":
+        if app_env == "production":
+            raise ValidationError(
+                f"{var_name} must be set in production. "
+                "Format: postgresql://user:password@host:5432/database"
+            )
+        return False
+    
+    # Validate format
+    valid_prefixes = ("postgresql://", "sqlite://")
+    
+    # Support legacy nebula.db format
+    if value == "nebula.db":
+        return False
+    
+    if not any(value.startswith(prefix) for prefix in valid_prefixes):
+        print(
+            f"WARNING: {var_name} may not be valid. Expected format: postgresql://user:pass@host:port/db",
+            file=sys.stderr
+        )
+        return True
+    
+    return False
+
+
+def validate_database_credentials(postgres_user: str, postgres_password: str, app_env: str, using_database_url: bool) -> List[str]:
+    """Validate PostgreSQL credentials are set when using PostgreSQL without DATABASE_URL.
+    
+    Args:
+        postgres_user: POSTGRES_USER value
+        postgres_password: POSTGRES_PASSWORD value
+        app_env: Current application environment
+        using_database_url: Whether DATABASE_URL is being used (which contains credentials)
+    
+    Returns:
+        List of missing credential variables
+    """
+    # If using DATABASE_URL, credentials are embedded in the URL
+    if using_database_url:
+        return []
+    
+    missing = []
+    
+    if postgres_user == "":
+        missing.append("POSTGRES_USER")
+    
+    if postgres_password == "":
+        missing.append("POSTGRES_PASSWORD")
+    
+    if missing and app_env == "production":
+        raise ValidationError(
+            f"PostgreSQL credentials missing in production: {', '.join(sorted(missing))}. "
+            "Set these or use DATABASE_URL instead."
+        )
+    
+    return missing
+
+
+def validate_smtp_config(smtp_host: str, smtp_user: str, smtp_password: str, app_env: str) -> List[str]:
+    """Validate SMTP configuration.
+    
+    Args:
+        smtp_host: SMTP_HOST value
+        smtp_user: SMTP_USERNAME value
+        smtp_password: SMTP_PASSWORD value
+        app_env: Current application environment
+    
+    Returns:
+        List of missing SMTP configuration variables
+    """
+    missing = []
+    
+    if smtp_host == "":
+        missing.append("SMTP_HOST")
+    
+    if smtp_user == "":
+        missing.append("SMTP_USERNAME")
+    
+    if smtp_password == "":
+        missing.append("SMTP_PASSWORD")
+    
+    if missing and app_env == "production" and smtp_host != "":
+        # If SMTP_HOST is set in production, credentials should be too
+        raise ValidationError(
+            f"SMTP configuration incomplete in production. Missing: {', '.join(sorted(missing))}. "
+            "These are required for email functionality."
+        )
+    
+    return missing
+
+
+def validate_cors_origins(value: str) -> bool:
+    """Validate CORS_ORIGINS format.
+    
+    Args:
+        value: The CORS_ORIGINS value
+    
+    Returns:
+        True if warning issued, False otherwise
+    """
+    if value == "":
+        print(
+            "WARNING: CORS_ORIGINS is not set. Defaulting to localhost for development.",
+            file=sys.stderr
+        )
+        return True
+    
+    if value.strip() == "*":
+        print(
+            "WARNING: CORS_ORIGINS='*' is insecure when using credentials. "
+            "Set explicit origins for production.",
+            file=sys.stderr
+        )
+        return True
+    
+    return False
+
+
+def validate_minio_config(minio_root_user: str, minio_root_password: str, app_env: str) -> List[str]:
+    """Validate MinIO configuration.
+    
+    Args:
+        minio_root_user: MINIO_ROOT_USER value
+        minio_root_password: MINIO_ROOT_PASSWORD value
+        app_env: Current application environment
+    
+    Returns:
+        List of missing MinIO credentials
+    """
+    missing = []
+    
+    if minio_root_user == "":
+        missing.append("MINIO_ROOT_USER")
+    
+    if minio_root_password == "":
+        missing.append("MINIO_ROOT_PASSWORD")
+    
+    if missing and app_env == "production":
+        raise ValidationError(
+            f"MinIO credentials missing in production: {', '.join(sorted(missing))}. "
+            "These are required for object storage."
+        )
+    
+    return missing
+
+
+def validate_github_oauth(client_id: str, client_secret: str, app_env: str) -> List[str]:
+    """Validate GitHub OAuth configuration.
+    
+    Args:
+        client_id: GITHUB_OAUTH2_CLIENT_ID value
+        client_secret: GITHUB_OAUTH2_CLIENT_SECRET value
+        app_env: Current application environment
+    
+    Returns:
+        List of missing OAuth credentials
+    """
+    missing = []
+    
+    if client_id == "":
+        missing.append("GITHUB_OAUTH2_CLIENT_ID")
+    
+    if client_secret == "":
+        missing.append("GITHUB_OAUTH2_CLIENT_SECRET")
+    
+    if missing and app_env == "production":
+        raise ValidationError(
+            f"GitHub OAuth credentials missing in production: {', '.join(sorted(missing))}. "
+            "These are required for GitHub SSO."
+        )
+    
+    return missing
+
+
+def validate_google_oauth(client_id: str, client_secret: str, app_env: str) -> List[str]:
+    """Validate Google OAuth configuration.
+    
+    Args:
+        client_id: GOOGLE_OAUTH2_CLIENT_ID value
+        client_secret: GOOGLE_OAUTH2_CLIENT_SECRET value
+        app_env: Current application environment
+    
+    Returns:
+        List of missing OAuth credentials
+    """
+    missing = []
+    
+    if client_id == "":
+        missing.append("GOOGLE_OAUTH2_CLIENT_ID")
+    
+    if client_secret == "":
+        missing.append("GOOGLE_OAUTH2_CLIENT_SECRET")
+    
+    if missing and app_env == "production":
+        raise ValidationError(
+            f"Google OAuth credentials missing in production: {', '.join(sorted(missing))}. "
+            "These are required for Google SSO."
+        )
+    
+    return missing
+
+
+def validate_saml_config(enabled: str, metadata_url: str, cert_path: str, key_path: str, app_env: str) -> List[str]:
+    """Validate SAML configuration when SAML is enabled.
+    
+    Args:
+        enabled: ENABLE_SAML value
+        metadata_url: SAML_METADATA_URL value
+        cert_path: SAML_CERT_PATH value
+        key_path: SAML_KEY_PATH value
+        app_env: Current application environment
+    
+    Returns:
+        List of missing SAML configuration variables
+    """
+    if enabled.lower() != "true":
+        return []
+    
+    missing = []
+    
+    if metadata_url == "":
+        missing.append("SAML_METADATA_URL")
+    
+    if cert_path == "":
+        missing.append("SAML_CERT_PATH")
+    
+    if key_path == "":
+        missing.append("SAML_KEY_PATH")
+    
+    if missing and app_env == "production":
+        raise ValidationError(
+            f"SAML configuration incomplete in production: {', '.join(sorted(missing))}. "
+            "These are required for SAML SSO."
+        )
+    
+    return missing
+
+
+def validate_redis_url(value: str, app_env: str) -> bool:
+    """Validate Redis URL format.
+    
+    Args:
+        value: REDIS_URL value
+        app_env: Current application environment
+    
+    Returns:
+        True if format invalid, False otherwise
+    """
+    if value == "":
+        if app_env == "production":
+            print(
+                "WARNING: REDIS_URL is not set. Redis is recommended for production caching.",
+                file=sys.stderr
+            )
+        return False
+    
+    if not value.startswith("redis://") and not value.startswith("rediss://"):
+        print(
+            f"WARNING: REDIS_URL may not be valid. Expected redis:// or rediss://",
+            file=sys.stderr
+        )
+        return True
+    
+    return False
+
+
+def validate_openai_api_key(value: str, app_env: str) -> bool:
+    """Validate OpenAI API key is not placeholder in production.
+    
+    Args:
+        value: OPENAI_API_KEY value
+        app_env: Current application environment
+    
+    Returns:
+        True if placeholder detected, False otherwise
+    """
+    if value == "":
+        return False
+    
+    if app_env == "production":
+        if validate_not_placeholder("OPENAI_API_KEY", value, app_env):
+            return True
+    
+    return False
+
+
+def run_validations() -> bool:
+    """Run all environment validations.
+    
+    Returns:
+        True if all validations passed (or warnings only), False if invalid.
+    
+    Raises:
+        ValidationError: If any production validation fails
+    """
+    app_env = get_env_or_none("APP_ENV") or "development"
+    
+    # Collect all warnings for development summary
+    warnings = []
+    
+    # Define required variables based on environment
+    required = ["APP_ENV"]
+    
+    # Always require DATABASE_URL (or legacy format)
+    db_url = get_env_value("DATABASE_URL")
+    if db_url == "" or db_url == "nebula.db":
+        # Default SQLite is fine
+        pass
+    elif db_url.startswith("postgresql://"):
+        required.append("DATABASE_URL")
+    
+    if app_env == "production":
+        required.extend(["JWT_SECRET", "SESSION_SECRET", "ENCRYPTION_KEY"])
+    
+    # Run required variable validation
+    missing = validate_required_variables(required, app_env)
+    if missing:
+        warnings.extend(missing)
+    
+    # Get all environment values
+    jwt_secret = get_env_value("JWT_SECRET")
+    session_secret = get_env_value("SESSION_SECRET")
+    encryption_key = get_env_value("ENCRYPTION_KEY")
+    cors_origins = get_env_value("CORS_ORIGINS")
+    
+    postgres_user = get_env_value("POSTGRES_USER")
+    postgres_password = get_env_value("POSTGRES_PASSWORD")
+    
+    smtp_host = get_env_value("SMTP_HOST")
+    smtp_user = get_env_value("SMTP_USERNAME")
+    smtp_password = get_env_value("SMTP_PASSWORD")
+    
+    minio_user = get_env_value("MINIO_ROOT_USER")
+    minio_password = get_env_value("MINIO_ROOT_PASSWORD")
+    
+    github_client_id = get_env_value("GITHUB_OAUTH2_CLIENT_ID")
+    github_client_secret = get_env_value("GITHUB_OAUTH2_CLIENT_SECRET")
+    
+    google_client_id = get_env_value("GOOGLE_OAUTH2_CLIENT_ID")
+    google_client_secret = get_env_value("GOOGLE_OAUTH2_CLIENT_SECRET")
+    
+    saml_enabled = get_env_value("ENABLE_SAML")
+    saml_metadata_url = get_env_value("SAML_METADATA_URL")
+    saml_cert_path = get_env_value("SAML_CERT_PATH")
+    saml_key_path = get_env_value("SAML_KEY_PATH")
+    
+    redis_url = get_env_value("REDIS_URL")
+    openai_key = get_env_value("OPENAI_API_KEY")
+    
+    # Run all validations and collect warnings/errors
+    validation_errors = []
+    
+    # JWT Secret
+    try:
+        validate_jwt_secret(jwt_secret, app_env)
+    except ValidationError as e:
+        validation_errors.append(str(e))
+    
+    # Session Secret
+    try:
+        validate_session_secret(session_secret, app_env)
+    except ValidationError as e:
+        validation_errors.append(str(e))
+    
+    # Encryption Key
+    try:
+        validate_encryption_key(encryption_key, app_env)
+    except ValidationError as e:
+        validation_errors.append(str(e))
+    
+    # Database URL
+    try:
+        validate_database_url(db_url, app_env)
+    except ValidationError as e:
+        validation_errors.append(str(e))
+    
+    # PostgreSQL credentials (if using PostgreSQL without DATABASE_URL)
+    using_db_url = db_url.startswith("postgresql://")
+    if db_url.startswith("postgresql://"):
+        try:
+            validate_database_credentials(postgres_user, postgres_password, app_env, using_db_url)
+        except ValidationError as e:
+            validation_errors.append(str(e))
+    
+    # SMTP Configuration
+    if smtp_host != "":
+        try:
+            validate_smtp_config(smtp_host, smtp_user, smtp_password, app_env)
+        except ValidationError as e:
+            validation_errors.append(str(e))
+    
+    # MinIO Configuration
+    if minio_user != "" or minio_password != "":
+        try:
+            validate_minio_config(minio_user, minio_password, app_env)
+        except ValidationError as e:
+            validation_errors.append(str(e))
+    
+    # GitHub OAuth
+    if github_client_id != "" or github_client_secret != "":
+        try:
+            validate_github_oauth(github_client_id, github_client_secret, app_env)
+        except ValidationError as e:
+            validation_errors.append(str(e))
+    
+    # Google OAuth
+    if google_client_id != "" or google_client_secret != "":
+        try:
+            validate_google_oauth(google_client_id, google_client_secret, app_env)
+        except ValidationError as e:
+            validation_errors.append(str(e))
+    
+    # SAML Configuration
+    try:
+        validate_saml_config(saml_enabled, saml_metadata_url, saml_cert_path, saml_key_path, app_env)
+    except ValidationError as e:
+        validation_errors.append(str(e))
+    
+    # CORS Origins
+    validate_cors_origins(cors_origins)
+    
+    # Redis URL
+    validate_redis_url(redis_url, app_env)
+    
+    # OpenAI API Key
+    validate_openai_api_key(openai_key, app_env)
+    
+    # If any production errors, raise
+    if validation_errors:
+        raise ValidationError("\n".join(validation_errors))
+    
+    # Print warnings for development
+    if warnings:
+        print(
+            f"WARNING: Missing environment variables in {app_env} mode: "
+            f"{', '.join(sorted(warnings))}",
+            file=sys.stderr
+        )
+    
+    return len(validation_errors) == 0
+
+
+def main() -> int:
+    """Main entry point for validation CLI."""
+    try:
+        run_validations()
+        print("Environment validation passed.")
+        return 0
+    except ValidationError as e:
+        print(f"Environment validation failed:\n{e}", file=sys.stderr)
+        return 1
+    except Exception as e:
+        print(f"Unexpected error during validation: {e}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
