@@ -113,11 +113,12 @@ class DocumentRepository:
     async def count_all(self) -> int:
         """Return total document count across all users."""
         row = await self._db.fetchone("SELECT COUNT(*) as count FROM documents")
+        return int(row["count"]) if row else 0
+
     async def count_for_user(self, user_id: int) -> int:
-        """Return total non-deleted document count for a user."""
+        """Return total document count for a user."""
         row = await self._db.fetchone(
-            "SELECT COUNT(*) as cnt FROM documents WHERE user_id = ? AND is_deleted = FALSE",
+            "SELECT COUNT(*) as cnt FROM documents WHERE user_id = ?",
             (user_id,),
         )
         return int(row["cnt"]) if row else 0
-        return int(row["count"]) if row else 0

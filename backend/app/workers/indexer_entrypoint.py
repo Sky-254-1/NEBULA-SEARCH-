@@ -38,7 +38,7 @@ async def main() -> None:
     await job_queue.connect()
 
     # Create and start worker
-    worker = IndexingWorker(max_retries=3)
+    worker = IndexingWorker()
     await worker.connect()
     logger.info("Worker initialized — waiting for index_document jobs")
 
