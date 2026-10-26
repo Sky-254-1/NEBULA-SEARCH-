@@ -103,7 +103,7 @@ class Settings:
         default_factory=lambda: os.getenv("COOKIE_SECURE", "true").lower() == "true"
     )
     cookie_samesite: str = field(
-        default_factory=lambda: os.getenv("COOKIE_SAMESITE", "lax")
+        default_factory=lambda: os.getenv("COOKIE_SAMESITE", "strict")
     )
     enable_rbac: bool = field(
         default_factory=lambda: os.getenv("ENABLE_RBAC", "true").lower() == "true"

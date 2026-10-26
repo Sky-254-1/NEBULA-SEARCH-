@@ -876,7 +876,7 @@ REFRESH_TOKEN_DAYS=7
 # Cookie Configuration
 AUTH_COOKIE_MODE=true
 COOKIE_SECURE=true
-COOKIE_SAMESITE=lax
+COOKIE_SAMESITE=strict
 
 # Brute Force Protection
 MAX_LOGIN_ATTEMPTS=5

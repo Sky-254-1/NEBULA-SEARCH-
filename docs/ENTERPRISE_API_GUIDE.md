@@ -152,7 +152,7 @@ Enable cookie mode for web applications:
 ```bash
 AUTH_COOKIE_MODE=true
 COOKIE_SECURE=true
-COOKIE_SAMESITE=lax
+COOKIE_SAMESITE=strict
 ```
 
 ### Roles & Permissions
