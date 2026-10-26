@@ -18,6 +18,7 @@ from vector.pipeline import index_document
 
 logger = logging.getLogger("nebula.vector.worker")
 POLL_INTERVAL = 2.0
+MAX_INDEX_ATTEMPTS = 3
 
 
 async def process_job(job: dict) -> None:
@@ -29,12 +30,25 @@ async def process_job(job: dict) -> None:
 
     document_id = payload.get("document_id")
     user_id = payload.get("user_id")
+    attempts = payload.get("attempts", 0)
     if not document_id or not user_id:
         return
 
     db = await connect()
     try:
-        await index_document(db, document_id, user_id)
+        success = await index_document(db, document_id, user_id)
+        if not success and attempts + 1 < MAX_INDEX_ATTEMPTS:
+            await job_queue.enqueue(
+                "index_document",
+                {"document_id": document_id, "user_id": user_id, "attempts": attempts + 1},
+            )
+    except Exception:
+        logger.exception("Worker job failed for doc %s", document_id)
+        if attempts + 1 < MAX_INDEX_ATTEMPTS:
+            await job_queue.enqueue(
+                "index_document",
+                {"document_id": document_id, "user_id": user_id, "attempts": attempts + 1},
+            )
     finally:
         await db.close()
 

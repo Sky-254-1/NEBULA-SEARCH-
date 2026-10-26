@@ -4,8 +4,12 @@ from typing import Optional
 from urllib.parse import urljoin
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from onelogin.saml2.auth import OneLogin_Saml2_Auth
-from onelogin.saml2.utils import OneLogin_Saml2_Utils
+try:
+    from onelogin.saml2.auth import OneLogin_Saml2_Auth
+    from onelogin.saml2.utils import OneLogin_Saml2_Utils
+except ImportError:
+    OneLogin_Saml2_Auth = None  # type: ignore
+    OneLogin_Saml2_Utils = None  # type: ignore
 
 from app.config import get_settings
 from app.database import get_db
@@ -18,6 +22,8 @@ router = APIRouter(prefix="/api/v1/auth/saml", tags=["SAML"])
 
 def _get_saml_auth(request: Request) -> OneLogin_Saml2_Auth:
     """Initialize SAML auth from request."""
+    if OneLogin_Saml2_Auth is None:
+        raise HTTPException(status_code=501, detail="SAML authentication library not installed")
     # Extract host and protocol
     forwarded_proto = request.headers.get("X-Forwarded-Proto", "https")
     host = request.headers.get("host", request.url.netloc)

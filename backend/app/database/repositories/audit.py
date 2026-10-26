@@ -131,58 +131,54 @@ class AuditRepository:
 
     async def delete_old_logs(self, days: int = 90) -> None:
         """Delete audit logs older than N days."""
-        # SQLite uses datetime('now', '-N days')
-        # Postgres uses CURRENT_TIMESTAMP - INTERVAL 'N days'
-        from app.config import get_settings
-        settings = get_settings()
-        if settings.uses_postgres:
-            sql = f"DELETE FROM audit_logs WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '{int(days)} days'"  # nosec B608: days is coerced to int, no user-controlled string interpolation
-        else:
-            sql = f"DELETE FROM audit_logs WHERE created_at < datetime('now', '-{int(days)} days')"  # nosec B608: days is coerced to int, no user-controlled string interpolation
-        await self._db.execute(sql)
+        # Cross-database compatible: SQLite uses datetime('now', ?), PostgreSQL adapts to CURRENT_TIMESTAMP - INTERVAL
+        days_int = int(days)
+        sql = "DELETE FROM audit_logs WHERE created_at < datetime('now', ?)"
+        await self._db.execute(sql, (f"-{days_int} days",))
         await self._db.commit()
 
     async def get_audit_statistics(self, days: int = 30) -> dict:
         """Get audit statistics for the last N days."""
         from app.config import get_settings
         settings = get_settings()
-        
-        if settings.uses_postgres:
-            date_filter = f"CURRENT_TIMESTAMP - INTERVAL '{int(days)} days'"
-        else:
-            date_filter = f"datetime('now', '-{int(days)} days')"
-        
+        days_int = int(days)
+
+        # Cross-database compatible: SQLite uses datetime('now', ?), PostgreSQL adapts to CURRENT_TIMESTAMP - INTERVAL
         # Total events
         total = await self._db.fetchone(
-            f"SELECT COUNT(*) as count FROM audit_logs WHERE created_at > {date_filter}",  # nosec B608: date_filter is built from int(days), not user input
+            "SELECT COUNT(*) as count FROM audit_logs WHERE created_at > datetime('now', ?)",
+            (f"-{days_int} days",)
         )
-        
+
         # Events by action
         by_action = await self._db.fetchall(
-            f"""SELECT action, COUNT(*) as count 
+            """SELECT action, COUNT(*) as count 
                 FROM audit_logs 
-                WHERE created_at > {date_filter}
+                WHERE created_at > datetime('now', ?)
                 GROUP BY action 
-                ORDER BY count DESC""",  # nosec B608: date_filter is built from int(days), not user input
+                ORDER BY count DESC""",
+            (f"-{days_int} days",)
         )
-        
+
         # Events by user
         by_user = await self._db.fetchall(
-            f"""SELECT user_id, COUNT(*) as count 
+            """SELECT user_id, COUNT(*) as count 
                 FROM audit_logs 
-                WHERE created_at > {date_filter} AND user_id IS NOT NULL
+                WHERE created_at > datetime('now', ?) AND user_id IS NOT NULL
                 GROUP BY user_id 
-                ORDER BY count DESC 
-                LIMIT 10""",  # nosec B608: date_filter is built from int(days), not user input
+                ORDER BY count DESC
+                LIMIT 10""",
+            (f"-{days_int} days",)
         )
-        
+
         # Failed events
-        failed = await self._db.fetchone(
-            f"""SELECT COUNT(*) as count 
+        failed = await self._db.fetchall(
+            """SELECT COUNT(*) as count 
                 FROM audit_logs 
-                WHERE created_at > {date_filter} AND status = 'failure'""",  # nosec B608: date_filter is built from int(days), not user input
+                WHERE created_at > datetime('now', ?) AND status = 'failure'""",
+            (f"-{days_int} days",)
         )
-        
+
         return {
             "total_events": total["count"] if total else 0,
             "by_action": {row["action"]: row["count"] for row in by_action},

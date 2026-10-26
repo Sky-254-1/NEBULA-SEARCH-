@@ -141,6 +141,7 @@ class DocumentResponse(BaseModel):
     content_type: Optional[str] = None
     created_at: str
     indexed_at: Optional[str] = None
+    status: Optional[str] = None
 
 
 class DocumentUploadResponse(BaseModel):

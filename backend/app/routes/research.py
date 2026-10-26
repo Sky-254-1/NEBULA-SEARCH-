@@ -4,13 +4,15 @@ Features: projects, notes, bookmarks, citations, and AI-assisted research.
 """
 
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
-from app.database.engine import get_db
+from app.database.engine import DatabaseConnection, get_db
+
+AsyncSession = DatabaseConnection
 from app.services.research import ResearchService
 
 router = APIRouter(prefix="/research", tags=["Research"])

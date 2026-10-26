@@ -5,11 +5,14 @@ Handles business logic for projects, notes, bookmarks, citations, and AI researc
 
 import logging
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
+try:
+    from sqlalchemy.ext.asyncio import AsyncSession
+except ImportError:
+    AsyncSession = Any  # type: ignore
 
 from app.database.models import ResearchProject, ResearchNote, ResearchBookmark, ResearchCitation
 

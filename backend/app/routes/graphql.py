@@ -4,7 +4,10 @@ from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse
 import logging
 
-from app.search.graphql.schema import schema
+try:
+    from app.search.graphql.schema import schema
+except ImportError:
+    schema = None
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/graphql", tags=["graphql"])
@@ -13,6 +16,8 @@ router = APIRouter(prefix="/graphql", tags=["graphql"])
 @router.post("/")
 async def graphql_endpoint(request: Request):
     """GraphQL endpoint."""
+    if schema is None:
+        raise HTTPException(status_code=501, detail="GraphQL is not available")
     try:
         data = await request.json()
         query = data.get("query")
