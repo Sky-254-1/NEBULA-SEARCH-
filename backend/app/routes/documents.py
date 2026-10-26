@@ -16,11 +16,12 @@ from app.models.schemas import DocumentListResponse, DocumentResponse, Paginatio
 from app.services.auth import get_current_user
 from app.services.queue import job_queue
 from app.utils.pagination import PaginationParams
+from app.middleware.rate_limit import rate_limit
 
 router = APIRouter(prefix="/api/v1/documents", tags=["Documents"])
 settings = get_settings()
 
-MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 ALLOWED_EXTENSIONS = {".txt", ".md", ".json", ".csv", ".pdf", ".html", ".htm", ".docx"}
 
 # MIME type allowlist for content-type validation
@@ -183,11 +184,15 @@ async def list_documents(
 
 @router.post("/", response_model=DocumentResponse)
 async def upload_document(
+    request,
     file: UploadFile = File(...),
     email: str = Depends(get_current_user),
     db=Depends(get_db),
 ):
     """Upload a new document for indexing."""
+    # Rate limit: 10 uploads per minute per user
+    await rate_limit(request, limit=10, window=60)
+
     # Validate file type before database lookup
     is_valid, error_msg = _validate_extension(file.filename or "")
     if not is_valid:
