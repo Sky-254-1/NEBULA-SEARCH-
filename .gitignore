@@ -43,8 +43,14 @@ nebula.db
 debug_migration.db
 # Keep the intentional template env files
 !.env.example
-!.env.development
-!.env.production
+
+# Environment files with secrets (development and production) should never be committed
+.env.development
+.env.production
+
+# Kubernetes secrets (base64-encoded secrets should not be in source control)
+infra/kubernetes/secrets.yaml
+kubernetes/configs/secrets.yaml
 
 # ---------------------------------------------------------------------
 # OS / editor clutter
