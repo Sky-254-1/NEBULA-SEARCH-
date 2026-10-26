@@ -79,6 +79,29 @@ class DocumentRepository:
         )
         await self._db.commit()
 
+    async def transition_to_processing(self, doc_id: int) -> bool:
+        """Try to transition from pending to processing. Returns True if successful."""
+        result = await self._db.execute(
+            "UPDATE documents SET status = 'processing' WHERE id = ? AND status = 'pending'",
+            (doc_id,)
+        )
+        await self._db.commit()
+        return result.rowcount > 0
+
+    async def transition_to_indexed(self, doc_id: int, content_hash: str) -> None:
+        await self._db.execute(
+            "UPDATE documents SET status = 'indexed', content_hash = ?, indexed_at = datetime('now'), error_message = NULL WHERE id = ?",
+            (content_hash, doc_id),
+        )
+        await self._db.commit()
+
+    async def transition_to_failed(self, doc_id: int, error_message: str) -> None:
+        await self._db.execute(
+            "UPDATE documents SET status = 'failed', error_message = ?, indexed_at = NULL WHERE id = ?",
+            (error_message, doc_id),
+        )
+        await self._db.commit()
+
     async def find_by_hash(self, user_id: int, content_hash: str) -> dict | None:
         row = await self._db.fetchone(
             "SELECT id, filename, content_hash, status FROM documents "

@@ -1,5 +1,6 @@
 """Documents domain: upload, list, delete documents."""
 
+import logging
 import os
 import re
 import uuid
@@ -7,6 +8,8 @@ from pathlib import Path
 from typing import AsyncGenerator
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+
+logger = logging.getLogger("nebula.documents")
 
 from app.config import get_settings
 from app.database import get_db
