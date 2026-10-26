@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { AuthResponse, APIError } from '@/types';
+import { config } from '@/config';
 
 // ============================================
 // API Client Configuration
@@ -26,7 +27,8 @@ const getDesktopApiBaseUrl = async (): Promise<string | null> => {
   return null;
 };
 
-export const API_BASE_URL = (import.meta.env && import.meta.env.VITE_API_URL) || '/api/v1';
+// Use validated config - fails fast if required vars are missing
+export const API_BASE_URL = config.apiUrl;
 const API_TIMEOUT = 30000;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
