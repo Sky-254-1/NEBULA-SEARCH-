@@ -48,6 +48,9 @@ debug_migration.db
 .env.development
 .env.production
 
+# Frontend environment files (production may contain API keys)
+frontend/.env.production
+
 # Kubernetes secrets (base64-encoded secrets should not be in source control)
 infra/kubernetes/secrets.yaml
 kubernetes/configs/secrets.yaml
