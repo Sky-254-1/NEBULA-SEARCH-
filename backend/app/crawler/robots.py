@@ -8,6 +8,7 @@ from urllib.robotparser import RobotFileParser
 import httpx
 
 from app.config import get_settings
+from app.crawler.ssrf_protection import SSRFProtectionError, validate_url
 
 logger = logging.getLogger("nebula.crawler.robots")
 settings = get_settings()
@@ -24,10 +25,24 @@ class RobotsParser:
 
     async def _fetch_robots(self, netloc: str, scheme: str) -> RobotFileParser | None:
         robots_url = f"{scheme}://{netloc}/robots.txt"
+        
+        # Validate URL for SSRF protection
+        try:
+            validate_url(robots_url)
+        except SSRFProtectionError as exc:
+            logger.debug("SSRF validation failed for robots.txt: %s", exc)
+            rp = RobotFileParser()
+            rp.allow_all = True
+            self._cache[netloc] = (time.time(), rp)
+            return rp
+        
         rp = RobotFileParser()
         try:
-            async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
-                resp = await client.get(robots_url, headers={"User-Agent": self._user_agent})
+            async with httpx.AsyncClient(timeout=10, follow_redirects=False) as client:
+                resp = await client.get(
+                    robots_url,
+                    headers={"User-Agent": self._user_agent},
+                )
                 if resp.status_code == 200:
                     rp.parse(resp.text.splitlines())
                 else:
