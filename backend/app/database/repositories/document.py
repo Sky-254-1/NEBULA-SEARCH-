@@ -53,6 +53,15 @@ class DocumentRepository:
         await self._db.commit()
         return result.rowcount > 0
 
+    async def purge(self, doc_id: int, user_id: int) -> bool:
+        """Hard delete a document row (used to roll back failed uploads)."""
+        result = await self._db.execute(
+            "DELETE FROM documents WHERE id = ? AND user_id = ?",
+            (doc_id, user_id),
+        )
+        await self._db.commit()
+        return result.rowcount > 0
+
     async def mark_indexed(self, doc_id: int, content_hash: str | None = None) -> None:
         now = datetime.now(timezone.utc).isoformat()
         if content_hash:

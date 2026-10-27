@@ -63,7 +63,9 @@ async def orchestrated_search(
 ):
     backend_list = [b.strip() for b in backends.split(",") if b.strip()]
     try:
-        payload = await orchestrate_search(q, backend_list, page, page_size)
+        payload = await orchestrate_search(
+            q, backends=backend_list, page=page, page_size=page_size
+        )
     except httpx.HTTPStatusError as exc:
         raise HTTPException(status_code=502, detail=f"Search backend error: {exc.response.status_code}") from exc
     except httpx.RequestError as exc:

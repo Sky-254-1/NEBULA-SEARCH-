@@ -1,6 +1,7 @@
 """Storage routes: documents, settings, exports."""
 
 import json
+import logging
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,6 +27,9 @@ from app.models.schemas import (
 from app.services.auth import get_current_user
 from app.services.queue import job_queue
 from app.utils.pagination import PaginationParams
+from app.utils.uploads import remove_file_quietly, save_upload_streaming
+
+logger = logging.getLogger("nebula.storage")
 
 router = APIRouter(prefix="/api/v1/storage", tags=["Storage"])
 settings = get_settings()
@@ -105,20 +109,45 @@ async def upload_document(
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=400, detail=f"File type not allowed: {ext}")
 
-    content = await file.read()
-    if len(content) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="File too large (max 10MB)")
-
     upload_dir = settings.storage_uploads / str(user_id)
     upload_dir.mkdir(parents=True, exist_ok=True)
     safe_name = f"{uuid.uuid4().hex}{ext}"
     dest = upload_dir / safe_name
-    dest.write_bytes(content)
+
+    # Stream to disk in bounded chunks instead of buffering the whole upload
+    # in memory. The 10 MB limit is enforced while writing.
+    try:
+        await save_upload_streaming(file, dest, MAX_UPLOAD_BYTES)
+    except HTTPException:
+        raise
+    except OSError as exc:
+        logger.exception("Failed to store upload for user %s", user_id)
+        remove_file_quietly(dest)
+        raise HTTPException(status_code=500, detail="Unable to store uploaded file") from exc
+    except Exception as exc:
+        remove_file_quietly(dest)
+        raise HTTPException(status_code=400, detail="Invalid file content") from exc
 
     docs = DocumentRepository(db)
-    doc_id = await docs.create(user_id, file.filename or safe_name, file.content_type, str(dest))
+    try:
+        doc_id = await docs.create(user_id, file.filename or safe_name, file.content_type, str(dest))
+    except Exception:
+        remove_file_quietly(dest)
+        raise
 
-    await job_queue.enqueue("index_document", {"document_id": doc_id, "user_id": user_id})
+    try:
+        await job_queue.enqueue("index_document", {"document_id": doc_id, "user_id": user_id})
+    except Exception as exc:
+        logger.exception("Failed to enqueue indexing job for document %s", doc_id)
+        try:
+            await docs.purge(doc_id, user_id)
+        except Exception:  # pragma: no cover - best-effort rollback
+            logger.warning("Failed to roll back document %s", doc_id, exc_info=True)
+        remove_file_quietly(dest)
+        raise HTTPException(
+            status_code=503,
+            detail="Document could not be scheduled for indexing",
+        ) from exc
 
     return DocumentResponse(
         id=doc_id,

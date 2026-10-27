@@ -253,6 +253,11 @@ def validate_url(url: str, allow_schemes: Tuple[str, ...] = ("http", "https")) -
     # Reject cloud metadata endpoints
     if is_cloud_metadata_endpoint(host):
         raise SSRFProtectionError(f"Access to cloud metadata endpoint blocked: {host}")
+
+    # Reject literal private/reserved IP addresses. Hostnames that resolve to
+    # private addresses are handled by ``resolve_and_validate_host``.
+    if is_ip_address(host) and is_private_ip(host):
+        raise SSRFProtectionError(f"Private/reserved IP address blocked: {host}")
     
     # Reject embedded credentials (user:pass@host)
     if parsed.username:
@@ -261,8 +266,13 @@ def validate_url(url: str, allow_schemes: Tuple[str, ...] = ("http", "https")) -
     if parsed.password:
         raise SSRFProtectionError("URL contains embedded credentials")
     
-    # Validate port if specified
-    port = parsed.port
+    # Validate port if specified. ``urlparse`` raises ``ValueError`` for ports
+    # outside 0-65535 (or non-numeric ones), which must surface as an SSRF
+    # rejection rather than an unhandled exception.
+    try:
+        port = parsed.port
+    except ValueError:
+        raise SSRFProtectionError(f"Invalid port in URL: {url}")
     if port is not None:
         # Reject non-standard ports (optional security measure)
         if port < 1 or port > 65535:
@@ -318,23 +328,30 @@ async def resolve_and_validate_host(
         SSRFProtectionError: If resolution fails or any IP is unsafe
     """
     if loop is None:
-        loop = asyncio.get_event_loop()
-    
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:  # pragma: no cover - no running loop in this thread
+            loop = asyncio.get_event_loop()
+
     if not host:
         raise SSRFProtectionError("Empty hostname")
-    
+
     host = normalize_host(host)
-    
+
     # If already an IP address, validate it directly
     if is_ip_address(host):
         if is_private_ip(host):
             raise SSRFProtectionError(f"Private/reserved IP address blocked: {host}")
         return [host]
-    
-    # Resolve hostname to IP addresses
+
+    # Resolve hostname to IP addresses. ``family``/``type`` are keyword-only
+    # arguments on asyncio's ``getaddrinfo``.
     try:
         info = await loop.getaddrinfo(
-            host, None, socket.AF_UNSPEC, socket.SOCK_STREAM
+            host,
+            None,
+            family=socket.AF_UNSPEC,
+            type=socket.SOCK_STREAM,
         )
     except socket.gaierror as exc:
         raise SSRFProtectionError(f"DNS resolution failed: {exc}")

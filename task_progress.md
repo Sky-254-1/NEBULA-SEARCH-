@@ -124,3 +124,37 @@
 - [ ] Enable GitHub branch protection with required CI status checks
 - [ ] Resolve Dependabot alerts (`eslint@10`, `vitest@4`, `react-syntax-highlighter@16`)
 - [ ] Live staging deployment + full release checklist
+
+## Verification (2026-10-27)
+
+- [x] Backend unit suite: **1042 passed** (including 16 new security regression tests)
+- [x] Backend E2E suite: **20 passed** (was 16 passed / 4 failed)
+- [x] Frontend unit suite: **58 passed** (4 files)
+- [x] Replaced the stubbed `app/search/intelligence.py` with DB-backed service
+      singletons — fixes `/api/v2/search/{trending,popular,autocomplete,spell-check,suggest}`
+- [x] Fixed `orchestrate_search` call signatures in `/api/v1/search/orchestrate`
+      and `/api/v2/search/*` (backends were passed as `user_email`)
+- [x] Fixed SSRF regressions: invalid-port `ValueError`, `asyncio.getaddrinfo`
+      keyword args, literal private-IP rejection, crawler error propagation
+- [x] Documented host-only constraints (Windows Application Control DLL block,
+      optional `BRAVE_API_KEY` / `SERPAPI_KEY`, sandboxed Node runners) in
+      `docs/TEST_ENVIRONMENT_CONSTRAINTS.md`
+
+## Security hardening (2026-10-27)
+
+- [x] Crawler: redirects are never auto-followed; every hop is re-validated
+      (private IPs, DNS, HTTPS→HTTP downgrade) and the hop count is bounded per
+      crawler instance. Sitemap discovery applies the same URL policy.
+- [x] Uploads: shared streaming helper (`app/utils/uploads.py`) enforces the
+      10 MB limit in 64 KiB chunks, validates PDF/DOCX magic bytes on the temp
+      file before the atomic rename, and removes temp files on any failure.
+      DB rows are purged and files deleted if job enqueueing fails (both the
+      `/api/v1/documents` and legacy `/api/v1/storage/documents` routes).
+- [x] Kubernetes: `configs/secrets.yaml` ships empty Secret data (fail closed);
+      weak `admin`/`minioadmin`/placeholder TLS values removed. Added
+      `secrets.example.yaml` and `configs/README.md` with out-of-band
+      provisioning instructions.
+- [x] Added regression tests: `test_uploads.py`, `test_upload_rollback.py`,
+      `test_crawler_redirects.py`, `test_k8s_secrets.py`.
+
+

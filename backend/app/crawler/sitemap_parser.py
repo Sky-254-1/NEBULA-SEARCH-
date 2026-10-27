@@ -7,6 +7,8 @@ from urllib.parse import urljoin, urlparse
 import httpx
 from bs4 import BeautifulSoup
 
+from app.crawler.ssrf_protection import SSRFProtectionError, validate_url
+
 logger = logging.getLogger("nebula.crawler.sitemap")
 
 
@@ -40,7 +42,11 @@ class SitemapParser:
         for path in sitemap_paths:
             sitemap_url = urljoin(base, path)
             try:
-                resp = await client.get(sitemap_url, timeout=10.0)
+                # Reject literal private/metadata targets before requesting.
+                validate_url(sitemap_url)
+                resp = await client.get(
+                    sitemap_url, timeout=10.0, follow_redirects=False
+                )
                 if resp.status_code == 200:
                     content_type = resp.headers.get("content-type", "")
                     if "xml" in content_type or resp.text.strip().startswith("<?xml"):
@@ -68,7 +74,10 @@ class SitemapParser:
                     if loc and loc.string:
                         nested_url = loc.string.strip()
                         try:
-                            async with httpx.AsyncClient(timeout=10.0) as client:
+                            validate_url(nested_url)
+                            async with httpx.AsyncClient(
+                                timeout=10.0, follow_redirects=False
+                            ) as client:
                                 resp = await client.get(nested_url)
                                 if resp.status_code == 200:
                                     nested_urls = await self._parse_sitemap(resp.text, base_url)
@@ -117,7 +126,13 @@ class SitemapParser:
             normalized = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
             if parsed.query:
                 normalized += f"?{parsed.query}"
-            
+
+            # Never surface private/metadata targets discovered in a sitemap.
+            try:
+                validate_url(normalized)
+            except SSRFProtectionError:
+                return ""
+
             return normalized
         except Exception:
             return ""

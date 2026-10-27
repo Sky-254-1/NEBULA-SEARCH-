@@ -193,8 +193,9 @@ class TestSSRFValidator:
 
     @pytest.mark.asyncio
     async def test_is_safe_url(self, validator):
-        """is_safe_url should return True for valid URLs."""
-        assert validator.is_safe_url("http://127.0.0.1:8080")
+        """is_safe_url should reject private/loopback URLs and accept public ones."""
+        assert validator.is_safe_url("https://example.com")
+        assert not validator.is_safe_url("http://127.0.0.1:8080")
         assert not validator.is_safe_url("http://127.0.0.1")
 
     @pytest.mark.asyncio
@@ -224,9 +225,9 @@ class TestSSRFValidator:
     @pytest.mark.asyncio
     async def test_redirect_count_limit(self, validator):
         """Max redirect count should be enforced."""
-        # Use localhost for testing to avoid DNS resolution
-        current = "http://127.0.0.1:8080"
-        location = "http://127.0.0.1:8080/other"
+        # Use a public IP literal to avoid DNS resolution in tests
+        current = "https://93.184.216.34"
+        location = "https://93.184.216.34/other"
         
         # First redirect is OK
         await validator.validate_redirect(current, location, 0)

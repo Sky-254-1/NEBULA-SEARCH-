@@ -140,6 +140,10 @@ class AsyncCrawler:
         self._max_depth = max_depth or settings.crawler_max_depth
         self._respect_robots = respect_robots
         self._max_redirects = max_redirects or settings.crawler_max_depth
+        self._ssrfer = SSRFValidator(
+            max_redirects=self._max_redirects,
+            allow_http_downgrade=False,
+        )
 
         self._semaphore = asyncio.Semaphore(self._max_concurrency)
         self._robots = RobotsParser(user_agent=self._user_agent)
@@ -190,54 +194,43 @@ class AsyncCrawler:
                 return None
 
         try:
-            resp = await client.get(
-                url,
-                headers={"User-Agent": self._user_agent},
-                follow_redirects=False,  # Disabled for SSRF protection
-                timeout=httpx.Timeout(30.0),
-            )
-            
-            # Handle redirects manually with SSRF validation
-            if resp.status_code in (301, 302, 303, 307, 308):
-                location = resp.headers.get("Location", "")
-                if not location:
-                    logger.debug("Redirect without Location header: %s", url)
-                    return None
-                
-                # Validate redirect URL
-                try:
-                    validated_url = await _ssrfer.validate_redirect(url, location, 0)
-                except SSRFProtectionError as exc:
-                    logger.warning("Redirect blocked for %s: %s", url, exc)
-                    return None
-                
-                # Follow the validated redirect
-                try:
-                    resp = await client.get(
-                        validated_url,
-                        headers={"User-Agent": self._user_agent},
-                        follow_redirects=False,
-                        timeout=httpx.Timeout(30.0),
+            # Redirects are never followed automatically: each hop is
+            # re-validated (DNS, private IPs, scheme downgrade) before the
+            # next request is issued, and the hop count is bounded.
+            current_url = url
+            redirect_count = 0
+
+            while True:
+                resp = await client.get(
+                    current_url,
+                    headers={"User-Agent": self._user_agent},
+                    follow_redirects=False,
+                    timeout=httpx.Timeout(30.0),
+                )
+
+                if resp.status_code in (301, 302, 303, 307, 308):
+                    location = resp.headers.get("Location", "")
+                    if not location:
+                        logger.debug("Redirect without Location header: %s", current_url)
+                        return None
+
+                    current_url = await self._ssrfer.validate_redirect(
+                        current_url, location, redirect_count
                     )
-                    resp.raise_for_status()
-                except Exception as exc:
-                    logger.debug("Redirect request failed for %s: %s", validated_url, exc)
+                    redirect_count += 1
+                    continue
+
+                resp.raise_for_status()
+                ctype = resp.headers.get("content-type", "").lower()
+                if not any(t in ctype for t in _CONTENT_TYPES):
+                    logger.debug("Skipping non-HTML content: %s (%s)", current_url, ctype)
                     return None
-            
-            resp.raise_for_status()
-            ctype = resp.headers.get("content-type", "").lower()
-            if not any(t in ctype for t in _CONTENT_TYPES):
-                logger.debug("Skipping non-HTML content: %s (%s)", url, ctype)
-                return None
-            return resp.text
+                return resp.text
         except SSRFProtectionError as exc:
             logger.warning("SSRF validation failed for %s: %s", url, exc)
             return None
         except httpx.HTTPStatusError as exc:
-            if exc.response.status_code in (301, 302, 303, 307, 308):
-                logger.debug("Redirect handled separately for %s", url)
-            else:
-                logger.warning("HTTP error for %s: %s", url, exc)
+            logger.warning("HTTP error for %s: %s", url, exc)
             return None
         except httpx.RequestError as exc:
             logger.warning("Request error for %s: %s", url, exc)
@@ -255,7 +248,7 @@ class AsyncCrawler:
         
         try:
             # Validate URL for SSRF before processing
-            validated_url = await _ssrfer.validate_url_async(url)
+            validated_url = await self._ssrfer.validate_url_async(url)
             norm_url = normalize_url(validated_url)
         except SSRFProtectionError as exc:
             logger.warning("SSRF validation failed for %s: %s", url, exc)
@@ -315,7 +308,7 @@ class AsyncCrawler:
                 for link in extracted.get("links", []):
                     try:
                         # Re-validate each discovered link for SSRF
-                        validated_link = await _ssrfer.validate_url_async(link)
+                        validated_link = await self._ssrfer.validate_url_async(link)
                         if validated_link not in self._seen_urls:
                             discovered.append(validated_link)
                             for cb in self._url_callbacks:
@@ -338,11 +331,18 @@ class AsyncCrawler:
         # Pre-validate all start URLs
         for u in start_urls:
             try:
-                validated = await _ssrfer.validate_url_async(u)
+                validated = await self._ssrfer.validate_url_async(u)
                 queue.append((validated, 0))
             except SSRFProtectionError as exc:
                 logger.warning("SSRF validation failed for start URL %s: %s", u, exc)
-        
+
+        if start_urls and not queue:
+            # Every requested start URL was rejected: fail loudly instead of
+            # silently returning an empty crawl.
+            raise SSRFProtectionError(
+                "All start URLs were blocked by SSRF protection"
+            )
+
         pages_crawled = 0
 
         async def on_content(data: dict):
@@ -382,7 +382,7 @@ class AsyncCrawler:
         validated_queue = []
         for url, depth in queue:
             try:
-                validated = await _ssrfer.validate_url_async(url)
+                validated = await self._ssrfer.validate_url_async(url)
                 validated_queue.append((validated, depth))
             except SSRFProtectionError as exc:
                 logger.warning("SSRF validation failed for queue URL %s: %s", url, exc)

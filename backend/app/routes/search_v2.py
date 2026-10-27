@@ -143,7 +143,9 @@ async def intelligent_search(
 
     # 2. Get initial results from orchestrator
     backend_list = [b.strip() for b in backends.split(",") if b.strip()]
-    search_response = await orchestrate_search(q, backend_list, 1, page_size * 2)
+    search_response = await orchestrate_search(
+        q, backends=backend_list, page=1, page_size=page_size * 2
+    )
 
     results = search_response.get("results", [])
 
@@ -160,11 +162,11 @@ async def intelligent_search(
             "page": page,
             "page_size": page_size,
             "spell_corrected": original_query != q,
-            "intent": intent_classifier.classify(q),
+            "intent": await intent_classifier.classify(q),
         }
 
     # 3. Classify query intent
-    intent = intent_classifier.classify(q)
+    intent = await intent_classifier.classify(q)
     logger.info(f"Query intent: {intent}")
 
     # 4. Apply advanced ranking
@@ -172,7 +174,7 @@ async def intelligent_search(
     if enable_personalization and user_id:
         user_profile = await personalization_engine.get_user_profile(user_id)
 
-    ranked_results = await hybrid_ranker.rank(
+    ranked_results = await hybrid_ranker.rank_async(
         query=q,
         results=results,
         user_profile=user_profile,
@@ -191,14 +193,17 @@ async def intelligent_search(
             logger.warning(f"Semantic reranking failed: {e}")
 
     # 6. Apply intent-based boosts
+    intent_name = intent.get("intent", "informational") if isinstance(intent, dict) else str(intent)
     for result in ranked_results:
-        intent_boost = intent_classifier.get_intent_boost(q, result)
+        intent_boost = await intent_classifier.get_intent_boost(intent_name, result)
         if 'combined_score' in result:
             result['combined_score'] *= intent_boost
+        elif 'final_score' in result:
+            result['final_score'] *= intent_boost
 
     # Re-sort after intent boost
     ranked_results.sort(
-        key=lambda x: x.get('combined_score', x.get('semantic_score', 0)),
+        key=lambda x: x.get('combined_score', x.get('final_score', x.get('semantic_score', 0))),
         reverse=True
     )
 
@@ -254,7 +259,9 @@ async def semantic_search(
     Returns results based on semantic similarity only.
     """
     # Get base results first
-    search_response = await orchestrate_search(q, ["wikipedia"], 1, top_k * 2)
+    search_response = await orchestrate_search(
+        q, backends=["wikipedia"], page=1, page_size=top_k * 2
+    )
     results = search_response.get("results", [])
 
     if not results:

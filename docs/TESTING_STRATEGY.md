@@ -11,6 +11,12 @@ This document defines the comprehensive testing strategy for the Nebula Search E
 - ✅ Performance benchmarks met
 - ✅ Zero regression bugs in production
 
+> **Environment note:** some hosts constrain the test environment (Windows
+> Application Control blocking SQLAlchemy's Cython DLL, missing optional
+> `BRAVE_API_KEY` / `SERPAPI_KEY`, sandboxed Node child processes). See
+> [TEST_ENVIRONMENT_CONSTRAINTS.md](TEST_ENVIRONMENT_CONSTRAINTS.md) for the
+> symptoms and the supported workarounds.
+
 ---
 
 ## Table of Contents

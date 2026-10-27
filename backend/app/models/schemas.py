@@ -92,12 +92,29 @@ class SearchResult(BaseModel):
     semantic_score: Optional[float] = None
 
 
+class SearchMeta(BaseModel):
+    """Pagination and backend metadata for orchestrated search."""
+    page: int = 1
+    page_size: int = 10
+    total: int = 0
+    backends: list[str] = []
+    response_time_ms: float = 0.0
+
+
 class OrchestratedSearchResponse(BaseModel):
     """Orchestrated search response."""
     query: str
     results: list[SearchResult]
-    backends_used: list[str]
+    backends_used: list[str] = []
     total: int
+    page: int = 1
+    page_size: int = 10
+    mode: str = "orchestrated"
+    suggestions: list[Any] = []
+    ai_answer: Optional[Any] = None
+    facets: Optional[Any] = None
+    response_time_ms: float = 0.0
+    meta: Optional[SearchMeta] = None
 
 
 # Vector schemas

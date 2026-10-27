@@ -144,25 +144,38 @@ async def orchestrate_search(
     # Preprocess query
     query = sanitize_query(query)
     if not query:
+        elapsed_ms = round((time.time() - _request_start) * 1000, 2)
         return {
             "query": query,
             "backends": backends,
+            "backends_used": backends,
             "results": [],
             "total": 0,
+            "page": page,
+            "page_size": page_size,
             "suggestions": [],
             "ai_answer": None,
             "facets": None,
-            "response_time_ms": round((time.time() - _request_start) * 1000, 2),
+            "response_time_ms": elapsed_ms,
+            "meta": {
+                "page": page,
+                "page_size": page_size,
+                "total": 0,
+                "backends": backends,
+                "response_time_ms": elapsed_ms,
+            },
         }
 
     # Expand query for broader recall
     query_variants = expand_query(query) if enable_personalization else [query]
 
-    # Run searches in parallel
+    # Run searches in parallel. Fetch the first ``page * page_size`` results
+    # from each backend; pagination is applied to the merged ranking below.
+    fetch_size = min(max_results, max(page_size, page * page_size))
     tasks = []
     for variant in query_variants:
         for backend in backends:
-            tasks.append(run_web_search(variant, backend))
+            tasks.append(run_web_search(variant, backend, 1, fetch_size))
 
     results_list = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -213,10 +226,12 @@ async def orchestrate_search(
             )
         )
 
+    elapsed_ms = round((time.time() - _request_start) * 1000, 2)
     return {
         "query": query,
         "mode": "orchestrated",
         "backends": backends,
+        "backends_used": backends,
         "results": paginated_results,
         "total": total,
         "page": page,
@@ -224,7 +239,14 @@ async def orchestrate_search(
         "suggestions": suggestions,
         "ai_answer": ai_answer,
         "facets": facets_out,
-        "response_time_ms": round((time.time() - _request_start) * 1000, 2),
+        "response_time_ms": elapsed_ms,
+        "meta": {
+            "page": page,
+            "page_size": page_size,
+            "total": total,
+            "backends": backends,
+            "response_time_ms": elapsed_ms,
+        },
     }
 
 

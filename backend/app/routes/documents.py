@@ -1,11 +1,9 @@
 """Documents domain: upload, list, delete documents."""
 
 import logging
-import os
 import re
 import uuid
 from pathlib import Path
-from typing import AsyncGenerator
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 
@@ -19,12 +17,13 @@ from app.models.schemas import DocumentListResponse, DocumentResponse, Paginatio
 from app.services.auth import get_current_user
 from app.services.queue import job_queue
 from app.utils.pagination import PaginationParams
+from app.utils.uploads import remove_file_quietly, save_upload_streaming
 from app.middleware.rate_limit import rate_limit
 
 router = APIRouter(prefix="/api/v1/documents", tags=["Documents"])
 settings = get_settings()
 
-MAX_UPLOAD_BYTES = 100 * 1024 * 1024
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 ALLOWED_EXTENSIONS = {".txt", ".md", ".json", ".csv", ".pdf", ".html", ".htm", ".docx"}
 
 
@@ -47,12 +46,6 @@ ALLOWED_MIME_TYPES = {
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 }
 
-# PDF file signature: %PDF-
-PDF_HEADER = b"%PDF-"
-# DOCX is a ZIP archive with specific structure
-DOCX_SIGNATURE = b"PK\x03\x04"  # ZIP local file header (used by docx)
-# JSON/HTML/CSV/TXT have no magic bytes, content-type is used as fallback
-
 
 def _validate_extension(filename: str) -> tuple[bool, str]:
     """Validate file extension against allowlist."""
@@ -73,25 +66,6 @@ def _validate_content_type(content_type: str | None) -> bool:
     return base_type in ALLOWED_MIME_TYPES
 
 
-async def _validate_content(file: UploadFile, filename: str, content_type: str | None) -> None:
-    """Validate file content safely using magic bytes."""
-    file_bytes = await file.read(1024)  # Read only first 1KB for signature check
-    await file.seek(0)  # Reset for subsequent reads
-
-    if not file_bytes:
-        return
-
-    # Check PDF signature
-    if filename.lower().endswith(".pdf"):
-        if not file_bytes.startswith(PDF_HEADER):
-            raise HTTPException(status_code=400, detail="Invalid PDF file signature")
-
-    # Check DOCX signature (ZIP-based)
-    if filename.lower().endswith(".docx"):
-        if not file_bytes.startswith(DOCX_SIGNATURE):
-            raise HTTPException(status_code=400, detail="Invalid DOCX file signature")
-
-
 def _sanitize_filename(filename: str) -> str:
     """Sanitize filename for safe storage."""
     if not filename:
@@ -103,51 +77,6 @@ def _sanitize_filename(filename: str) -> str:
     # Strip leading/trailing whitespace and dots
     filename = filename.strip().strip(".")
     return filename or "unnamed"
-async def _stream_and_save_file(
-    file: UploadFile, dest: Path, max_bytes: int
-) -> int:
-    """
-    Stream file content in chunks and save to disk.
-    Returns total bytes written.
-    Raises HTTPException if file exceeds max_bytes.
-    """
-    total_bytes = 0
-    chunk_size = 64 * 1024  # 64 KB chunks
-    tmp_path = dest.with_suffix(dest.suffix + ".PartTemp")
-
-    try:
-        with open(tmp_path, "wb") as f:
-            while True:
-                chunk = await file.read(chunk_size)
-                if not chunk:
-                    break
-                total_bytes += len(chunk)
-                if total_bytes > max_bytes:
-                    # Clean up partial file
-                    if tmp_path.exists():
-                        tmp_path.unlink()
-                    raise HTTPException(
-                        status_code=413,
-                        detail=f"File too large (max {max_bytes // (1024 * 1024)}MB)",
-                    )
-                f.write(chunk)
-
-        # Atomic replace
-        os.replace(tmp_path, dest)
-        return total_bytes
-    except HTTPException:
-        # Re-raise HTTPException
-        if tmp_path.exists():
-            tmp_path.unlink()
-        raise
-    except Exception:
-        # Clean up on any other error
-        if tmp_path.exists():
-            try:
-                tmp_path.unlink()
-            except Exception:
-                pass
-        raise
 
 
 @router.get("/", response_model=DocumentListResponse)
@@ -237,37 +166,51 @@ async def upload_document(
     safe_name = f"{uuid.uuid4().hex}{ext}"
     dest = storage_dir / safe_name
 
-    # Stream and validate file content
+    # Stream to disk in bounded chunks; the size limit and PDF/DOCX magic-byte
+    # checks are enforced before the temporary file is moved into place.
     try:
-        total_bytes = await _stream_and_save_file(file, dest, MAX_UPLOAD_BYTES)
-        # Validate content signature
-        await _validate_content(file, file.filename or safe_name, file.content_type)
+        await save_upload_streaming(file, dest, MAX_UPLOAD_BYTES)
     except HTTPException:
         raise
-    except Exception as e:
-        logger.warning("File processing error: %s", e)
-        raise HTTPException(status_code=400, detail="Invalid file content")
+    except OSError as exc:
+        logger.exception("Failed to store upload for user %s", user_id)
+        remove_file_quietly(dest)
+        raise HTTPException(status_code=500, detail="Unable to store uploaded file") from exc
+    except Exception as exc:
+        logger.warning("File processing error: %s", exc)
+        remove_file_quietly(dest)
+        raise HTTPException(status_code=400, detail="Invalid file content") from exc
+
+    docs = DocumentRepository(db)
 
     # Create database record AFTER file is successfully written
     try:
-        docs = DocumentRepository(db)
         doc_id = await docs.create(
             user_id,
             _sanitize_filename(file.filename or safe_name),
             file.content_type,
             str(dest),
         )
-
-        # Enqueue indexing job
-        await job_queue.enqueue("index_document", {"document_id": doc_id, "user_id": user_id})
     except Exception:
-        # Cleanup file if DB insertion fails
-        if dest.exists():
-            try:
-                dest.unlink()
-            except Exception:
-                pass
+        # Do not leave an orphaned file when the DB insert fails.
+        remove_file_quietly(dest)
         raise
+
+    # Enqueue indexing job. If that fails, roll back the row and the file so a
+    # document never exists in the database without a pending indexing job.
+    try:
+        await job_queue.enqueue("index_document", {"document_id": doc_id, "user_id": user_id})
+    except Exception as exc:
+        logger.exception("Failed to enqueue indexing job for document %s", doc_id)
+        try:
+            await docs.purge(doc_id, user_id)
+        except Exception:  # pragma: no cover - best-effort rollback
+            logger.warning("Failed to roll back document %s", doc_id, exc_info=True)
+        remove_file_quietly(dest)
+        raise HTTPException(
+            status_code=503,
+            detail="Document could not be scheduled for indexing",
+        ) from exc
 
     return DocumentResponse(
         id=doc_id,
