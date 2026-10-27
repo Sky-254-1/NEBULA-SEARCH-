@@ -39,7 +39,7 @@ class JobProgress:
         if not self.started_at or self.progress <= 0 or self.progress >= 100:
             return None
         
-        elapsed = time.time() - self.started_at
+        elapsed = max(time.time() - self.started_at, 0.001)
         rate = self.progress / elapsed  # percent per second
         remaining = 100 - self.progress
         
@@ -53,10 +53,7 @@ class JobProgress:
         if not self.started_at or self.chunks_processed == 0:
             return None
         
-        elapsed = time.time() - self.started_at
-        if elapsed <= 0:
-            return None
-        
+        elapsed = max(time.time() - self.started_at, 0.001)
         chunks_per_second = self.chunks_processed / elapsed
         
         if chunks_per_second >= 1:
