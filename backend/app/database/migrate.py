@@ -81,6 +81,9 @@ async def run_migrations() -> None:
                 # Skip PostgreSQL-specific EXTENSION statements on SQLite
                 if not settings.uses_postgres and _is_extension_statement(statement):
                     continue
+                # For SQLite, handle CREATE TABLE to strip public. prefix
+                if not settings.uses_postgres and _is_create_table_statement(statement):
+                    statement = _strip_postgres_prefix_from_table_name(statement)
                 # For SQLite, handle ALTER TABLE ADD COLUMN with idempotency check
                 if not settings.uses_postgres and _is_add_column_statement(statement):
                     statement = await _make_add_column_idempotent(db, statement)
@@ -128,6 +131,17 @@ def _is_extension_statement(statement: str) -> bool:
 def _is_add_column_statement(statement: str) -> bool:
     """Check if statement is an ALTER TABLE ADD COLUMN statement."""
     return bool(re.match(r"^\s*ALTER\s+TABLE\s+\w+\s+ADD\s+COLUMN\s+", statement, re.IGNORECASE))
+
+
+def _is_create_table_statement(statement: str) -> bool:
+    """Check if statement is a CREATE TABLE statement."""
+    return bool(re.match(r"^\s*CREATE\s+TABLE\s+", statement, re.IGNORECASE))
+
+
+def _strip_postgres_prefix_from_table_name(statement: str) -> str:
+    """Strip PostgreSQL schema prefix (public.) from table names for SQLite."""
+    # Replace public.table_name with just table_name
+    return re.sub(r'\bpublic\.(\w+)\b', r'\1', statement)
 
 
 async def _make_add_column_idempotent(db, statement: str) -> str | None:

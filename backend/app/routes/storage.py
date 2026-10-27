@@ -43,10 +43,30 @@ async def _user_id(db, email: str) -> int:
 
 
 @router.get("/documents", response_model=DocumentListResponse)
-async def list_documents(email: str = Depends(get_current_user), db=Depends(get_db)):
+async def list_documents(
+    pagination: PaginationParams = Depends(),
+    email: str = Depends(get_current_user),
+    db=Depends(get_db),
+):
     user_id = await _user_id(db, email)
     docs = DocumentRepository(db)
-    rows = await docs.list_for_user(user_id)
+    
+    # Get total count
+    total = await docs.count_for_user(user_id)
+    
+    # Get paginated documents
+    rows = await docs.list_for_user(user_id, limit=pagination.page_size, offset=pagination.offset)
+    
+    # Create pagination metadata
+    pagination_meta = PaginationMeta(
+        total=total,
+        page=pagination.page,
+        page_size=pagination.page_size,
+        total_pages=(total + pagination.page_size - 1) // pagination.page_size if total > 0 else 0,
+        has_next=pagination.page < (total + pagination.page_size - 1) // pagination.page_size if total > 0 else False,
+        has_previous=pagination.page > 1,
+    )
+    
     return DocumentListResponse(
         documents=[
             DocumentResponse(
@@ -57,7 +77,8 @@ async def list_documents(email: str = Depends(get_current_user), db=Depends(get_
                 created_at=str(r["created_at"]),
             )
             for r in rows
-        ]
+        ],
+        pagination=pagination_meta,
     )
 
 

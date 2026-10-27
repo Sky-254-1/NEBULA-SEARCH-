@@ -17,7 +17,7 @@ class DocumentRepository:
         storage_path: str,
     ) -> int:
         await self._db.execute(
-            "INSERT INTO documents (user_id, filename, content_type, storage_path) VALUES (?, ?, ?, ?)",
+            "INSERT INTO documents (user_id, filename, content_type, storage_path, is_deleted) VALUES (?, ?, ?, ?, 0)",
             (user_id, filename, content_type, storage_path),
         )
         await self._db.commit()
@@ -27,30 +27,31 @@ class DocumentRepository:
         )
         return row["id"] if row else 0
 
-    async def list_for_user(self, user_id: int, limit: int = 50) -> list[dict]:
+    async def list_for_user(self, user_id: int, limit: int = 50, offset: int = 0) -> list[dict]:
         rows = await self._db.fetchall(
             "SELECT id, filename, content_type, storage_path, indexed_at, created_at, "
-            "status, content_hash, error_message "
-            "FROM documents WHERE user_id = ? ORDER BY created_at DESC LIMIT ?",
-            (user_id, limit),
+            "status, content_hash, error_message, is_deleted "
+            "FROM documents WHERE user_id = ? AND is_deleted = 0 ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (user_id, limit, offset),
         )
         return [dict(row) for row in rows]
 
     async def get_by_id(self, doc_id: int, user_id: int):
         return await self._db.fetchone(
             "SELECT id, filename, content_type, storage_path, indexed_at, created_at, "
-            "status, content_hash, error_message "
-            "FROM documents WHERE id = ? AND user_id = ?",
+            "status, content_hash, error_message, is_deleted "
+            "FROM documents WHERE id = ? AND user_id = ? AND is_deleted = 0",
             (doc_id, user_id),
         )
 
     async def delete(self, doc_id: int, user_id: int) -> bool:
-        row = await self.get_by_id(doc_id, user_id)
-        if not row:
-            return False
-        await self._db.execute("DELETE FROM documents WHERE id = ? AND user_id = ?", (doc_id, user_id))
+        """Soft delete a document by setting is_deleted = 1."""
+        result = await self._db.execute(
+            "UPDATE documents SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
+            (doc_id, user_id),
+        )
         await self._db.commit()
-        return True
+        return result.rowcount > 0
 
     async def mark_indexed(self, doc_id: int, content_hash: str | None = None) -> None:
         now = datetime.now(timezone.utc).isoformat()
@@ -118,7 +119,7 @@ class DocumentRepository:
     async def count_for_user(self, user_id: int) -> int:
         """Return total document count for a user."""
         row = await self._db.fetchone(
-            "SELECT COUNT(*) as cnt FROM documents WHERE user_id = ?",
+            "SELECT COUNT(*) as cnt FROM documents WHERE user_id = ? AND is_deleted = 0",
             (user_id,),
         )
         return int(row["cnt"]) if row else 0
