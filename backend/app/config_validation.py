@@ -653,6 +653,128 @@ def run_validations() -> bool:
     return len(validation_errors) == 0
 
 
+class ValidationResult:
+    """Result of configuration validation."""
+    def __init__(self):
+        self.errors: List[str] = []
+        self.warnings: List[str] = []
+
+
+def validate_config(settings) -> ValidationResult:
+    """Validate configuration and return validation result.
+    
+    Args:
+        settings: Settings dataclass instance
+    
+    Returns:
+        ValidationResult with errors and warnings lists
+    """
+    app_env = settings.app_env
+    result = ValidationResult()
+    
+    # Get all environment values from settings
+    db_url = settings.database_url
+    jwt_secret = settings.jwt_secret
+    session_secret = ""  # SESSION_SECRET not in settings, skip
+    encryption_key = settings.encryption_key
+    cors_origins = settings.cors_origins
+    
+    postgres_user = get_env_value("POSTGRES_USER")
+    postgres_password = get_env_value("POSTGRES_PASSWORD")
+    
+    smtp_host = get_env_value("SMTP_HOST")
+    smtp_user = get_env_value("SMTP_USERNAME")
+    smtp_password = get_env_value("SMTP_PASSWORD")
+    
+    minio_user = get_env_value("MINIO_ROOT_USER")
+    minio_password = get_env_value("MINIO_ROOT_PASSWORD")
+    
+    github_client_id = get_env_value("GITHUB_OAUTH2_CLIENT_ID")
+    github_client_secret = get_env_value("GITHUB_OAUTH2_CLIENT_SECRET")
+    
+    google_client_id = get_env_value("GOOGLE_OAUTH2_CLIENT_ID")
+    google_client_secret = get_env_value("GOOGLE_OAUTH2_CLIENT_SECRET")
+    
+    saml_enabled = get_env_value("ENABLE_SAML")
+    saml_metadata_url = get_env_value("SAML_METADATA_URL")
+    saml_cert_path = get_env_value("SAML_CERT_PATH")
+    saml_key_path = get_env_value("SAML_KEY_PATH")
+    
+    redis_url = get_env_value("REDIS_URL")
+    openai_key = get_env_value("OPENAI_API_KEY")
+    
+    # Run all validations and collect errors/warnings
+    # JWT Secret
+    try:
+        validate_jwt_secret(jwt_secret, app_env)
+    except ValidationError as e:
+        result.errors.append(str(e))
+    
+    # Encryption Key - already validated during Settings creation, skip here
+    
+    # Database URL
+    try:
+        validate_database_url(db_url, app_env)
+    except ValidationError as e:
+        result.errors.append(str(e))
+    
+    # PostgreSQL credentials
+    using_db_url = db_url.startswith("postgresql://")
+    if db_url.startswith("postgresql://"):
+        try:
+            validate_database_credentials(postgres_user, postgres_password, app_env, using_db_url)
+        except ValidationError as e:
+            result.errors.append(str(e))
+    
+    # SMTP Configuration
+    if smtp_host != "":
+        try:
+            validate_smtp_config(smtp_host, smtp_user, smtp_password, app_env)
+        except ValidationError as e:
+            result.errors.append(str(e))
+    
+    # MinIO Configuration
+    if minio_user != "" or minio_password != "":
+        try:
+            validate_minio_config(minio_user, minio_password, app_env)
+        except ValidationError as e:
+            result.errors.append(str(e))
+    
+    # GitHub OAuth
+    if github_client_id != "" or github_client_secret != "":
+        try:
+            validate_github_oauth(github_client_id, github_client_secret, app_env)
+        except ValidationError as e:
+            result.errors.append(str(e))
+    
+    # Google OAuth
+    if google_client_id != "" or google_client_secret != "":
+        try:
+            validate_google_oauth(google_client_id, google_client_secret, app_env)
+        except ValidationError as e:
+            result.errors.append(str(e))
+    
+    # SAML Configuration
+    try:
+        validate_saml_config(saml_enabled, saml_metadata_url, saml_cert_path, saml_key_path, app_env)
+    except ValidationError as e:
+        result.errors.append(str(e))
+    
+    # CORS Warnings
+    if validate_cors_origins(cors_origins):
+        result.warnings.append("CORS validation warning (see logs)")
+    
+    # Redis Warnings
+    if validate_redis_url(redis_url, app_env):
+        result.warnings.append("Redis URL validation warning (see logs)")
+    
+    # OpenAI API Key Warnings
+    if validate_openai_api_key(openai_key, app_env):
+        result.warnings.append("OpenAI API key warning (see logs)")
+    
+    return result
+
+
 def main() -> int:
     """Main entry point for validation CLI."""
     try:
