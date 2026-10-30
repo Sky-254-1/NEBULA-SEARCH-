@@ -36,24 +36,71 @@ async def test_indexing_start_requires_document_ownership(client, auth_headers):
 
 
 @pytest.mark.asyncio
+async def test_indexing_start_persists_job_owner(client, auth_headers):
+    from app.database import connect
+    from app.database.repositories.indexing_job import IndexingJobRepository
+    from app.database.repositories.user import UserRepository
+    from app.indexing.queue import indexing_queue
+
+    uploaded = await client.post(
+        "/api/v1/documents/",
+        headers=auth_headers,
+        files={"file": ("persisted.txt", b"indexable text", "text/plain")},
+    )
+    assert uploaded.status_code == 201
+    document_id = uploaded.json()["id"]
+    started = await client.post(
+        "/api/v1/indexing/start",
+        headers=auth_headers,
+        json={"document_id": document_id},
+    )
+    assert started.status_code == 200
+    job_id = started.json()["data"]["job_id"]
+
+    db = await connect()
+    try:
+        user_id = await UserRepository(db).get_id_by_email("test@example.com")
+        record = await IndexingJobRepository(db).get_for_user(job_id, user_id)
+        assert record["document_id"] == document_id
+        assert record["status"] == "QUEUED"
+    finally:
+        await db.close()
+        await indexing_queue.remove(job_id)
+        progress_tracker.remove(job_id)
+
+
+@pytest.mark.asyncio
 async def test_indexing_jobs_are_private_to_the_submitter(client, auth_headers):
     from app.database import connect
+    from app.database.repositories.document import DocumentRepository
+    from app.database.repositories.indexing_job import IndexingJobRepository
     from app.database.repositories.user import UserRepository
 
     db = await connect()
     try:
         user_id = await UserRepository(db).get_id_by_email("test@example.com")
+        document_id = await DocumentRepository(db).create(
+            user_id, "private.txt", "text/plain", "/tmp/private.txt"
+        )
+        await IndexingJobRepository(db).create(
+            "private-indexing-job", user_id, document_id, "private.txt"
+        )
     finally:
         await db.close()
 
     job_id = "private-indexing-job"
-    progress_tracker.create(job_id, user_id=user_id, document_id=1)
+    progress_tracker.create(job_id, user_id=user_id, document_id=document_id)
     try:
+        # Ownership is durable and the in-memory progress record may be rebuilt.
+        progress_tracker.remove(job_id)
         response = await client.get(
             f"/api/v1/indexing/job/{job_id}",
             headers=auth_headers,
         )
         assert response.status_code == 200
+        listed = await client.get("/api/v1/indexing/jobs", headers=auth_headers)
+        assert listed.status_code == 200
+        assert any(job["job_id"] == job_id for job in listed.json()["data"]["jobs"])
 
         stranger_signup = await client.post(
             "/api/v1/auth/signup",

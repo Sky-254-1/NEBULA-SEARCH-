@@ -57,6 +57,7 @@ class TaskBuilder:
         filename: str = "",
         file_path: Optional[str] = None,
         priority: str = JobPriority.NORMAL,
+        task_id: Optional[str] = None,
     ) -> IndexTask:
         """
         Create an index task for a document.
@@ -71,7 +72,7 @@ class TaskBuilder:
         Returns:
             IndexTask
         """
-        task_id = str(uuid.uuid4())
+        task_id = task_id or str(uuid.uuid4())
         payload = {
             "document_id": document_id,
             "user_id": user_id,
@@ -227,6 +228,7 @@ async def submit_index_task(
     filename: str = "",
     file_path: Optional[str] = None,
     priority: str = JobPriority.NORMAL,
+    job_id: Optional[str] = None,
 ) -> str:
     """
     Submit document for indexing.
@@ -247,6 +249,7 @@ async def submit_index_task(
     task = TaskBuilder.create_index_task(
         document_id=document_id,
         user_id=user_id,
+        task_id=job_id,
         filename=filename,
         file_path=file_path,
         priority=priority,

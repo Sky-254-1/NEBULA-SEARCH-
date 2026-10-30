@@ -151,6 +151,9 @@ each document belongs to the authenticated user before the job is queued.
 Job listings are scoped to the submitting user, and job status, progress, and
 cancellation return `404` for jobs owned by another user. Worker health,
 metrics, scheduler, and dead-letter routes require an administrator token.
+New indexing submissions are recorded in the database with their owner and
+document before queueing; job history remains visible after a process restart,
+while detailed progress and ETA are currently process-local.
 Dead-letter list, delete, and retry operations currently return `501` because
 the application has no durable dead-letter repository wired to those routes.
 

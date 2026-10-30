@@ -1,6 +1,7 @@
 """Indexing API routes."""
 
 import logging
+import uuid
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -15,6 +16,7 @@ from app.indexing.scheduler import get_scheduler
 from app.indexing.tasks import submit_index_task
 from app.database import get_db
 from app.database.repositories.document import DocumentRepository
+from app.database.repositories.indexing_job import IndexingJobRepository
 from app.database.repositories.user import UserRepository
 from app.models.schemas import APIResponse
 from app.services.auth import get_current_user, require_admin
@@ -34,10 +36,20 @@ async def _owner_context(db, email: str, document_id: int | None = None) -> int:
     return user_id
 
 
-def _owned_progress(job_id: str, user_id: int):
-    progress = progress_tracker.get(job_id)
-    if not progress or progress.user_id != user_id:
+async def _owned_progress(job_id: str, user_id: int, db):
+    record = await IndexingJobRepository(db).get_for_user(job_id, user_id)
+    if not record:
         raise HTTPException(status_code=404, detail="Job not found")
+    progress = progress_tracker.get(job_id)
+    if progress and progress.user_id != user_id:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if not progress:
+        progress = progress_tracker.create(
+            job_id,
+            user_id=user_id,
+            document_id=record["document_id"],
+        )
+        progress_tracker.update_status(job_id, record["status"])
     return progress
 
 
@@ -79,12 +91,22 @@ async def start_indexing(request: StartIndexRequest, email: str = Depends(get_cu
     """
     try:
         user_id = await _owner_context(db, email, request.document_id)
-        # Submit to queue
-        job_id = await submit_index_task(
-            document_id=request.document_id,
-            user_id=user_id,
-            priority=request.priority,
-        )
+        job_id = str(uuid.uuid4())
+        jobs = IndexingJobRepository(db)
+        document = await DocumentRepository(db).get_by_id(request.document_id, user_id)
+        await jobs.create(job_id, user_id, request.document_id, document["filename"], request.priority)
+        try:
+            await submit_index_task(
+                document_id=request.document_id,
+                user_id=user_id,
+                job_id=job_id,
+                filename=document["filename"],
+                file_path=document["storage_path"],
+                priority=request.priority,
+            )
+        except BaseException:
+            await jobs.delete_for_user(job_id, user_id)
+            raise
         
         # Track progress
         progress_tracker.create(job_id, user_id=user_id, document_id=request.document_id)
@@ -122,12 +144,24 @@ async def reindex_documents(request: ReindexRequest, email: str = Depends(get_cu
         
         if request.document_ids:
             for doc_id in request.document_ids:
-                await _owner_context(db, email, doc_id)
-                job_id = await submit_index_task(
-                    document_id=doc_id,
-                    user_id=user_id,
-                    priority=request.priority,
-                )
+                document = await DocumentRepository(db).get_by_id(doc_id, user_id)
+                if not document:
+                    raise HTTPException(status_code=404, detail="Document not found")
+                job_id = str(uuid.uuid4())
+                jobs = IndexingJobRepository(db)
+                await jobs.create(job_id, user_id, doc_id, document["filename"], request.priority)
+                try:
+                    await submit_index_task(
+                        document_id=doc_id,
+                        user_id=user_id,
+                        job_id=job_id,
+                        filename=document["filename"],
+                        file_path=document["storage_path"],
+                        priority=request.priority,
+                    )
+                except BaseException:
+                    await jobs.delete_for_user(job_id, user_id)
+                    raise
                 progress_tracker.create(job_id, user_id=user_id, document_id=doc_id)
                 progress_tracker.update_status(job_id, JobStatus.QUEUED)
                 job_ids.append(job_id)
@@ -160,13 +194,14 @@ async def cancel_job(job_id: str, email: str = Depends(get_current_user), db=Dep
     """
     try:
         user_id = await _owner_context(db, email)
-        progress = _owned_progress(job_id, user_id)
+        progress = await _owned_progress(job_id, user_id, db)
         # Remove from queue
         removed = await indexing_queue.remove(job_id)
         
         # Update progress
         if removed:
             progress_tracker.cancel(job_id)
+            await IndexingJobRepository(db).set_status(job_id, JobStatus.CANCELLED)
         elif progress.status not in {"COMPLETED", "FAILED", "CANCELLED"}:
             raise HTTPException(status_code=409, detail="Job is already being processed")
         
@@ -216,8 +251,8 @@ async def get_jobs(email: str = Depends(get_current_user), db=Depends(get_db)) -
     """
     try:
         user_id = await _owner_context(db, email)
-        # Get jobs from queue
-        jobs = [job for job in await indexing_queue.peek(count=100) if job.get("user_id") == user_id]
+        # Query durable job records by owner so completed jobs remain private and visible.
+        jobs = await IndexingJobRepository(db).list_for_user(user_id, limit=100)
         
         # Add progress info
         for job in jobs:
@@ -226,6 +261,14 @@ async def get_jobs(email: str = Depends(get_current_user), db=Depends(get_db)) -
                 progress = progress_tracker.get(job_id)
                 if progress:
                     job["progress"] = progress.to_dict()
+                else:
+                    job["progress"] = {
+                        "job_id": job_id,
+                        "status": job["status"],
+                        "progress": job["progress"],
+                        "current_step": job["current_step"],
+                        "worker_id": job["worker_id"],
+                    }
         
         return APIResponse(
             status="success",
@@ -256,7 +299,7 @@ async def get_job(job_id: str, email: str = Depends(get_current_user), db=Depend
     try:
         # Get progress
         user_id = await _owner_context(db, email)
-        progress = _owned_progress(job_id, user_id)
+        progress = await _owned_progress(job_id, user_id, db)
         
         return APIResponse(
             status="success",
@@ -286,7 +329,7 @@ async def get_job_progress(job_id: str, email: str = Depends(get_current_user), 
     """
     try:
         user_id = await _owner_context(db, email)
-        progress = _owned_progress(job_id, user_id)
+        progress = await _owned_progress(job_id, user_id, db)
         
         return APIResponse(
             status="success",

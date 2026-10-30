@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
 from app.config import get_settings
+from app.database.engine import connect
+from app.database.repositories.indexing_job import IndexingJobRepository
 from app.indexing.config import (
     get_indexing_config,
 )
@@ -20,6 +22,19 @@ from app.indexing.retry import get_retry_handler
 
 logger = logging.getLogger("nebula.indexing.worker")
 settings = get_settings()
+
+
+async def _persist_job_status(job_id: str, status: str) -> None:
+    """Persist lifecycle status without making a DB outage lose worker progress."""
+    db = None
+    try:
+        db = await connect()
+        await IndexingJobRepository(db).set_status(job_id, status)
+    except Exception:
+        logger.exception("Failed to persist indexing job status for %s", job_id)
+    finally:
+        if db is not None:
+            await db.close()
 
 
 class Worker:
@@ -86,6 +101,7 @@ class Worker:
             job_id = job["job_id"]
             progress_tracker.update_status(job_id, "RUNNING")
             progress_tracker.start(job_id, self.worker_id)
+            await _persist_job_status(job_id, "RUNNING")
             
             # Update health
             health_monitor = get_worker_health_monitor()
@@ -104,6 +120,7 @@ class Worker:
                 # Mark complete
                 duration = time.time() - self._job_start_time
                 progress_tracker.complete(job_id)
+                await _persist_job_status(job_id, "COMPLETED")
                 
                 # Record metrics
                 metrics = get_metrics_collector()
@@ -114,6 +131,7 @@ class Worker:
                 # Job failed
                 duration = time.time() - self._job_start_time if self._job_start_time else 0
                 progress_tracker.fail(job_id, str(exc))
+                await _persist_job_status(job_id, "FAILED")
                 
                 # Record metrics
                 metrics = get_metrics_collector()
@@ -141,6 +159,7 @@ class Worker:
                     # Re-enqueue with delay
                     await indexing_queue.enqueue(job)
                     progress_tracker.update_status(job_id, "RETRYING")
+                    await _persist_job_status(job_id, "RETRYING")
                     metrics.record_retry()
                 
                 else:
