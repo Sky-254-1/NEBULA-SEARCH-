@@ -44,7 +44,7 @@ wide CI verification remain open.
 | Critical risk mitigated; feature unavailable | OAuth endpoints attempted email-based account linking without provider verification, while provider config referenced nonexistent settings and the identity table was missing. | `backend/app/routes/oauth.py`, `tests/test_oauth_fail_closed.py`, `docs/AUTHENTICATION_API.md` | Verified authorize/callback/link/unlink/accounts fail closed; unauthenticated linking returns `401`; `tests/test_oauth_fail_closed.py` passed. |
 | Critical, partially mitigated | Crawler followed redirects automatically and never checked resolved destination addresses; robots.txt followed redirects too. | `backend/app/crawler/security.py`, `backend/app/crawler/crawler.py`, `backend/app/crawler/robots.py`, `tests/test_crawler_ssrf.py` | Private URL is blocked before robots lookup, private initial target blocked, public-to-loopback redirect blocked, public target works; `tests/test_crawler_ssrf.py`: **4 passed**. DNS rebinding and external egress policy remain open. |
 | High, mitigated for supported upload formats | Upload buffered the entire body before checking size and trusted the file extension and client MIME. | `backend/app/routes/documents.py`, `tests/test_upload_validation.py` | Streaming limit, malformed text/PDF rejection, DOCX expansion bounds, timeout/interruption cleanup and generated storage names are covered. Latest upload + pagination run: **8 passed**. Per-user quotas and full MIME/content coverage remain open. |
-| High, partially mitigated | Browser refresh tokens were persisted in localStorage, and cookie-authenticated mutations needed explicit CSRF integration. | `frontend/src/api/client.ts`, `frontend/src/api/base.js`, `frontend/src/state/useAuthStore.ts`, `frontend/src/context/AuthContext.tsx`, `frontend/src/auth/AuthContext.jsx`, `frontend/src/utils/storage.js`, browser mutation callers, `backend/app/middleware/security.py`, `backend/app/routes/mfa.py`, `backend/app/routes/webauthn.py` | `tests/test_csrf_cookie_auth.py`: bearer header cannot bypass CSRF when cookies are present; matching cookie/header is accepted. Combined targeted suite: **32 passed**. Browser build was not run because `frontend/node_modules` is absent. |
+| High, partially mitigated | Browser refresh tokens were persisted in localStorage, and cookie-authenticated mutations needed explicit CSRF integration. | `frontend/src/api/client.ts`, `frontend/src/api/base.js`, `frontend/src/state/useAuthStore.ts`, `frontend/src/context/AuthContext.tsx`, `frontend/src/auth/AuthContext.jsx`, `frontend/src/utils/storage.js`, browser mutation callers, `backend/app/middleware/security.py`, `backend/app/routes/mfa.py`, `backend/app/routes/webauthn.py` | `tests/test_csrf_cookie_auth.py`: bearer header cannot bypass CSRF when cookies are present; matching cookie/header is accepted. Focused combined suite: **37 passed, 42 warnings**. Browser build was not run because `frontend/node_modules` is absent. |
 | Medium | Document listing fetched a capped first batch, then sliced in application memory, causing inaccurate totals and inaccessible later pages. | `backend/app/database/repositories/document.py`, `backend/app/routes/documents.py`, `tests/test_document_pagination.py`, `docs/AUTHENTICATION_API.md` | Added stable owner-filtered SQL pagination and independent user count. Regression test seeds 61 documents for one user and 3 for another; **1 passed**. |
 | High, partially mitigated | Upload failures could leave partial files; DOCX validation did not limit archive expansion or entries. | `backend/app/routes/documents.py`, `tests/test_upload_validation.py` | Added bounded archive checks, 60-second handler read timeout and cleanup on validation failure/cancellation. Oversize, malformed formats, path-like filename, archive expansion, timeout and interruption cases; upload + pagination suites **8 passed**. Per-user quota remains open. |
 
@@ -68,18 +68,20 @@ Executed on 2026-10-30 using the repository's Python 3.11 interpreter:
 pytest tests/test_auth.py tests/test_auth_service.py tests/test_refresh_auth.py \
   tests/test_indexing_authorization.py tests/test_storage.py \
   tests/test_oauth_fail_closed.py tests/test_crawler_ssrf.py \
-  tests/test_upload_validation.py tests/test_csrf_cookie_auth.py -q --show-capture=no
-32 passed, 37 warnings
+  tests/test_upload_validation.py tests/test_csrf_cookie_auth.py \
+  tests/test_document_pagination.py -q --show-capture=no
+37 passed, 42 warnings
 ```
 
 Warnings include existing Pydantic/Strawberry deprecations and an unawaited
-coroutine warning in `tests/conftest.py` database cleanup. A later upload and
-pagination run passed **8 tests**. A repository-wide `pytest -q` attempt did
-not complete: collection stopped with **72 errors**. The collection included
-tests from the nested `NEBULA-SEARCH--main` checkout that import modules absent
-there, binary `.txt` output artifacts collected as tests, and a pre-existing
-untracked backend test that fails during import. No frontend build or CI run
-was completed; no production readiness claim is made.
+coroutine warning in `tests/conftest.py` database cleanup. A focused upload and
+pagination run passed **8 tests**. A root-wide `pytest -q` attempt stopped at
+collection with **72 errors**, including nested-checkout imports, binary `.txt`
+output artifacts collected as tests, and a pre-existing untracked backend test
+that fails during import. A second run restricted to `tests/` completed with
+**149 passed, 6 failed, 16 errors**: live-server E2E tests could not connect to
+localhost and two search tests use stale call signatures. No frontend build or
+CI run was completed; no production readiness claim is made.
 
 ## Remaining deliverables
 
