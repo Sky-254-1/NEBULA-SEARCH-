@@ -33,6 +33,7 @@ _URL_BLACKLIST = re.compile(
 _CONTENT_TYPES = {"text/html", "text/plain", "application/xhtml+xml"}
 _REDIRECT_STATUSES = {301, 302, 303, 307, 308}
 _MAX_REDIRECTS = 5
+_MAX_RESPONSE_BYTES = 5 * 1024 * 1024
 
 
 def normalize_url(url: str) -> str:
@@ -186,26 +187,34 @@ class AsyncCrawler:
                 if not await is_safe_destination(current_url):
                     logger.warning("Blocked unsafe crawler redirect destination")
                     return None
-                resp = await client.get(
+                async with client.stream(
+                    "GET",
                     current_url,
                     headers={"User-Agent": self._user_agent},
                     follow_redirects=False,
-                    timeout=30,
-                )
-                if resp.status_code not in _REDIRECT_STATUSES:
-                    break
-                location = resp.headers.get("location")
-                if not location or redirect_count >= _MAX_REDIRECTS:
-                    return None
-                current_url = urljoin(str(resp.url), location)
-            else:
-                return None
-            resp.raise_for_status()
-            ctype = resp.headers.get("content-type", "").lower()
-            if not any(t in ctype for t in _CONTENT_TYPES):
-                logger.debug("Skipping non-HTML content: %s (%s)", url, ctype)
-                return None
-            return resp.text
+                    timeout=httpx.Timeout(30.0, connect=10.0),
+                ) as resp:
+                    if resp.status_code in _REDIRECT_STATUSES:
+                        location = resp.headers.get("location")
+                        if not location or redirect_count >= _MAX_REDIRECTS:
+                            return None
+                        current_url = urljoin(str(resp.url), location)
+                        continue
+
+                    resp.raise_for_status()
+                    ctype = resp.headers.get("content-type", "").lower()
+                    if not any(t in ctype for t in _CONTENT_TYPES):
+                        logger.debug("Skipping non-HTML content: %s (%s)", url, ctype)
+                        return None
+
+                    body = bytearray()
+                    async for chunk in resp.aiter_bytes():
+                        if len(body) + len(chunk) > _MAX_RESPONSE_BYTES:
+                            logger.warning("Crawler response exceeded size limit for %s", url)
+                            return None
+                        body.extend(chunk)
+                    return bytes(body).decode(resp.encoding or "utf-8", errors="replace")
+            return None
         except Exception as exc:
             logger.warning("Unexpected fetch error for %s: %s", url, exc)
             return None

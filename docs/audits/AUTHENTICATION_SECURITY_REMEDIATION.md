@@ -28,7 +28,7 @@ wide CI verification remain open.
 | Operational routes | Worker health and scheduler were available to ordinary authenticated users; now administrator-gated. Metrics and dead-letter routes are also administrator-gated. |
 | Dead-letter operations | Retry/list/delete were success-shaped placeholders. They now return explicit `501 Not Implemented`; a durable repository and actual retry workflow remain unimplemented. |
 | Documents/uploads | Document reads/deletes use owner-filtered queries. Listing now uses owner-scoped SQL LIMIT/OFFSET and an independent count. Upload writes bounded chunks, enforces the limit while streaming, cleans up failed/interrupted files, applies a read timeout, and bounds DOCX entry count, expansion size, paths and compression ratios. Per-user storage quotas and full format validation remain open. |
-| Crawler | Initial and redirected destinations now require HTTP(S) and resolve exclusively to public IPs; redirects are validated manually, and robots fetches do not follow redirects. DNS can still change between validation and connection, and network egress policy is not configured here. |
+| Crawler | Initial and redirected destinations now require HTTP(S) and resolve exclusively to public IPs; redirects are validated manually, unsafe service ports are rejected, robots fetches do not follow redirects, and response bodies are capped at 5 MiB. DNS can still change between validation and connection, and network egress policy is not configured here. |
 | Browser credentials | Browser refresh credentials are now held in HttpOnly cookies; the frontend clears legacy persisted refresh tokens and stores only short-lived access tokens. Mutating cookie-authenticated requests send a double-submit CSRF token, including requests that also carry a bearer header. Access tokens remain in `localStorage`, so script injection can still steal the short-lived access credential. |
 | GraphQL, CI, infrastructure | Not fully audited or verified in this change. Existing tests cover selected API behavior, but no CI run or production deployment verification was performed. |
 
@@ -42,9 +42,9 @@ wide CI verification remain open.
 | High | Access-token validation treated a missing `type` claim as `access` and did not reject absent subjects in the shared decoder. | `backend/app/services/auth.py` | `tests/test_auth_service.py`: missing access type and subject rejected; final combined targeted suites **30 passed**. |
 | Medium | API docs overstated OAuth readiness and omitted indexing access rules and unsupported dead-letter behavior. | `docs/AUTHENTICATION_API.md` | Documentation review only; no separate automated test. |
 | Critical risk mitigated; feature unavailable | OAuth endpoints attempted email-based account linking without provider verification, while provider config referenced nonexistent settings and the identity table was missing. | `backend/app/routes/oauth.py`, `tests/test_oauth_fail_closed.py`, `docs/AUTHENTICATION_API.md` | Verified authorize/callback/link/unlink/accounts fail closed; unauthenticated linking returns `401`; `tests/test_oauth_fail_closed.py` passed. |
-| Critical, partially mitigated | Crawler followed redirects automatically and never checked resolved destination addresses; robots.txt followed redirects too. | `backend/app/crawler/security.py`, `backend/app/crawler/crawler.py`, `backend/app/crawler/robots.py`, `tests/test_crawler_ssrf.py` | Private URL is blocked before robots lookup, private initial target blocked, public-to-loopback redirect blocked, public target works; `tests/test_crawler_ssrf.py`: **4 passed**. DNS rebinding and external egress policy remain open. |
+| Critical, partially mitigated | Crawler followed redirects automatically and never checked resolved destination addresses; robots.txt followed redirects too. | `backend/app/crawler/security.py`, `backend/app/crawler/crawler.py`, `backend/app/crawler/robots.py`, `tests/test_crawler_ssrf.py` | Private URL is blocked before robots lookup, private initial target blocked, public-to-loopback redirect blocked, unsafe service port and oversized response blocked, public target works. DNS rebinding and external egress policy remain open. |
 | High, mitigated for supported upload formats | Upload buffered the entire body before checking size and trusted the file extension and client MIME. | `backend/app/routes/documents.py`, `tests/test_upload_validation.py` | Streaming limit, malformed text/PDF rejection, DOCX expansion bounds, timeout/interruption cleanup and generated storage names are covered. Latest upload + pagination run: **8 passed**. Per-user quotas and full MIME/content coverage remain open. |
-| High, partially mitigated | Browser refresh tokens were persisted in localStorage, and cookie-authenticated mutations needed explicit CSRF integration. | `frontend/src/api/client.ts`, `frontend/src/api/base.js`, `frontend/src/state/useAuthStore.ts`, `frontend/src/context/AuthContext.tsx`, `frontend/src/auth/AuthContext.jsx`, `frontend/src/utils/storage.js`, browser mutation callers, `backend/app/middleware/security.py`, `backend/app/routes/mfa.py`, `backend/app/routes/webauthn.py` | `tests/test_csrf_cookie_auth.py`: bearer header cannot bypass CSRF when cookies are present; matching cookie/header is accepted. Latest focused security suite: **38 passed, 43 warnings**. Browser build was not run because `frontend/node_modules` is absent. |
+| High, partially mitigated | Browser refresh tokens were persisted in localStorage, and cookie-authenticated mutations needed explicit CSRF integration. | `frontend/src/api/client.ts`, `frontend/src/api/base.js`, `frontend/src/state/useAuthStore.ts`, `frontend/src/context/AuthContext.tsx`, `frontend/src/auth/AuthContext.jsx`, `frontend/src/utils/storage.js`, browser mutation callers, `backend/app/middleware/security.py`, `backend/app/routes/mfa.py`, `backend/app/routes/webauthn.py` | `tests/test_csrf_cookie_auth.py`: bearer header cannot bypass CSRF when cookies are present; matching cookie/header is accepted. Latest focused security suite: **40 passed, 45 warnings**. Browser build was not run because `frontend/node_modules` is absent. |
 | Medium | Document listing fetched a capped first batch, then sliced in application memory, causing inaccurate totals and inaccessible later pages. | `backend/app/database/repositories/document.py`, `backend/app/routes/documents.py`, `tests/test_document_pagination.py`, `docs/AUTHENTICATION_API.md` | Added stable owner-filtered SQL pagination and independent user count. Regression test seeds 61 documents for one user and 3 for another; **1 passed**. |
 | High, partially mitigated | Upload failures could leave partial files; DOCX validation did not limit archive expansion or entries. | `backend/app/routes/documents.py`, `tests/test_upload_validation.py` | Added bounded archive checks, 60-second handler read timeout and cleanup on validation failure/cancellation. Oversize, malformed formats, path-like filename, archive expansion, timeout and interruption cases; upload + pagination suites **8 passed**. Per-user quota remains open. |
 | High, partially mitigated | Indexing job ownership existed only in the process-local progress tracker; PostgreSQL had no corresponding `index_jobs` table. | `backend/app/database/migrations/018_index_job_ownership_sqlite.sql`, `backend/app/database/migrations/018_index_job_ownership_postgres.sql`, `backend/app/database/repositories/indexing_job.py`, `backend/app/routes/indexing.py`, `backend/app/indexing/tasks.py`, `backend/app/indexing/worker.py`, `tests/test_indexing_authorization.py` | Queue submissions now create owner-scoped durable job rows before enqueue, reads/listing/cancellation authorize against those records, and worker lifecycle status is persisted. Focused tests cover owner isolation and durable records; detailed progress still remains process-local. |
@@ -66,17 +66,18 @@ wide CI verification remain open.
 Executed on 2026-10-30 using the repository's Python 3.11 interpreter:
 
 ```text
-pytest tests/test_auth.py tests/test_auth_service.py tests/test_refresh_auth.py \
-  tests/test_indexing_authorization.py tests/test_storage.py \
-  tests/test_oauth_fail_closed.py tests/test_crawler_ssrf.py \
-  tests/test_upload_validation.py tests/test_csrf_cookie_auth.py \
-  tests/test_document_pagination.py -q --show-capture=no
-38 passed, 43 warnings
+pytest tests/test_crawler_ssrf.py tests/test_indexing_authorization.py \
+  tests/test_document_pagination.py tests/test_upload_validation.py \
+  tests/test_refresh_auth.py tests/test_auth_service.py \
+  tests/test_oauth_fail_closed.py tests/test_csrf_cookie_auth.py \
+  tests/test_storage.py tests/test_auth.py \
+  -q --show-capture=no
+40 passed, 45 warnings
 ```
 
 Warnings include existing Pydantic/Strawberry deprecations and an unawaited
 coroutine warning in `tests/conftest.py` database cleanup. The latest focused
-security suite passed **38 tests**. A root-wide `pytest -q` attempt stopped at
+security suite passed **40 tests**. A root-wide `pytest -q` attempt stopped at
 collection with **72 errors**, including nested-checkout imports, binary `.txt`
 output artifacts collected as tests, and a pre-existing untracked backend test
 that fails during import. A second run restricted to `tests/` completed with

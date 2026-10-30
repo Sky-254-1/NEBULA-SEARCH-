@@ -83,3 +83,48 @@ async def test_crawler_fetches_public_destination(monkeypatch):
         result = await crawler._fetch("https://public.example/article", client)
 
     assert result == "<html>public content</html>"
+
+
+@pytest.mark.asyncio
+async def test_crawler_rejects_unsafe_service_port(monkeypatch):
+    calls = []
+
+    def public_dns(host, port, type):
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", port))]
+
+    monkeypatch.setattr("app.crawler.security.socket.getaddrinfo", public_dns)
+
+    async def handler(request: httpx.Request):
+        calls.append(request.url)
+        return httpx.Response(200, text="no", request=request)
+
+    crawler = AsyncCrawler(respect_robots=False)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        result = await crawler._fetch("http://public.example:5432/", client)
+
+    assert result is None
+    assert calls == []
+
+
+@pytest.mark.asyncio
+async def test_crawler_stops_when_response_exceeds_size_limit(monkeypatch):
+    monkeypatch.setattr("app.crawler.crawler._MAX_RESPONSE_BYTES", 20)
+
+    def public_dns(host, port, type):
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", port))]
+
+    monkeypatch.setattr("app.crawler.security.socket.getaddrinfo", public_dns)
+
+    async def handler(request: httpx.Request):
+        return httpx.Response(
+            200,
+            headers={"Content-Type": "text/html"},
+            text="<html>" + ("x" * 100) + "</html>",
+            request=request,
+        )
+
+    crawler = AsyncCrawler(respect_robots=False)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        result = await crawler._fetch("https://public.example/article", client)
+
+    assert result is None
