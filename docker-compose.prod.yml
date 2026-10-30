@@ -235,13 +235,13 @@ services:
       context: .
       dockerfile: docker/frontend.Dockerfile
     container_name: nebula-frontend
-    ports:
-      - "${FRONTEND_PORT:-3000}:80"
+    # Not published on the host: all public traffic goes through the edge
+    # nginx (TLS, rate limiting, CSP). Other services reach it as frontend:80.
+    expose:
+      - "80"
     depends_on:
       backend:
         condition: service_healthy
-      nginx:
-        condition: service_started
     networks:
       - nebula-public
     restart: unless-stopped

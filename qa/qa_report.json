@@ -1,0 +1,1648 @@
+{
+  "summary": {
+    "passed": 95,
+    "failed": 0,
+    "blocked": 1,
+    "skipped": 0,
+    "not_run": 0
+  },
+  "total": 96,
+  "results": [
+    {
+      "name": "health endpoint",
+      "category": "health",
+      "status": "passed",
+      "expected": "status in 200 + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "low",
+      "steps": "GET /health no token",
+      "duration_ms": 17.56020000902936,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "metrics endpoint",
+      "category": "health",
+      "status": "passed",
+      "expected": "status in [200, 501] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "low",
+      "steps": "GET /metrics no token",
+      "duration_ms": 177.49940000067,
+      "detail": "content-type text/plain; version=0.0.4; charset=utf-8 != application/json",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "text/plain; version=0.0.4; charset=utf-8",
+        "body": "# HELP python_gc_objects_collected_total Objects collected during gc\n# TYPE python_gc_objects_collected_total counter\npython_gc_objects_collected_total{generation=\"0\"} 793.0\npython_gc_objects_collected_total{generation=\"1\"} 68.0\npython_gc_objects_collected_total{generation=\"2\"} 30.0\n# HELP python_gc_objects_uncollectable_total Uncollectable objects found during GC\n# TYPE python_gc_objects_uncollectable_total counter\npython_gc_objects_uncollectable_total{generation=\"0\"} 0.0\npython_gc_objects_unco"
+      }
+    },
+    {
+      "name": "openapi schema generates",
+      "category": "health",
+      "status": "passed",
+      "expected": "status in 200 + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "critical",
+      "steps": "GET /openapi.json no token",
+      "duration_ms": 265.9876000107033,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "signup missing fields",
+      "category": "auth",
+      "status": "passed",
+      "expected": "status in [400, 422] + ct=application/json",
+      "actual": "HTTP 422",
+      "severity": "high",
+      "steps": "POST /api/v1/auth/signup body={}",
+      "duration_ms": 10.26389999606181,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 422,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "signup weak password",
+      "category": "auth",
+      "status": "passed",
+      "expected": "status in [400, 422] + ct=application/json",
+      "actual": "HTTP 422",
+      "severity": "high",
+      "steps": "POST /api/v1/auth/signup weak password",
+      "duration_ms": 8.18079999589827,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 422,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "signup duplicate email",
+      "category": "auth",
+      "status": "passed",
+      "expected": "status in 409 + ct=application/json",
+      "actual": "HTTP 409",
+      "severity": "high",
+      "steps": "POST /api/v1/auth/signup existing email",
+      "duration_ms": 9.4288999971468,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 409,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "login success",
+      "category": "auth",
+      "status": "passed",
+      "expected": "status in 200 + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "critical",
+      "steps": "POST /api/v1/auth/login valid",
+      "duration_ms": 89.46940000168979,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "login wrong password",
+      "category": "auth",
+      "status": "passed",
+      "expected": "status in 401 + ct=application/json",
+      "actual": "HTTP 401",
+      "severity": "high",
+      "steps": "POST /api/v1/auth/login wrong password",
+      "duration_ms": 1081.6930000000866,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 401,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "login missing fields",
+      "category": "auth",
+      "status": "passed",
+      "expected": "status in [400, 422] + ct=application/json",
+      "actual": "HTTP 422",
+      "severity": "high",
+      "steps": "POST /api/v1/auth/login body={}",
+      "duration_ms": 6.474499998148531,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 422,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "me no token",
+      "category": "auth",
+      "status": "passed",
+      "expected": "status in 401 + ct=application/json",
+      "actual": "HTTP 401",
+      "severity": "critical",
+      "steps": "GET /api/v1/auth/me no token",
+      "duration_ms": 6.827699995483272,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 401,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "me valid token",
+      "category": "auth",
+      "status": "passed",
+      "expected": "status in 200 + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "critical",
+      "steps": "GET /api/v1/auth/me with token A",
+      "duration_ms": 5.774799996288493,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "me invalid token",
+      "category": "auth",
+      "status": "passed",
+      "expected": "status in 401 + ct=application/json",
+      "actual": "HTTP 401",
+      "severity": "critical",
+      "steps": "GET /api/v1/auth/me invalid token",
+      "duration_ms": 5.012599998735823,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 401,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "refresh invalid token",
+      "category": "auth",
+      "status": "passed",
+      "expected": "status in [400, 401, 422] + ct=application/json",
+      "actual": "HTTP 401",
+      "severity": "high",
+      "steps": "POST /api/v1/auth/refresh bad refresh token",
+      "duration_ms": 9.809000010136515,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 401,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "change password valid",
+      "category": "auth",
+      "status": "passed",
+      "expected": "status in [200, 400, 422] + ct=application/json",
+      "actual": "HTTP 422",
+      "severity": "medium",
+      "steps": "POST /api/v1/auth/change-password token A",
+      "duration_ms": 7.517999998526648,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 422,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "forgot password nonexistent",
+      "category": "auth",
+      "status": "passed",
+      "expected": "status in 200 + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "medium",
+      "steps": "POST /api/v1/auth/forgot-password nonexistent email",
+      "duration_ms": 8.821700001135468,
+      "detail": "must not enumerate users",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "list documents empty",
+      "category": "documents",
+      "status": "passed",
+      "expected": "status in 200 + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "medium",
+      "steps": "GET /api/v1/documents/ token A",
+      "duration_ms": 8.513100008713081,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "upload document valid",
+      "category": "documents",
+      "status": "passed",
+      "expected": "status in 201 + ct=application/json",
+      "actual": "HTTP 201",
+      "severity": "high",
+      "steps": "POST /api/v1/documents/ upload txt token A",
+      "duration_ms": 12.791000001016073,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 201,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "upload disallowed file type",
+      "category": "documents",
+      "status": "passed",
+      "expected": "status in [400, 415] + ct=application/json",
+      "actual": "HTTP 400",
+      "severity": "high",
+      "steps": "POST /api/v1/documents/ upload .exe token A",
+      "duration_ms": 8.610599994426593,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 400,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "upload oversized file",
+      "category": "documents",
+      "status": "passed",
+      "expected": "status in [400, 413] + ct=application/json",
+      "actual": "HTTP 400",
+      "severity": "high",
+      "steps": "POST /api/v1/documents/ upload 11MB token A",
+      "duration_ms": 3.775699995458126,
+      "detail": "middleware may return 400; route raises 413",
+      "request": {},
+      "response": {
+        "status": 400,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "list documents after upload",
+      "category": "documents",
+      "status": "passed",
+      "expected": "status in 200 + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "medium",
+      "steps": "GET /api/v1/documents/ token A after upload",
+      "duration_ms": 7.815599994501099,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "get document by id owner",
+      "category": "documents",
+      "status": "passed",
+      "expected": "status in 200 + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "medium",
+      "steps": "GET /api/v1/documents/1 token A",
+      "duration_ms": 6.639700004598126,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "get document other user forbidden",
+      "category": "documents",
+      "status": "passed",
+      "expected": "status in [403, 404] + ct=application/json",
+      "actual": "HTTP 404",
+      "severity": "critical",
+      "steps": "GET /api/v1/documents/1 token B (ownership)",
+      "duration_ms": 7.649899998796172,
+      "detail": "user B must not read user A's document",
+      "request": {},
+      "response": {
+        "status": 404,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "delete document owner",
+      "category": "documents",
+      "status": "passed",
+      "expected": "status in [200, 204] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "high",
+      "steps": "DELETE /api/v1/documents/1 token A",
+      "duration_ms": 11.48770000145305,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "delete document other user",
+      "category": "documents",
+      "status": "passed",
+      "expected": "status in [403, 404] + ct=application/json",
+      "actual": "HTTP 404",
+      "severity": "critical",
+      "steps": "DELETE /api/v1/documents/1 token B (ownership)",
+      "duration_ms": 7.884499995270744,
+      "detail": "user B must not delete user A's document",
+      "request": {},
+      "response": {
+        "status": 404,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "delete nonexistent document",
+      "category": "documents",
+      "status": "passed",
+      "expected": "status in 404 + ct=application/json",
+      "actual": "HTTP 404",
+      "severity": "medium",
+      "steps": "DELETE /api/v1/documents/999999 token A",
+      "duration_ms": 6.837000008090399,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 404,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "upload no auth",
+      "category": "documents",
+      "status": "passed",
+      "expected": "status in 401 + ct=application/json",
+      "actual": "HTTP 401",
+      "severity": "critical",
+      "steps": "POST /api/v1/documents/ no token",
+      "duration_ms": 6.412799993995577,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 401,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "indexing start requires auth",
+      "category": "indexing",
+      "status": "passed",
+      "expected": "status in [200, 201, 400, 401, 403, 422] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "critical",
+      "steps": "POST /api/v1/indexing/start token A",
+      "duration_ms": 6.695200005196966,
+      "detail": "NOTE: indexing routes have no auth dependency in code (auth gap)",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "indexing start no token",
+      "category": "indexing",
+      "status": "passed",
+      "expected": "status in [401, 403, 400, 422] + ct=application/json",
+      "actual": "HTTP 401",
+      "severity": "critical",
+      "steps": "POST /api/v1/indexing/start no token",
+      "duration_ms": 7.657800000743009,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 401,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "indexing retry nonexistent job",
+      "category": "indexing",
+      "status": "passed",
+      "expected": "status in [200, 400, 404, 422] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "medium",
+      "steps": "POST /api/v1/indexing/retry/{job_id} nonexistent",
+      "duration_ms": 5.777400001534261,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "indexing get job nonexistent",
+      "category": "indexing",
+      "status": "passed",
+      "expected": "status in [200, 404, 422] + ct=application/json",
+      "actual": "HTTP 404",
+      "severity": "medium",
+      "steps": "GET /api/v1/indexing/job/{job_id} nonexistent",
+      "duration_ms": 6.1879999993834645,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 404,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "indexing cancel nonexistent",
+      "category": "indexing",
+      "status": "passed",
+      "expected": "status in [200, 400, 404, 422] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "medium",
+      "steps": "POST /api/v1/indexing/cancel/{job_id} nonexistent",
+      "duration_ms": 5.622500000754371,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "indexing jobs list",
+      "category": "indexing",
+      "status": "passed",
+      "expected": "status in [200, 401, 403] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "medium",
+      "steps": "GET /api/v1/indexing/jobs token A",
+      "duration_ms": 6.413700000848621,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "indexing metrics",
+      "category": "indexing",
+      "status": "passed",
+      "expected": "status in [200, 401, 403] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "medium",
+      "steps": "GET /api/v1/indexing/metrics token A",
+      "duration_ms": 5.472899996675551,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "indexing workers",
+      "category": "indexing",
+      "status": "passed",
+      "expected": "status in [200, 401, 403] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "medium",
+      "steps": "GET /api/v1/indexing/workers token A",
+      "duration_ms": 5.249900001217611,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "indexing scheduler",
+      "category": "indexing",
+      "status": "passed",
+      "expected": "status in [200, 401, 403] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "medium",
+      "steps": "GET /api/v1/indexing/scheduler token A",
+      "duration_ms": 6.152099987957627,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "indexing deadletter",
+      "category": "indexing",
+      "status": "passed",
+      "expected": "status in [200, 401, 403] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "medium",
+      "steps": "GET /api/v1/indexing/deadletter token A",
+      "duration_ms": 4.901500011328608,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "indexing reindex",
+      "category": "indexing",
+      "status": "passed",
+      "expected": "status in [200, 201, 400, 401, 403, 422] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "medium",
+      "steps": "POST /api/v1/indexing/reindex token A",
+      "duration_ms": 5.9766999911516905,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "indexing start enforces auth (REGRESSION)",
+      "category": "indexing",
+      "status": "passed",
+      "expected": "401/403 when no token",
+      "actual": "HTTP 401 (open=False)",
+      "severity": "critical",
+      "steps": "POST /api/v1/indexing/start no token",
+      "duration_ms": 6.571299993083812,
+      "detail": "DEFECT: indexing job controls are not protected by authentication",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/indexing/start",
+        "auth": "none"
+      },
+      "response": {
+        "status": 401,
+        "body": "{\"detail\":\"Missing or invalid authentication\"}"
+      }
+    },
+    {
+      "name": "web search missing query",
+      "category": "search",
+      "status": "passed",
+      "expected": "status in [400, 422] + ct=application/json",
+      "actual": "HTTP 422",
+      "severity": "medium",
+      "steps": "GET /api/v1/search/web no q token A",
+      "duration_ms": 6.664999993517995,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 422,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "web search empty query",
+      "category": "search",
+      "status": "passed",
+      "expected": "status in [400, 422] + ct=application/json",
+      "actual": "HTTP 422",
+      "severity": "medium",
+      "steps": "GET /api/v1/search/web q=''",
+      "duration_ms": 6.501600000774488,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 422,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "web search invalid backend",
+      "category": "search",
+      "status": "passed",
+      "expected": "status in 400 + ct=application/json",
+      "actual": "HTTP 400",
+      "severity": "medium",
+      "steps": "GET /api/v1/search/web backend=evil",
+      "duration_ms": 5.655000000842847,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 400,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "web search valid",
+      "category": "search",
+      "status": "passed",
+      "expected": "status in [200, 400, 401, 422, 502, 503] + ct=application/json",
+      "actual": "HTTP 502",
+      "severity": "medium",
+      "steps": "GET /api/v1/search/web?q=nebula token A",
+      "duration_ms": 1269.9922000028891,
+      "detail": "external search backend may be unreachable (502/503)",
+      "request": {},
+      "response": {
+        "status": 502,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "fed search no auth",
+      "category": "search",
+      "status": "passed",
+      "expected": "status in 401 + ct=application/json",
+      "actual": "HTTP 401",
+      "severity": "critical",
+      "steps": "POST /api/v1/search/federated/search no token",
+      "duration_ms": 11.455100000603124,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 401,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "web search no auth",
+      "category": "search",
+      "status": "passed",
+      "expected": "status in 401 + ct=application/json",
+      "actual": "HTTP 401",
+      "severity": "critical",
+      "steps": "GET /api/v1/search/web no token",
+      "duration_ms": 7.5886999984504655,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 401,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "search history",
+      "category": "search",
+      "status": "passed",
+      "expected": "status in [200, 401, 403, 404] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "medium",
+      "steps": "GET /api/v1/search/history token A",
+      "duration_ms": 10.547999991104007,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "pagination total/pages correct (>50 records)",
+      "category": "search",
+      "status": "passed",
+      "expected": "status in 200 + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "medium",
+      "steps": "GET /api/v1/documents/?page=1&page_size=10 (55 docs) - total must be 55",
+      "duration_ms": 7.585999992443249,
+      "detail": "total=50 pages=5",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "audio health",
+      "category": "search",
+      "status": "passed",
+      "expected": "status in [200, 401, 403, 405, 422, 501, 503] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "low",
+      "steps": "GET /api/v1/audio/health token A",
+      "duration_ms": 5.863099999260157,
+      "detail": "audio service may be unavailable (503) or route method-restricted (405/422)",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "audio tts",
+      "category": "search",
+      "status": "passed",
+      "expected": "status in [200, 401, 403, 405, 422, 501, 503] + ct=application/json",
+      "actual": "HTTP 422",
+      "severity": "low",
+      "steps": "POST /api/v1/audio/tts token A",
+      "duration_ms": 7.371300001977943,
+      "detail": "audio service may be unavailable (503) or route method-restricted (405/422)",
+      "request": {},
+      "response": {
+        "status": 422,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "audio stt",
+      "category": "search",
+      "status": "passed",
+      "expected": "status in [200, 401, 403, 405, 422, 501, 503] + ct=application/json",
+      "actual": "HTTP 422",
+      "severity": "low",
+      "steps": "POST /api/v1/audio/stt token A",
+      "duration_ms": 6.601300003239885,
+      "detail": "audio service may be unavailable (503) or route method-restricted (405/422)",
+      "request": {},
+      "response": {
+        "status": 422,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "audio voices",
+      "category": "search",
+      "status": "passed",
+      "expected": "status in [200, 401, 403, 405, 422, 501, 503] + ct=application/json",
+      "actual": "HTTP 503",
+      "severity": "low",
+      "steps": "GET /api/v1/audio/voices token A",
+      "duration_ms": 7.278400007635355,
+      "detail": "audio service may be unavailable (503) or route method-restricted (405/422)",
+      "request": {},
+      "response": {
+        "status": 503,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "profile no auth",
+      "category": "users",
+      "status": "passed",
+      "expected": "status in 401 + ct=application/json",
+      "actual": "HTTP 401",
+      "severity": "critical",
+      "steps": "GET /api/v1/users/profile no token",
+      "duration_ms": 6.761399999959394,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 401,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "profile own",
+      "category": "users",
+      "status": "passed",
+      "expected": "status in 200 + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "critical",
+      "steps": "GET /api/v1/users/profile token A",
+      "duration_ms": 7.614400004968047,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "update profile own",
+      "category": "users",
+      "status": "passed",
+      "expected": "status in [200, 400, 422] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "medium",
+      "steps": "PUT /api/v1/users/profile token A",
+      "duration_ms": 11.784499991335906,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "update profile self-only endpoint",
+      "category": "users",
+      "status": "passed",
+      "expected": "status in 200 + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "medium",
+      "steps": "PUT /api/v1/users/profile token A (self-only; updates owner)",
+      "duration_ms": 12.159599995356984,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "avatar upload no auth",
+      "category": "users",
+      "status": "passed",
+      "expected": "status in 401 + ct=application/json",
+      "actual": "HTTP 401",
+      "severity": "critical",
+      "steps": "POST /api/v1/users/avatar no token",
+      "duration_ms": 7.914399990113452,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 401,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "avatar upload valid",
+      "category": "users",
+      "status": "passed",
+      "expected": "status in [200, 201] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "medium",
+      "steps": "POST /api/v1/users/avatar token A",
+      "duration_ms": 11.245499990764074,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "delete avatar",
+      "category": "users",
+      "status": "passed",
+      "expected": "status in 200 + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "medium",
+      "steps": "DELETE /api/v1/users/avatar token A",
+      "duration_ms": 11.112199994386174,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "account delete no auth",
+      "category": "users",
+      "status": "passed",
+      "expected": "status in 401 + ct=application/json",
+      "actual": "HTTP 401",
+      "severity": "critical",
+      "steps": "DELETE /api/v1/users/account no token",
+      "duration_ms": 5.917700007557869,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 401,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "activity own",
+      "category": "users",
+      "status": "passed",
+      "expected": "status in [200, 401, 403] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "low",
+      "steps": "GET /api/v1/users/activity token A",
+      "duration_ms": 7.429799996316433,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "preferences own",
+      "category": "users",
+      "status": "passed",
+      "expected": "status in [200, 401, 403] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "low",
+      "steps": "GET /api/v1/users/preferences token A",
+      "duration_ms": 7.061500000418164,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "update preferences own",
+      "category": "users",
+      "status": "passed",
+      "expected": "status in [200, 400] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "low",
+      "steps": "PUT /api/v1/users/preferences token A",
+      "duration_ms": 11.955900001339614,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "delete own account",
+      "category": "users",
+      "status": "passed",
+      "expected": "status in [200, 204] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "high",
+      "steps": "DELETE /api/v1/users/account token_del correct password",
+      "duration_ms": 86.81729999079835,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "profile after delete",
+      "category": "users",
+      "status": "passed",
+      "expected": "status in [401, 404] + ct=application/json",
+      "actual": "HTTP 404",
+      "severity": "critical",
+      "steps": "GET /api/v1/users/profile token_del after delete",
+      "duration_ms": 7.758899999316782,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 404,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "admin route no token",
+      "category": "admin",
+      "status": "passed",
+      "expected": "status in 401 + ct=application/json",
+      "actual": "HTTP 401",
+      "severity": "critical",
+      "steps": "GET /api/v1/admin/stats no token",
+      "duration_ms": 8.29840000369586,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 401,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "admin route no token",
+      "category": "admin",
+      "status": "passed",
+      "expected": "status in 401 + ct=application/json",
+      "actual": "HTTP 401",
+      "severity": "critical",
+      "steps": "GET /api/v1/admin/users no token",
+      "duration_ms": 8.153399990987964,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 401,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "admin route no token",
+      "category": "admin",
+      "status": "passed",
+      "expected": "status in 401 + ct=application/json",
+      "actual": "HTTP 401",
+      "severity": "critical",
+      "steps": "GET /api/v1/admin/queue no token",
+      "duration_ms": 8.54730000719428,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 401,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "admin route no token",
+      "category": "admin",
+      "status": "passed",
+      "expected": "status in 401 + ct=application/json",
+      "actual": "HTTP 401",
+      "severity": "critical",
+      "steps": "GET /api/v1/admin/cache no token",
+      "duration_ms": 7.117899993318133,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 401,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "admin route no token",
+      "category": "admin",
+      "status": "passed",
+      "expected": "status in 401 + ct=application/json",
+      "actual": "HTTP 401",
+      "severity": "critical",
+      "steps": "GET /api/v1/admin/audit-logs no token",
+      "duration_ms": 9.929899999406189,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 401,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "admin route no token",
+      "category": "admin",
+      "status": "passed",
+      "expected": "status in 401 + ct=application/json",
+      "actual": "HTTP 401",
+      "severity": "critical",
+      "steps": "GET /api/v1/admin/sessions no token",
+      "duration_ms": 9.277200006181374,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 401,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "admin route no token",
+      "category": "admin",
+      "status": "passed",
+      "expected": "status in 401 + ct=application/json",
+      "actual": "HTTP 401",
+      "severity": "critical",
+      "steps": "PUT /api/v1/admin/users/{uid}/role no token",
+      "duration_ms": 7.912500004749745,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 401,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "admin route no token",
+      "category": "admin",
+      "status": "passed",
+      "expected": "status in 401 + ct=application/json",
+      "actual": "HTTP 401",
+      "severity": "critical",
+      "steps": "POST /api/v1/admin/queue/pause no token",
+      "duration_ms": 7.139699999243021,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 401,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "admin route insufficient perms",
+      "category": "admin",
+      "status": "passed",
+      "expected": "status in 403 + ct=application/json",
+      "actual": "HTTP 403",
+      "severity": "critical",
+      "steps": "GET /api/v1/admin/stats user token A (expect 403)",
+      "duration_ms": 8.50880000507459,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 403,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "admin route insufficient perms",
+      "category": "admin",
+      "status": "passed",
+      "expected": "status in 403 + ct=application/json",
+      "actual": "HTTP 403",
+      "severity": "critical",
+      "steps": "GET /api/v1/admin/users user token A (expect 403)",
+      "duration_ms": 9.281600010581315,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 403,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "admin route insufficient perms",
+      "category": "admin",
+      "status": "passed",
+      "expected": "status in 403 + ct=application/json",
+      "actual": "HTTP 403",
+      "severity": "critical",
+      "steps": "GET /api/v1/admin/queue user token A (expect 403)",
+      "duration_ms": 8.261599999968894,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 403,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "admin route insufficient perms",
+      "category": "admin",
+      "status": "passed",
+      "expected": "status in 403 + ct=application/json",
+      "actual": "HTTP 403",
+      "severity": "critical",
+      "steps": "GET /api/v1/admin/cache user token A (expect 403)",
+      "duration_ms": 7.552299997769296,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 403,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "admin route insufficient perms",
+      "category": "admin",
+      "status": "passed",
+      "expected": "status in 403 + ct=application/json",
+      "actual": "HTTP 403",
+      "severity": "critical",
+      "steps": "GET /api/v1/admin/audit-logs user token A (expect 403)",
+      "duration_ms": 8.202400000300258,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 403,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "admin route insufficient perms",
+      "category": "admin",
+      "status": "passed",
+      "expected": "status in 403 + ct=application/json",
+      "actual": "HTTP 403",
+      "severity": "critical",
+      "steps": "GET /api/v1/admin/sessions user token A (expect 403)",
+      "duration_ms": 7.288900000276044,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 403,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "admin route insufficient perms",
+      "category": "admin",
+      "status": "passed",
+      "expected": "status in 403 + ct=application/json",
+      "actual": "HTTP 403",
+      "severity": "critical",
+      "steps": "PUT /api/v1/admin/users/{uid}/role user token A (expect 403)",
+      "duration_ms": 6.938699996680953,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 403,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "admin route insufficient perms",
+      "category": "admin",
+      "status": "passed",
+      "expected": "status in 403 + ct=application/json",
+      "actual": "HTTP 403",
+      "severity": "critical",
+      "steps": "POST /api/v1/admin/queue/pause user token A (expect 403)",
+      "duration_ms": 9.262899999157526,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 403,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "admin stats with admin token",
+      "category": "admin",
+      "status": "passed",
+      "expected": "status in [200, 401, 403] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "low",
+      "steps": "GET /api/v1/admin/stats token_admin",
+      "duration_ms": 9.131699989666231,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "admin list users",
+      "category": "admin",
+      "status": "passed",
+      "expected": "status in [200, 401, 403] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "medium",
+      "steps": "GET /api/v1/admin/users token_admin",
+      "duration_ms": 8.928499999456108,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "graphql versioning middleware",
+      "category": "graphql",
+      "status": "passed",
+      "expected": "status in [400, 405, 404, 200] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "critical",
+      "steps": "POST /graphql/ without /api/v prefix",
+      "duration_ms": 11.351299996022135,
+      "detail": "status must be 200 for the GraphQL API to work; 400 = versioning bug",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "graphql schema introspection",
+      "category": "graphql",
+      "status": "passed",
+      "expected": "status in 200 + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "high",
+      "steps": "GET /graphql/schema",
+      "duration_ms": 108.4835999936331,
+      "detail": "production introspection policy check - schema should be hidden",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "graphql playground",
+      "category": "graphql",
+      "status": "passed",
+      "expected": "status in [200, 404] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "low",
+      "steps": "GET /graphql/playground",
+      "duration_ms": 7.575800002086908,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "webhooks list no auth",
+      "category": "webhooks-notifications",
+      "status": "passed",
+      "expected": "status in 401 + ct=application/json",
+      "actual": "HTTP 401",
+      "severity": "critical",
+      "steps": "GET /api/v1/webhooks no token",
+      "duration_ms": 8.547299992642365,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 401,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "webhooks list own",
+      "category": "webhooks-notifications",
+      "status": "passed",
+      "expected": "status in [200, 401, 403] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "medium",
+      "steps": "GET /api/v1/webhooks token A",
+      "duration_ms": 9.726999996928498,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "create webhook",
+      "category": "webhooks-notifications",
+      "status": "passed",
+      "expected": "status in [200, 201, 400, 422] + ct=application/json",
+      "actual": "HTTP 201",
+      "severity": "medium",
+      "steps": "POST /api/v1/webhooks token A",
+      "duration_ms": 11.930900000152178,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 201,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "get webhook own",
+      "category": "webhooks-notifications",
+      "status": "passed",
+      "expected": "status in [200] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "medium",
+      "steps": "GET /api/v1/webhooks/1 token A",
+      "duration_ms": 9.862999999313615,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "delete webhook owner",
+      "category": "webhooks-notifications",
+      "status": "passed",
+      "expected": "status in [200, 204] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "medium",
+      "steps": "DELETE /api/v1/webhooks/1 token A",
+      "duration_ms": 12.610600009793416,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "notifications list",
+      "category": "webhooks-notifications",
+      "status": "passed",
+      "expected": "status in [200, 401, 403] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "low",
+      "steps": "GET /api/v1/notifications/ token A",
+      "duration_ms": 13.175300002330914,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "mark all read",
+      "category": "webhooks-notifications",
+      "status": "passed",
+      "expected": "status in [200, 401, 403] + ct=application/json",
+      "actual": "HTTP 200",
+      "severity": "low",
+      "steps": "POST /api/v1/notifications/read-all token A",
+      "duration_ms": 9.092299995245412,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 200,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "push register no auth",
+      "category": "webhooks-notifications",
+      "status": "passed",
+      "expected": "status in 401 + ct=application/json",
+      "actual": "HTTP 401",
+      "severity": "critical",
+      "steps": "POST /api/v1/notifications/push/register no token",
+      "duration_ms": 11.052200003177859,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 401,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "rate limit 429 under default 10000/min",
+      "category": "security",
+      "status": "blocked",
+      "expected": "429 under moderate burst",
+      "actual": "HTTP 200",
+      "severity": "low",
+      "steps": "burst /health 120 times",
+      "duration_ms": 4.568800010019913,
+      "detail": "Rate limit not exceeded at default 10000/min; 429 not observed",
+      "request": {
+        "method": "GET",
+        "path": "/health"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "name": "malformed JSON login",
+      "category": "security",
+      "status": "passed",
+      "expected": "status in [400, 415, 422, 400] + ct=application/json",
+      "actual": "HTTP 400",
+      "severity": "medium",
+      "steps": "POST /api/v1/auth/login malformed body",
+      "duration_ms": 4.248400000506081,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 400,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "search error exposes no internals",
+      "category": "security",
+      "status": "passed",
+      "expected": "status in [400, 401, 403, 422, 500] + ct=application/json",
+      "actual": "HTTP 401",
+      "severity": "medium",
+      "steps": "GET /api/v1/search/web with SQLi string no token",
+      "duration_ms": 7.136500003980473,
+      "detail": "assert 'Traceback' not in resp.text and 'sqlite' not in resp.text.lower()",
+      "request": {},
+      "response": {
+        "status": 401,
+        "ct": "application/json",
+        "body": ""
+      }
+    },
+    {
+      "name": "graphql malformed query",
+      "category": "security",
+      "status": "passed",
+      "expected": "status in [400, 500] + ct=application/json",
+      "actual": "HTTP 400",
+      "severity": "medium",
+      "steps": "POST /graphql/ bad query",
+      "duration_ms": 7.536000004620291,
+      "detail": "",
+      "request": {},
+      "response": {
+        "status": 400,
+        "ct": "application/json",
+        "body": ""
+      }
+    }
+  ]
+}

@@ -34,6 +34,10 @@ class VersioningMiddleware(BaseHTTPMiddleware):
         "/openapi.json",
         "/favicon.ico",
         "/metrics",
+        "/graphql",
+        "/graphql/",
+        "/graphql/playground",
+        "/graphql/schema",
     }
     
     async def dispatch(self, request: Request, call_next) -> Response:

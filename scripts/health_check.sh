@@ -357,12 +357,12 @@ else
     check_warn "Response Time" "${LATENCY}ms (threshold: 2000ms)"
 fi
 
-# Test 4: Check frontend is serving
-FRONTEND_RESPONSE=$(curl -sf --max-time 5 http://localhost:3000 2>/dev/null || echo "")
+# Test 4: Check frontend is serving (edge nginx in production; :3000 for dev)
+FRONTEND_RESPONSE=$(curl -skL --max-time 5 https://localhost/ 2>/dev/null || curl -sf --max-time 5 http://localhost:3000 2>/dev/null || echo "")
 if [ -n "$FRONTEND_RESPONSE" ]; then
     check_result "Frontend" 0 "Frontend is serving content"
 else
-    check_warn "Frontend" "Frontend not responding on port 3000"
+    check_warn "Frontend" "Frontend not responding via https://localhost or port 3000"
 fi
 
 # ============================================================

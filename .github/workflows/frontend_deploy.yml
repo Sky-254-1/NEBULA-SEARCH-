@@ -8,11 +8,34 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: production
     permissions:
       contents: read
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Verify Vercel deployment environment
+      env:
+        VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      shell: bash
+      run: |
+        missing=()
+        for name in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+          if [ -z "${!name}" ]; then
+            missing+=("$name")
+          fi
+        done
+        if [ "${#missing[@]}" -ne 0 ]; then
+          echo "::error title=Missing Vercel credentials::Set ${missing[*]} under Settings -> Secrets and variables -> Actions (or the 'production' environment), then re-run this workflow."
+          exit 1
+        fi
+
+        npm install --global vercel@latest
+        vercel whoami --token="$VERCEL_TOKEN"
+        echo "Vercel credentials verified."
 
     - name: Set up Node.js
       uses: actions/setup-node@v4
@@ -48,7 +71,6 @@ jobs:
         VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       working-directory: ./frontend
       run: |
-        npm install --global vercel@latest
         vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
         vercel build --prod --token="$VERCEL_TOKEN"
         vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"

@@ -1,0 +1,9 @@
+num included routers: 39
+type: <class 'fastapi.routing._IncludedRouter'>
+attrs: ['_build_effective_context', '_effective_candidates', '_effective_candidates_version', '_effective_low_priority_routes', '_effective_low_priority_routes_version', '_effective_routes_lock', '_handle_selected', '_match', 'effective_candidates', 'effective_low_priority_routes', 'effective_route_contexts', 'handle', 'include_context', 'matches', 'original_router', 'url_path_for']
+  path = 'MISSING'
+  prefix = 'MISSING'
+  router = 'MISSING'
+  routes = 'MISSING'
+  endpoint = 'MISSING'
+  methods = 'MISSING'

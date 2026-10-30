@@ -130,7 +130,7 @@ try {
 # Display service URLs
 Write-Host "`n=== Deployment Complete ===`n" -ForegroundColor Green
 Write-Host "Service URLs:" -ForegroundColor Cyan
-Write-Host "  Frontend:  http://localhost:3000" -ForegroundColor White
+Write-Host "  Frontend:  https://localhost (via nginx)" -ForegroundColor White
 Write-Host "  Backend:   http://localhost:8000" -ForegroundColor White
 Write-Host "  API Docs:  http://localhost:8000/docs" -ForegroundColor White
 Write-Host "  MinIO:     http://localhost:9000" -ForegroundColor White

@@ -21,6 +21,13 @@ ALTER TABLE users ADD COLUMN mfa_enabled BOOLEAN DEFAULT FALSE NOT NULL;
 ALTER TABLE users ADD COLUMN mfa_secret TEXT;
 ALTER TABLE users ADD COLUMN mfa_backup_codes TEXT;
 
+-- Profile fields
+ALTER TABLE users ADD COLUMN first_name TEXT;
+ALTER TABLE users ADD COLUMN last_name TEXT;
+ALTER TABLE users ADD COLUMN phone_number TEXT;
+ALTER TABLE users ADD COLUMN avatar_url TEXT;
+ALTER TABLE users ADD COLUMN two_factor_enabled BOOLEAN DEFAULT FALSE NOT NULL;
+
 -- Add details to sessions
 ALTER TABLE sessions ADD COLUMN session_id TEXT;
 ALTER TABLE sessions ADD COLUMN device_name TEXT;

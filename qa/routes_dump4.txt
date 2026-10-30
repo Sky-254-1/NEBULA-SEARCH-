@@ -1,0 +1,8 @@
+num routes 7
+GET,HEAD                         /docs              swagger_ui_html                          
+GET,HEAD                         /docs/oauth2-redirect swagger_ui_redirect                      
+GET                              /favicon.ico       favicon                                  
+GET                              /metrics           metrics                                  
+GET,HEAD                         /openapi.json      openapi                                  
+GET,HEAD                         /redoc             redoc_html                               
+-                                /static                                                     

@@ -70,7 +70,7 @@ powershell -ExecutionPolicy Bypass -File scripts/verify-deployment.ps1
 
 The production stack includes:
 - **Backend**: FastAPI application (port 8000)
-- **Frontend**: Nginx serving React build (port 3000)
+- **Frontend**: Nginx serving React build (internal only, port 80; published through the edge Nginx on 80/443)
 - **PostgreSQL**: Database (port 5432)
 - **Redis**: Cache and session store (port 6379)
 - **Elasticsearch**: Vector and full-text search (port 9200)
@@ -191,10 +191,16 @@ The project includes comprehensive CI/CD workflows:
 1. Fork the repository
 2. Enable GitHub Actions
 3. Configure secrets in repository settings:
-   - `VERCEL_TOKEN` - For frontend deployment
+   - `VERCEL_TOKEN` - Vercel API token (Vercel → Account Settings → Tokens)
+   - `VERCEL_ORG_ID` - Vercel organization/user ID (`vercel link`, then see `frontend/.vercel/project.json`)
+   - `VERCEL_PROJECT_ID` - Vercel project ID (same file)
    - `SLACK_WEBHOOK_URL` - For notifications
    - `STAGING_ECR_REGISTRY` - For staging deployments
    - `STAGING_KUBE_CONFIG` - For staging Kubernetes access
+
+   `frontend_deploy.yml` runs in the GitHub `production` environment and fails
+   fast with an explicit error if any of the three Vercel credentials are
+   missing, so a push never reaches Vercel with an empty token.
 4. Enable branch protection on main:
    - Require CI checks to pass
    - Require code review

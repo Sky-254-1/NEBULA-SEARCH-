@@ -1,0 +1,11 @@
+19: async def web_search(
+21:     backend: str = Query("wikipedia", description="Search backend: wikipedia, brave, serpapi"),
+28:         raise HTTPException(status_code=400, detail=f"Unknown backend: {backend}")
+36:         raise HTTPException(
+37:             status_code=502,
+38:             detail=f"Search backend error: {exc.response.status_code}",
+41:         raise HTTPException(
+42:             status_code=502,
+43:             detail=f"Search backend unreachable: {str(exc)}",
+68:         raise HTTPException(status_code=502, detail=f"Search backend error: {exc.response.status_code}") from exc
+70:         raise HTTPException(status_code=502, detail=f"Search backend unreachable: {str(exc)}") from exc

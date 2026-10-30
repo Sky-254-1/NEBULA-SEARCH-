@@ -145,6 +145,40 @@ class UserRepository:
         )
         await self._db.commit()
 
+    async def update_avatar(self, user_id: int, avatar_url: str | None) -> None:
+        """Update the user's avatar URL (used for avatar upload/delete)."""
+        await self._db.execute(
+            "UPDATE users SET avatar_url = ? WHERE id = ?",
+            (avatar_url, user_id),
+        )
+        await self._db.commit()
+
+    async def update_profile(
+        self,
+        user_id: int,
+        first_name: str | None = None,
+        last_name: str | None = None,
+        phone_number: str | None = None,
+    ) -> None:
+        """Update mutable profile fields for a user."""
+        assignments = []
+        params: list = []
+        if first_name is not None:
+            assignments.append("first_name = ?")
+            params.append(first_name)
+        if last_name is not None:
+            assignments.append("last_name = ?")
+            params.append(last_name)
+        if phone_number is not None:
+            assignments.append("phone_number = ?")
+            params.append(phone_number)
+        if not assignments:
+            return
+        params.append(user_id)
+        sql = "UPDATE users SET {0} WHERE id = ?".format(", ".join(assignments))
+        await self._db.execute(sql, tuple(params))
+        await self._db.commit()
+
     async def hard_delete(self, user_id: int) -> None:
         """Permanently delete user (GDPR compliance)."""
         await self._db.execute("DELETE FROM users WHERE id = ?", (user_id,))

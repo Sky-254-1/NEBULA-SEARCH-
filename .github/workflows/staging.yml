@@ -42,15 +42,20 @@ jobs:
         python-version: '3.11'
         cache: 'pip'
 
-    - name: Install backend dependencies
+    - name: Install backend test dependencies
       run: |
         cd backend
-        pip install -r requirements.txt
+        python -m pip install --upgrade pip
+        python -m pip install -r requirements-dev.txt
 
     - name: Run backend tests
+      env:
+        JWT_SECRET: ci-test-secret
+        APP_ENV: testing
+        DATABASE_URL: test_nebula.db
       run: |
         cd backend
-        pytest tests/ -v --tb=short
+        python -m pytest tests/ -v --tb=short
 
     - name: Build and push Docker image
       env:

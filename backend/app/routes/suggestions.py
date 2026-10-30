@@ -26,7 +26,7 @@ router = APIRouter(prefix="/api/v1/search/suggestions", tags=["Suggestions"])
 
 class SuggestionItem(BaseModel):
     """Single search suggestion."""
-    model_config = ConfigDict(json_schema_extra={"examples": {"text": "machine learning", "type": "trending", "score": 0.98}})
+    model_config = ConfigDict(json_schema_extra={"example": {"text": "machine learning", "type": "trending", "score": 0.98}})
     text: str
     type: str
     score: float
@@ -34,7 +34,7 @@ class SuggestionItem(BaseModel):
 
 class SuggestionsResponse(BaseModel):
     """Search suggestions response."""
-    model_config = ConfigDict(json_schema_extra={"examples": {"query": "machine", "suggestions": [], "cache_hit": False, "latency_ms": 45}})
+    model_config = ConfigDict(json_schema_extra={"example": {"query": "machine", "suggestions": [], "cache_hit": False, "latency_ms": 45}})
     query: str
     suggestions: list[SuggestionItem]
     cache_hit: bool

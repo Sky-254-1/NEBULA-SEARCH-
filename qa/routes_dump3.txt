@@ -1,0 +1,472 @@
+ERROR: 4 validation errors for OpenAPI
+components.schemas.SuggestionItem.Schema.examples
+  Input should be a valid list [type=list_type, input_value={'score': 0.98, 'text': '...ng', 'type': 'trending'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/list_type
+components.schemas.SuggestionItem.Reference.$ref
+  Field required [type=missing, input_value={'description': 'Single s...Item', 'type': 'object'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/missing
+components.schemas.SuggestionsResponse.Schema.examples
+  Input should be a valid list [type=list_type, input_value={'cache_hit': False, 'lat...ine', 'suggestions': []}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/list_type
+components.schemas.SuggestionsResponse.Reference.$ref
+  Field required [type=missing, input_value={'description': 'Search s...onse', 'type': 'object'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/missing
+  + Exception Group Traceback (most recent call last):
+  |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_utils.py", line 104, in create_collapsing_task_group
+  |     async with anyio.create_task_group() as tg:
+  |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\anyio\_backends\_asyncio.py", line 847, in __aexit__
+  |     raise BaseExceptionGroup(
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "c:\Users\User\Downloads\NEBULA-SEARCH\qa\dump_routes3.py", line 20, in <module>
+    |     r = c.get('/openapi.json')
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_client.py", line 1053, in get
+    |     return self.request(
+    |            ^^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\testclient.py", line 518, in request
+    |     return super().request(
+    |            ^^^^^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_client.py", line 825, in request
+    |     return self.send(request, auth=auth, follow_redirects=follow_redirects)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_client.py", line 928, in send
+    |     raise exc
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_client.py", line 922, in send
+    |     response.read()
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_models.py", line 881, in read
+    |     self._content = b"".join(self.iter_bytes())
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_models.py", line 897, in iter_bytes
+    |     for raw_bytes in self.iter_raw():
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_models.py", line 951, in iter_raw
+    |     for raw_stream_bytes in self.stream:
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_client.py", line 153, in __iter__
+    |     for chunk in self._stream:
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\testclient.py", line 384, in iter_body
+    |     exit_stack.close()
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\contextlib.py", line 609, in close
+    |     self.__exit__(None, None, None)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\contextlib.py", line 601, in __exit__
+    |     raise exc_details[1]
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\contextlib.py", line 586, in __exit__
+    |     if cb(*exc_details):
+    |        ^^^^^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\testclient.py", line 399, in close_app
+    |     raise exception
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\anyio\from_thread.py", line 265, in _call_func
+    |     retval = await retval_or_awaitable
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\testclient.py", line 366, in run_app
+    |     await self.app(scope, receive, send)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\applications.py", line 1194, in __call__
+    |     await super().__call__(scope, receive, send)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\applications.py", line 96, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    |     raise exc
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    |     await self.app(scope, receive, _send)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\telemetry\_asgi.py", line 151, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\main.py", line 370, in _request_id_middleware
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\middleware\compression.py", line 19, in dispatch
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\middleware\security_enhanced.py", line 218, in dispatch
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\middleware\security_enhanced.py", line 195, in dispatch
+    |     return await call_next(request)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\middleware\security_enhanced.py", line 94, in dispatch
+    |     return await call_next(request)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\middleware\security.py", line 255, in dispatch
+    |     return await call_next(request)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\middleware\security.py", line 171, in dispatch
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\services\monitoring.py", line 196, in dispatch
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\middleware\rate_limit.py", line 294, in dispatch
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\middleware\response.py", line 28, in dispatch
+    |     return await call_next(request)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\middleware\versioning.py", line 42, in dispatch
+    |     return await call_next(request)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\middleware\security.py", line 25, in dispatch
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\cors.py", line 91, in __call__
+    |     await self.simple_response(scope, receive, send, request_headers=headers)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\cors.py", line 149, in simple_response
+    |     await self.app(scope, receive, send)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 683, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\routing.py", line 2811, in app
+    |     await route.handle(scope, receive, send)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 289, in handle
+    |     await self.app(scope, receive, send)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 65, in app
+    |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 62, in app
+    |     response = await f(request)
+    |                ^^^^^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\applications.py", line 1125, in openapi
+    |     schema = self.openapi()
+    |              ^^^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\applications.py", line 1101, in openapi
+    |     self.openapi_schema = get_openapi(
+    |                           ^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\openapi\utils.py", line 671, in get_openapi
+    |     return jsonable_encoder(OpenAPI(**output), by_alias=True, exclude_none=True)  # type: ignore[no-any-return]
+    |                             ^^^^^^^^^^^^^^^^^
+    |   File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\pydantic\main.py", line 280, in __init__
+    |     validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+    |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    | pydantic_core._pydantic_core.ValidationError: 4 validation errors for OpenAPI
+    | components.schemas.SuggestionItem.Schema.examples
+    |   Input should be a valid list [type=list_type, input_value={'score': 0.98, 'text': '...ng', 'type': 'trending'}, input_type=dict]
+    |     For further information visit https://errors.pydantic.dev/2.14/v/list_type
+    | components.schemas.SuggestionItem.Reference.$ref
+    |   Field required [type=missing, input_value={'description': 'Single s...Item', 'type': 'object'}, input_type=dict]
+    |     For further information visit https://errors.pydantic.dev/2.14/v/missing
+    | components.schemas.SuggestionsResponse.Schema.examples
+    |   Input should be a valid list [type=list_type, input_value={'cache_hit': False, 'lat...ine', 'suggestions': []}, input_type=dict]
+    |     For further information visit https://errors.pydantic.dev/2.14/v/list_type
+    | components.schemas.SuggestionsResponse.Reference.$ref
+    |   Field required [type=missing, input_value={'description': 'Search s...onse', 'type': 'object'}, input_type=dict]
+    |     For further information visit https://errors.pydantic.dev/2.14/v/missing
+    +------------------------------------
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "c:\Users\User\Downloads\NEBULA-SEARCH\qa\dump_routes3.py", line 20, in <module>
+    r = c.get('/openapi.json')
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_client.py", line 1053, in get
+    return self.request(
+           ^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\testclient.py", line 518, in request
+    return super().request(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_client.py", line 825, in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_client.py", line 928, in send
+    raise exc
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_client.py", line 922, in send
+    response.read()
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_models.py", line 881, in read
+    self._content = b"".join(self.iter_bytes())
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_models.py", line 897, in iter_bytes
+    for raw_bytes in self.iter_raw():
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_models.py", line 951, in iter_raw
+    for raw_stream_bytes in self.stream:
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_client.py", line 153, in __iter__
+    for chunk in self._stream:
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\testclient.py", line 384, in iter_body
+    exit_stack.close()
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\contextlib.py", line 609, in close
+    self.__exit__(None, None, None)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\contextlib.py", line 601, in __exit__
+    raise exc_details[1]
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\contextlib.py", line 586, in __exit__
+    if cb(*exc_details):
+       ^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\testclient.py", line 399, in close_app
+    raise exception
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\anyio\from_thread.py", line 265, in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\testclient.py", line 366, in run_app
+    await self.app(scope, receive, send)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\applications.py", line 1194, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\applications.py", line 96, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\telemetry\_asgi.py", line 151, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\main.py", line 370, in _request_id_middleware
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\middleware\compression.py", line 19, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\middleware\security_enhanced.py", line 218, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\middleware\security_enhanced.py", line 195, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\middleware\security_enhanced.py", line 94, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\middleware\security.py", line 255, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\middleware\security.py", line 171, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\services\monitoring.py", line 196, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\middleware\rate_limit.py", line 294, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\middleware\response.py", line 28, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\middleware\versioning.py", line 42, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 203, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\User\Downloads\NEBULA-SEARCH\backend\app\middleware\security.py", line 25, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 179, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\cors.py", line 91, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\cors.py", line 149, in simple_response
+    await self.app(scope, receive, send)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 683, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\routing.py", line 2811, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 289, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 65, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 62, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\applications.py", line 1125, in openapi
+    schema = self.openapi()
+             ^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\applications.py", line 1101, in openapi
+    self.openapi_schema = get_openapi(
+                          ^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\openapi\utils.py", line 671, in get_openapi
+    return jsonable_encoder(OpenAPI(**output), by_alias=True, exclude_none=True)  # type: ignore[no-any-return]
+                            ^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\pydantic\main.py", line 280, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 4 validation errors for OpenAPI
+components.schemas.SuggestionItem.Schema.examples
+  Input should be a valid list [type=list_type, input_value={'score': 0.98, 'text': '...ng', 'type': 'trending'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/list_type
+components.schemas.SuggestionItem.Reference.$ref
+  Field required [type=missing, input_value={'description': 'Single s...Item', 'type': 'object'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/missing
+components.schemas.SuggestionsResponse.Schema.examples
+  Input should be a valid list [type=list_type, input_value={'cache_hit': False, 'lat...ine', 'suggestions': []}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/list_type
+components.schemas.SuggestionsResponse.Reference.$ref
+  Field required [type=missing, input_value={'description': 'Search s...onse', 'type': 'object'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/missing

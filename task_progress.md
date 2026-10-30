@@ -120,7 +120,7 @@
 
 ## Remaining (Release Engineering)
 
-- [ ] Push to origin/main — security fixes pending publication
+- [x] Push to origin/main — security fixes published
 - [ ] Enable GitHub branch protection with required CI status checks
-- [ ] Resolve Dependabot alerts (`eslint@10`, `vitest@4`, `react-syntax-highlighter@16`)
+- [ ] Resolve Dependabot alerts — merged safe patch updates only (`@testing-library/react` 16.3.2→16.3.3, `@testing-library/user-event` 14.6.1→14.6.7). Major bumps (`react-router-dom` 6→7, `vitest` 2→5, `zod` 3→4) require migration work.
 - [ ] Live staging deployment + full release checklist

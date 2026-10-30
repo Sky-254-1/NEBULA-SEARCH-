@@ -3,7 +3,7 @@
 import logging
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
 from app.indexing.config import JobPriority, JobStatus
@@ -14,6 +14,7 @@ from app.indexing.queue import indexing_queue
 from app.indexing.scheduler import get_scheduler
 from app.indexing.tasks import submit_index_task
 from app.models.schemas import APIResponse
+from app.services.auth import get_current_user
 
 logger = logging.getLogger("nebula.indexing.routes")
 router = APIRouter(prefix="/api/v1/indexing", tags=["indexing"])
@@ -45,7 +46,7 @@ class RetryRequest(BaseModel):
 
 # Endpoints
 @router.post("/start", response_model=APIResponse)
-async def start_indexing(request: StartIndexRequest) -> APIResponse:
+async def start_indexing(request: StartIndexRequest, email: str = Depends(get_current_user)) -> APIResponse:
     """
     Start indexing a document.
     
@@ -80,7 +81,7 @@ async def start_indexing(request: StartIndexRequest) -> APIResponse:
 
 
 @router.post("/reindex", response_model=APIResponse)
-async def reindex_documents(request: ReindexRequest) -> APIResponse:
+async def reindex_documents(request: ReindexRequest, email: str = Depends(get_current_user)) -> APIResponse:
     """
     Reindex documents.
     
@@ -117,7 +118,7 @@ async def reindex_documents(request: ReindexRequest) -> APIResponse:
 
 
 @router.post("/cancel/{job_id}", response_model=APIResponse)
-async def cancel_job(job_id: str) -> APIResponse:
+async def cancel_job(job_id: str, email: str = Depends(get_current_user)) -> APIResponse:
     """
     Cancel an indexing job.
     
@@ -155,7 +156,7 @@ async def cancel_job(job_id: str) -> APIResponse:
 
 
 @router.post("/retry/{job_id}", response_model=APIResponse)
-async def retry_job(job_id: str) -> APIResponse:
+async def retry_job(job_id: str, email: str = Depends(get_current_user)) -> APIResponse:
     """
     Retry a failed job from dead-letter queue.
     
@@ -182,7 +183,7 @@ async def retry_job(job_id: str) -> APIResponse:
 
 
 @router.get("/jobs", response_model=APIResponse)
-async def get_jobs() -> APIResponse:
+async def get_jobs(email: str = Depends(get_current_user)) -> APIResponse:
     """
     Get all indexing jobs.
     
@@ -215,7 +216,7 @@ async def get_jobs() -> APIResponse:
 
 
 @router.get("/job/{job_id}", response_model=APIResponse)
-async def get_job(job_id: str) -> APIResponse:
+async def get_job(job_id: str, email: str = Depends(get_current_user)) -> APIResponse:
     """
     Get specific job details.
     
@@ -251,7 +252,7 @@ async def get_job(job_id: str) -> APIResponse:
 
 
 @router.get("/progress/{job_id}", response_model=APIResponse)
-async def get_job_progress(job_id: str) -> APIResponse:
+async def get_job_progress(job_id: str, email: str = Depends(get_current_user)) -> APIResponse:
     """
     Get job progress.
     
@@ -311,7 +312,7 @@ async def get_workers() -> APIResponse:
 
 
 @router.get("/metrics", response_model=APIResponse)
-async def get_metrics() -> APIResponse:
+async def get_metrics(email: str = Depends(get_current_user)) -> APIResponse:
     """
     Get indexing metrics.
     
@@ -339,7 +340,7 @@ async def get_metrics() -> APIResponse:
 
 
 @router.get("/deadletter", response_model=APIResponse)
-async def get_dead_letter_queue_route() -> APIResponse:
+async def get_dead_letter_queue_route(email: str = Depends(get_current_user)) -> APIResponse:
     """
     Get dead-letter queue.
     
@@ -362,7 +363,7 @@ async def get_dead_letter_queue_route() -> APIResponse:
 
 
 @router.delete("/deadletter/{job_id}", response_model=APIResponse)
-async def delete_dead_letter_job(job_id: str) -> APIResponse:
+async def delete_dead_letter_job(job_id: str, email: str = Depends(get_current_user)) -> APIResponse:
     """
     Delete a job from dead-letter queue.
     
@@ -388,7 +389,7 @@ async def delete_dead_letter_job(job_id: str) -> APIResponse:
 
 
 @router.get("/scheduler", response_model=APIResponse)
-async def get_scheduler_status() -> APIResponse:
+async def get_scheduler_status(email: str = Depends(get_current_user)) -> APIResponse:
     """
     Get scheduler status.
     

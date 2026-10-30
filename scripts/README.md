@@ -130,7 +130,7 @@ After deployment, access your services at:
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
-| Frontend | http://localhost:3000 | - |
+| Frontend | https://localhost (production, via nginx) / http://localhost:3000 (dev) | - |
 | Backend API | http://localhost:8000 | - |
 | API Docs | http://localhost:8000/docs | - |
 | MinIO Console | http://localhost:9000 | minioadmin / (from .env.production) |

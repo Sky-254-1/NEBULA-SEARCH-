@@ -73,7 +73,7 @@ async def list_documents(
     )
 
 
-@router.post("/", response_model=DocumentResponse)
+@router.post("/", response_model=DocumentResponse, status_code=201)
 async def upload_document(
     file: UploadFile = File(...),
     email: str = Depends(get_current_user),
@@ -107,6 +107,25 @@ async def upload_document(
         filename=file.filename or safe_name,
         content_type=file.content_type,
         created_at="",
+    )
+
+
+@router.get("/{doc_id}", response_model=DocumentResponse)
+async def get_document(
+    doc_id: int, email: str = Depends(get_current_user), db=Depends(get_db)
+):
+    """Get a single document by id (owner only)."""
+    user_id = await _user_id(db, email)
+    docs = DocumentRepository(db)
+    row = await docs.get_by_id(doc_id, user_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return DocumentResponse(
+        id=row["id"],
+        filename=row["filename"],
+        content_type=row.get("content_type"),
+        indexed_at=row.get("indexed_at"),
+        created_at=str(row["created_at"]),
     )
 
 

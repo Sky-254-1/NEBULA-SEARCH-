@@ -2,12 +2,15 @@
 # This script verifies that all services are running and healthy
 
 param(
-    [string]$ComposeFile = "..\docker-compose.prod.yml",
+    [string]$ComposeFile,
     [int]$Timeout = 30
 )
 
 $ErrorActionPreference = "Stop"
-$rootDir = ".."
+if (-not $ComposeFile) {
+    # Resolve relative to this script so it works from any working directory.
+    $ComposeFile = Join-Path $PSScriptRoot "..\docker-compose.prod.yml"
+}
 
 Write-Host "`n=== Nebula Search - Deployment Verification ===`n" -ForegroundColor Cyan
 
@@ -17,11 +20,26 @@ function Test-Endpoint {
         [string]$Url,
         [string]$Name,
         [int]$ExpectedStatus = 200,
-        [int]$TimeoutSeconds = 10
+        [int]$TimeoutSeconds = 10,
+        [switch]$Insecure
     )
-    
+
+    $previousCallback = [System.Net.ServicePointManager]::ServerCertificateValidationCallback
+    if ($Insecure -and $PSVersionTable.PSVersion.Major -lt 7) {
+        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+    }
+
     try {
-        $response = Invoke-WebRequest -Uri $Url -Method Head -TimeoutSec $TimeoutSeconds -UseBasicParsing
+        $params = @{
+            Uri = $Url
+            Method = 'Head'
+            TimeoutSec = $TimeoutSeconds
+            UseBasicParsing = $true
+        }
+        if ($Insecure -and $PSVersionTable.PSVersion.Major -ge 7) {
+            $params['SkipCertificateCheck'] = $true
+        }
+        $response = Invoke-WebRequest @params
         if ($response.StatusCode -eq $ExpectedStatus) {
             Write-Host "  ✅ $Name : $Url" -ForegroundColor Green
             return $true
@@ -32,6 +50,8 @@ function Test-Endpoint {
     } catch {
         Write-Host "  ❌ $Name : $Url - $($_.Exception.Message)" -ForegroundColor Red
         return $false
+    } finally {
+        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = $previousCallback
     }
 }
 
@@ -112,7 +132,8 @@ $results = @()
 
 $results += Test-Endpoint -Url "http://localhost:8000/health" -Name "Backend Health"
 $results += Test-Endpoint -Url "http://localhost:8000/api/v1/health" -Name "API Health"
-$results += Test-Endpoint -Url "http://localhost:3000/health.html" -Name "Frontend Health"
+# The frontend is only exposed through the edge nginx in production.
+$results += Test-Endpoint -Url "https://localhost/" -Name "Frontend (via edge nginx)" -Insecure
 
 # Test API endpoints
 Write-Host "`nTesting API endpoints..." -ForegroundColor Cyan
@@ -170,7 +191,8 @@ if ($minioHealthy) { $passedChecks++ }
 
 Write-Host "Health Endpoints: $($results.Count) checks, $($results | Where-Object { $_ -eq $true }).Count passed" -ForegroundColor $(if ($results -contains $false) { "Yellow" } else { "Green" })
 Write-Host "API Endpoints: $($apiResults.Count) checks, $($apiResults | Where-Object { $_ -eq $true }).Count passed" -ForegroundColor $(if ($apiResults -contains $false) { "Yellow" } else { "Green" })
-Write-Host "Storage: MinIO $($minioHealthy ? "✅ Healthy" : "❌ Unhealthy")" -ForegroundColor $(if ($minioHealthy) { "Green" } else { "Red" })
+$minioStatus = if ($minioHealthy) { "✅ Healthy" } else { "❌ Unhealthy" }
+Write-Host "Storage: MinIO $minioStatus" -ForegroundColor $(if ($minioHealthy) { "Green" } else { "Red" })
 
 Write-Host "`nOverall: $passedChecks/$totalChecks checks passed`n" -ForegroundColor $(if ($passedChecks -eq $totalChecks) { "Green" } else { "Yellow" })
 
