@@ -16,6 +16,8 @@ class JobProgress:
     job_id: str
     status: str
     progress: int  # 0-100
+    user_id: Optional[int] = None
+    document_id: Optional[int] = None
     current_step: Optional[IndexingStep] = None
     started_at: Optional[float] = None
     last_update: Optional[float] = None
@@ -105,10 +107,18 @@ class ProgressTracker:
     def __init__(self) -> None:
         self._progress_map: dict[str, JobProgress] = {}
     
-    def create(self, job_id: str, document_size: Optional[int] = None) -> JobProgress:
+    def create(
+        self,
+        job_id: str,
+        document_size: Optional[int] = None,
+        user_id: Optional[int] = None,
+        document_id: Optional[int] = None,
+    ) -> JobProgress:
         """Create new progress tracker for job."""
         progress = JobProgress(
             job_id=job_id,
+            user_id=user_id,
+            document_id=document_id,
             status="QUEUED",
             progress=0,
             document_size=document_size,

@@ -133,9 +133,10 @@ def decode_token(token: str, expected_type: str | None = None) -> dict:
     except jwt.InvalidTokenError as exc:
         raise HTTPException(status_code=401, detail="Invalid token") from exc
 
+    if not isinstance(payload.get("sub"), str) or not payload["sub"].strip():
+        raise HTTPException(status_code=401, detail="Invalid token subject")
     if expected_type:
-        token_type = payload.get("type", "access")
-        if token_type != expected_type:
+        if payload.get("type") != expected_type:
             raise HTTPException(status_code=401, detail="Invalid token type")
     return payload
 

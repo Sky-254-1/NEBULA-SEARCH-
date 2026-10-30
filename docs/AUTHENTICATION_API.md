@@ -2,6 +2,11 @@
 
 ## Overview
 
+This document describes the implemented API surface. OAuth providers and
+dead-letter indexing operations are not production-ready; see the security
+audit in `docs/audits/AUTHENTICATION_SECURITY_REMEDIATION.md` for current
+coverage and known gaps.
+
 The Nebula Search Engine provides a comprehensive, enterprise-grade authentication and authorization system with support for:
 
 - **Local Authentication**: Email/password with secure hashing
@@ -124,10 +129,22 @@ Get new access token using refresh token.
 
 **Features:**
 - Refresh token rotation (old token invalidated)
-- Reuse detection (revokes entire session family)
-- Session family tracking
+- Atomic one-time rotation (concurrent reuse revokes the token family)
+- Session-family tracking with family-wide logout/revocation
 
 **Rate Limit:** 10 requests per minute
+
+---
+
+### Indexing Authorization
+
+Indexing start and reindex requests require an access token and verify that
+each document belongs to the authenticated user before the job is queued.
+Job listings are scoped to the submitting user, and job status, progress, and
+cancellation return `404` for jobs owned by another user. Worker health,
+metrics, scheduler, and dead-letter routes require an administrator token.
+Dead-letter list, delete, and retry operations currently return `501` because
+the application has no durable dead-letter repository wired to those routes.
 
 ---
 

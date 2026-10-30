@@ -190,11 +190,14 @@ async def refresh(request: Request, response: Response, body: RefreshRequest | N
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 
     if session["revoked_reason"]:
-        raise HTTPException(status_code=401, detail=f"Session revoked: {session['revoked_reason']}")
+        raise HTTPException(status_code=401, detail="Refresh session is no longer valid")
 
     if session["rotated_at"]:
         if settings.enable_refresh_reuse_detection:
-            await sessions.revoke_session_family(session["session_id"], "Refresh token reuse detected")
+            await sessions.revoke_session_family(
+                session.get("family_id") or session["session_id"],
+                "Refresh token reuse detected",
+            )
             if settings.enable_audit_logs:
                 audit = AuditRepository(db)
                 await audit.create(
@@ -225,8 +228,6 @@ async def refresh(request: Request, response: Response, body: RefreshRequest | N
     access_token = create_access_token(user["email"], role=user["role"])
     new_refresh = create_refresh_token()
 
-    await sessions.update_rotation(session["id"], datetime.now(timezone.utc))
-
     new_expires = datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_days)
     # Generate new session_id for the rotated session
     new_session_id = str(uuid.uuid4())
@@ -235,9 +236,30 @@ async def refresh(request: Request, response: Response, body: RefreshRequest | N
         hash_token(new_refresh),
         new_expires,
         session_id=new_session_id,
+        family_id=session.get("family_id") or session["session_id"],
         device_name=session["device_name"],
         parent_refresh_id=session["id"],
     )
+
+    # Insert the candidate descendant before claiming the old token. If two
+    # requests race, the loser revokes the family after both descendants exist.
+    rotated_at = datetime.now(timezone.utc)
+    if not await sessions.rotate_once(session["id"], rotated_at):
+        if settings.enable_refresh_reuse_detection:
+            family_id = session.get("family_id") or session["session_id"]
+            await sessions.revoke_session_family(family_id, "Refresh token reuse detected")
+            if settings.enable_audit_logs:
+                audit = AuditRepository(db)
+                await audit.create(
+                    session["user_id"],
+                    "security_alert",
+                    resource="session",
+                    metadata={"action": "concurrent_refresh_reuse", "session_id": family_id},
+                    ip=request.client.host if request.client else None,
+                )
+        else:
+            await sessions.delete_by_session_id(new_session_id)
+        raise HTTPException(status_code=401, detail="Refresh token is no longer valid")
 
     if settings.enable_audit_logs:
         audit = AuditRepository(db)
@@ -268,7 +290,10 @@ async def logout(request: Request, response: Response, body: RefreshRequest | No
         sessions = SessionRepository(db)
         session = await sessions.get_by_hash(hash_token(refresh_token))
         if session:
-            await sessions.delete_by_session_id(session["session_id"])
+            await sessions.revoke_session_family(
+                session.get("family_id") or session["session_id"],
+                "Logged out",
+            )
             if settings.enable_audit_logs:
                 audit = AuditRepository(db)
                 await audit.create(

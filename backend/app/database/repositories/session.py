@@ -21,6 +21,7 @@ class SessionRepository:
         ip_address: str | None = None,
         user_agent: str | None = None,
         parent_refresh_id: int | None = None,
+        family_id: str | None = None,
     ) -> int:
         from app.config import get_settings
         get_settings()
@@ -28,11 +29,13 @@ class SessionRepository:
         # Generate session_id if not provided
         if session_id is None:
             session_id = str(uuid.uuid4())
+        if family_id is None:
+            family_id = session_id
 
         sql = """INSERT INTO auth_sessions
-                 (user_id, token_hash, expires_at, session_id, device_name, 
+                 (user_id, token_hash, expires_at, session_id, family_id, device_name,
                   device_type, ip_address, user_agent, parent_refresh_id)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
         
         cursor = await self._db.execute(
             sql,
@@ -41,6 +44,7 @@ class SessionRepository:
                 refresh_token_hash,
                 expires_at.isoformat(),
                 session_id,
+                family_id,
                 device_name,
                 device_type,
                 ip_address,
@@ -56,11 +60,11 @@ class SessionRepository:
 
     async def get_by_hash(self, refresh_token_hash: str):
         return await self._db.fetchone(
-            """SELECT id, user_id, expires_at, session_id, device_name, device_type,
+            """SELECT id, user_id, expires_at, session_id, family_id, device_name, device_type,
                       ip_address, user_agent, parent_refresh_id, rotated_at, 
                       revoked_reason, is_active, created_at, last_activity_at
                FROM auth_sessions 
-               WHERE token_hash = ? AND is_deleted = FALSE""",
+               WHERE token_hash = ? AND is_deleted = FALSE AND is_active = TRUE""",
             (refresh_token_hash,),
         )
 
@@ -106,18 +110,31 @@ class SessionRepository:
         await self._db.commit()
 
     async def revoke_session_family(self, session_id: str, reason: str) -> None:
+        now = datetime.now(timezone.utc).isoformat()
         await self._db.execute(
-            "UPDATE auth_sessions SET revoked_reason = ? WHERE session_id = ?",
-            (reason, session_id),
+            """UPDATE auth_sessions
+               SET is_active = FALSE, revoked_reason = ?, terminated_at = ?,
+                   termination_reason = ?
+               WHERE (family_id = ? OR session_id = ?) AND is_deleted = FALSE""",
+            (reason, now, reason, session_id, session_id),
         )
         await self._db.commit()
 
-    async def update_rotation(self, session_id: int, rotated_at: datetime) -> None:
-        await self._db.execute(
-            "UPDATE auth_sessions SET rotated_at = ? WHERE id = ?",
-            (rotated_at.isoformat(), session_id),
+    async def rotate_once(self, session_id: int, rotated_at: datetime) -> bool:
+        """Atomically claim an unexpired refresh token for one-time rotation."""
+        value = rotated_at.isoformat()
+        cursor = await self._db.execute(
+            """UPDATE auth_sessions SET rotated_at = ?, last_activity_at = ?
+               WHERE id = ? AND rotated_at IS NULL AND revoked_reason IS NULL
+                 AND is_active = TRUE AND is_deleted = FALSE AND expires_at > ?""",
+            (value, value, session_id, value),
         )
         await self._db.commit()
+        rowcount = getattr(cursor, "rowcount", None)
+        if rowcount is not None:
+            return rowcount == 1
+        # asyncpg.execute returns a command tag such as "UPDATE 1".
+        return str(cursor).endswith(" 1")
 
     async def update_last_seen(self, session_id: int) -> None:
         now = datetime.now(timezone.utc).isoformat()

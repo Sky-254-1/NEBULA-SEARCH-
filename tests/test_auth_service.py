@@ -42,3 +42,41 @@ def test_decode_invalid_token():
     with pytest.raises(HTTPException) as exc:
         decode_token("not.a.valid.token")
     assert exc.value.status_code == 401
+
+
+def test_access_token_requires_explicit_type():
+    from datetime import datetime, timedelta, timezone
+
+    token = jwt.encode(
+        {
+            "sub": "user@example.com",
+            "iat": datetime.now(timezone.utc),
+            "exp": datetime.now(timezone.utc) + timedelta(minutes=5),
+            "iss": settings.jwt_issuer,
+            "aud": settings.jwt_audience,
+        },
+        settings.jwt_secret,
+        algorithm=settings.jwt_algorithm,
+    )
+    with pytest.raises(HTTPException) as exc:
+        decode_token(token, expected_type="access")
+    assert exc.value.status_code == 401
+
+
+def test_token_requires_subject():
+    from datetime import datetime, timedelta, timezone
+
+    token = jwt.encode(
+        {
+            "type": "access",
+            "iat": datetime.now(timezone.utc),
+            "exp": datetime.now(timezone.utc) + timedelta(minutes=5),
+            "iss": settings.jwt_issuer,
+            "aud": settings.jwt_audience,
+        },
+        settings.jwt_secret,
+        algorithm=settings.jwt_algorithm,
+    )
+    with pytest.raises(HTTPException) as exc:
+        decode_token(token, expected_type="access")
+    assert exc.value.status_code == 401
