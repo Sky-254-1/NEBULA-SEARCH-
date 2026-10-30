@@ -3,13 +3,15 @@
  * Interface for ElevenLabs audio features
  */
 
+import { getCsrfHeaders } from '../utils/csrf';
+
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 /**
  * Get authentication token from localStorage
  */
 function getAuthToken() {
-  return localStorage.getItem('token');
+  return localStorage.getItem('access_token');
 }
 
 /**
@@ -19,10 +21,11 @@ async function authFetch(url, options = {}) {
   const token = getAuthToken();
   const headers = {
     ...options.headers,
-    'Authorization': token ? `Bearer ${token}` : '',
+    ...getCsrfHeaders(),
   };
+  if (token) headers.Authorization = `Bearer ${token}`;
 
-  const response = await fetch(url, { ...options, headers });
+  const response = await fetch(url, { ...options, headers, credentials: 'include' });
   
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
@@ -101,7 +104,9 @@ export async function speechToText(audioFile, language = 'en') {
     method: 'POST',
     headers: {
       'Authorization': token ? `Bearer ${token}` : '',
+      ...getCsrfHeaders(),
     },
+    credentials: 'include',
     body: formData,
   });
   

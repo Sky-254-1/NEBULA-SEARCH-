@@ -1,3 +1,5 @@
+import { getCsrfHeaders } from './csrf';
+
 /**
  * Global error handling utilities for the frontend.
  * Catches unhandled errors and promises to prevent app crashes.
@@ -54,7 +56,9 @@ async function logErrorToBackend(error: any) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...getCsrfHeaders(),
         },
+        credentials: 'include',
         body: JSON.stringify({
           ...error,
           user_agent: navigator.userAgent,

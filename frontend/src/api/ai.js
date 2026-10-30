@@ -14,6 +14,10 @@ export function createAiApi(authedFetch, getTokens, setTokens) {
     aiAskStream: async (prompt, { onChunk, onDone, onError } = {}) => {
       const tokens = getTokens();
       const headers = { 'Content-Type': 'application/json' };
+      const csrfToken = document.cookie.split('; ')
+        .find((cookie) => cookie.startsWith('csrf_token='))
+        ?.slice('csrf_token='.length);
+      if (csrfToken) headers['X-CSRF-Token'] = decodeURIComponent(csrfToken);
       if (tokens?.access_token) {
         headers.Authorization = `Bearer ${tokens.access_token}`;
       }
@@ -21,14 +25,19 @@ export function createAiApi(authedFetch, getTokens, setTokens) {
       let response = await fetch(`${getApiBase()}/ai/ask/stream`, {
         method: 'POST',
         headers,
+        credentials: 'include',
         body: JSON.stringify({ prompt }),
       });
 
-      if (response.status === 401 && tokens?.refresh_token) {
+      if (response.status === 401) {
         const refreshRes = await fetch(`${getApiBase()}/auth/refresh`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refresh_token: tokens.refresh_token }),
+          headers: {
+            'Content-Type': 'application/json',
+            ...(csrfToken ? { 'X-CSRF-Token': decodeURIComponent(csrfToken) } : {}),
+          },
+          credentials: 'include',
+          body: JSON.stringify({}),
         });
         if (refreshRes.ok) {
           const refreshed = await refreshRes.json();
@@ -37,6 +46,7 @@ export function createAiApi(authedFetch, getTokens, setTokens) {
           response = await fetch(`${getApiBase()}/ai/ask/stream`, {
             method: 'POST',
             headers,
+            credentials: 'include',
             body: JSON.stringify({ prompt }),
           });
         }

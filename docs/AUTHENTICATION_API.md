@@ -34,6 +34,13 @@ Authorization: Bearer <access_token>
 ```
 
 Alternatively, when `AUTH_COOKIE_MODE=true`, tokens can be sent via HTTP-only cookies.
+Browser clients use the HttpOnly `refresh_token` cookie for refresh and logout;
+they should not persist the returned refresh token. The access token remains in
+the JSON response and is short-lived. Cookie-authenticated unsafe requests
+(POST, PUT, PATCH, DELETE) must also send the readable `csrf_token` cookie value
+as `X-CSRF-Token`. This check still applies when the request also includes an
+Authorization bearer header if cookies are present. Configure `COOKIE_SECURE`
+for HTTPS deployments.
 
 ## Endpoints
 
@@ -131,6 +138,7 @@ Get new access token using refresh token.
 - Refresh token rotation (old token invalidated)
 - Atomic one-time rotation (concurrent reuse revokes the token family)
 - Session-family tracking with family-wide logout/revocation
+- In cookie mode, the browser may send an empty body; the refresh credential is read from the HttpOnly cookie
 
 **Rate Limit:** 10 requests per minute
 
@@ -154,7 +162,7 @@ the application has no durable dead-letter repository wired to those routes.
 
 Logout current session.
 
-**Request Body:**
+**Request Body (optional in cookie mode):**
 ```json
 {
   "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -172,6 +180,7 @@ Logout current session.
 - Deletes entire session family
 - Clears cookies (if cookie mode enabled)
 - Audit logging
+- In cookie mode, send an empty body; CSRF protection applies to the cookie-authenticated POST
 
 ---
 

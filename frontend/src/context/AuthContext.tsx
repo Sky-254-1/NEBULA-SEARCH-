@@ -74,6 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(guestUser);
     localStorage.setItem('guest_mode', 'true');
     localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
   };
 
   useEffect(() => {
@@ -93,6 +94,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await refreshUser();
         setIsLoading(false);
       } else {
+        // A safe /me request plants the CSRF cookie; the API client can then
+        // rotate the HttpOnly refresh cookie if the access cookie has expired.
+        await refreshUser();
         setIsLoading(false);
       }
     };

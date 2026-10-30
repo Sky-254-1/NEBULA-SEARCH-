@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Shield, KeyRound } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { apiClient } from '@/api/client';
 
 export const MFAPage: React.FC = () => {
   const navigate = useNavigate();
@@ -18,19 +19,18 @@ export const MFAPage: React.FC = () => {
     }
     setIsLoading(true);
     try {
-      const response = await fetch('/api/v1/auth/mfa/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, temp_token: (location.state as any)?.temp_token }),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        localStorage.setItem('access_token', data.access_token);
-        localStorage.setItem('refresh_token', data.refresh_token);
-        navigate('/dashboard');
-      } else {
-        toast.error('Invalid verification code');
-      }
+      const data = await apiClient.post<{ access_token: string }>(
+        '/auth/mfa/verify-login',
+        undefined,
+        {
+          params: {
+            mfa_pending_token: (location.state as any)?.mfa_pending_token ?? (location.state as any)?.temp_token,
+            token: code,
+          },
+        }
+      );
+      apiClient.setAccessToken(data.access_token);
+      navigate('/dashboard');
     } catch (error) {
       toast.error('Failed to verify code');
     } finally {

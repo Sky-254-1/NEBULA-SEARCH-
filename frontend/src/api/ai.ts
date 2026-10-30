@@ -10,13 +10,18 @@ export const aiApi = {
   async askStream(prompt: string, onChunk: (chunk: string) => void): Promise<void> {
     // Use the same auth token handling as the apiClient
     const token = localStorage.getItem('access_token');
+    const csrfToken = document.cookie.split('; ')
+      .find((cookie) => cookie.startsWith('csrf_token='))
+      ?.slice('csrf_token='.length);
     const baseURL = apiClient['client'].defaults.baseURL || '/api/v1';
     const response = await fetch(`${baseURL}/ai/ask/stream`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(csrfToken ? { 'X-CSRF-Token': decodeURIComponent(csrfToken) } : {}),
         ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       },
+      credentials: 'include',
       body: JSON.stringify({ prompt }),
     });
 
@@ -26,21 +31,21 @@ export const aiApi = {
       // Attach structured error info for interceptor handling
       if (response.status === 401) {
         error.status = 401;
-        // Trigger token refresh via auth store
-        const { useAuthStore } = await import('@/state/useAuthStore');
-        const store = useAuthStore.getState();
-        if (store.refreshToken) {
-          try {
-            await store.refreshTokenAction();
-            // Retry with new token
-            const newToken = localStorage.getItem('access_token');
-            return this.askStream(prompt, onChunk);
-          } catch (refreshError) {
-            // Redirect to login
-            window.location.href = '/login';
-            throw error;
-          }
-        } else {
+        try {
+          const refreshed = await fetch(`${baseURL}/auth/refresh`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(csrfToken ? { 'X-CSRF-Token': decodeURIComponent(csrfToken) } : {}),
+            },
+            credentials: 'include',
+            body: JSON.stringify({}),
+          });
+          if (!refreshed.ok) throw error;
+          const tokens = await refreshed.json();
+          apiClient.setAccessToken(tokens.access_token);
+          return this.askStream(prompt, onChunk);
+        } catch {
           window.location.href = '/login';
           throw error;
         }

@@ -29,7 +29,7 @@ wide CI verification remain open.
 | Dead-letter operations | Retry/list/delete were success-shaped placeholders. They now return explicit `501 Not Implemented`; a durable repository and actual retry workflow remain unimplemented. |
 | Documents/uploads | Document reads/deletes use owner-filtered queries. Upload now writes bounded chunks, enforces the limit during streaming, and checks PDF/DOCX signatures and UTF-8/JSON content. Broader format validation remains limited. |
 | Crawler | Initial and redirected destinations now require HTTP(S) and resolve exclusively to public IPs; redirects are validated manually, and robots fetches do not follow redirects. DNS can still change between validation and connection, and network egress policy is not configured here. |
-| Browser credentials | The frontend auth store persists both access and refresh tokens in `localStorage`. HttpOnly cookie mode exists server-side, but the browser integration still uses bearer tokens and requires a coordinated migration. |
+| Browser credentials | Browser refresh credentials are now held in HttpOnly cookies; the frontend clears legacy persisted refresh tokens and stores only short-lived access tokens. Mutating cookie-authenticated requests send a double-submit CSRF token, including requests that also carry a bearer header. Access tokens remain in `localStorage`, so script injection can still steal the short-lived access credential. |
 | GraphQL, CI, infrastructure | Not fully audited or verified in this change. Existing tests cover selected API behavior, but no CI run or production deployment verification was performed. |
 
 ## Remediated findings
@@ -44,6 +44,7 @@ wide CI verification remain open.
 | Critical risk mitigated; feature unavailable | OAuth endpoints attempted email-based account linking without provider verification, while provider config referenced nonexistent settings and the identity table was missing. | `backend/app/routes/oauth.py`, `tests/test_oauth_fail_closed.py`, `docs/AUTHENTICATION_API.md` | Verified authorize/callback/link/unlink/accounts fail closed; unauthenticated linking returns `401`; `tests/test_oauth_fail_closed.py` passed. |
 | Critical, partially mitigated | Crawler followed redirects automatically and never checked resolved destination addresses; robots.txt followed redirects too. | `backend/app/crawler/security.py`, `backend/app/crawler/crawler.py`, `backend/app/crawler/robots.py`, `tests/test_crawler_ssrf.py` | Private URL is blocked before robots lookup, private initial target blocked, public-to-loopback redirect blocked, public target works; `tests/test_crawler_ssrf.py`: **4 passed**. DNS rebinding and external egress policy remain open. |
 | High, mitigated for supported upload formats | Upload buffered the entire body before checking size and trusted the file extension and client MIME. | `backend/app/routes/documents.py`, `tests/test_upload_validation.py` | Oversize stream, invalid UTF-8 text and fake PDF rejected; `tests/test_upload_validation.py`: **3 passed**. DOCX/archive safety and full MIME/content coverage remain open. |
+| High, partially mitigated | Browser refresh tokens were persisted in localStorage, and cookie-authenticated mutations needed explicit CSRF integration. | `frontend/src/api/client.ts`, `frontend/src/api/base.js`, `frontend/src/state/useAuthStore.ts`, `frontend/src/context/AuthContext.tsx`, `frontend/src/auth/AuthContext.jsx`, `frontend/src/utils/storage.js`, browser mutation callers, `backend/app/middleware/security.py`, `backend/app/routes/mfa.py`, `backend/app/routes/webauthn.py` | `tests/test_csrf_cookie_auth.py`: bearer header cannot bypass CSRF when cookies are present; matching cookie/header is accepted. Combined targeted suite: **32 passed**. Browser build was not run because `frontend/node_modules` is absent. |
 
 ## Outstanding findings
 
@@ -51,7 +52,7 @@ wide CI verification remain open.
 | --- | --- | --- |
 | High | No verified OAuth/OIDC provider flow, identity persistence, PKCE/state binding, nonce validation, redirect allowlisting or explicit account-linking flow is implemented. The existing routes now return `501`. | Open. OAuth login and account linking are unavailable until implemented and verified. |
 | High residual | DNS addresses are checked before each crawler request, but the HTTP client resolves the hostname again when connecting; DNS rebinding can race the check. No network egress policy is defined in this repository. | Partially mitigated. Pin resolved addresses during the request or enforce network-level egress restrictions. |
-| High | Browser persists long-lived refresh credentials in `localStorage`, exposing them to script injection. | Open. Move browser auth to secure HttpOnly cookies with CSRF protection and adapt the client; keep mobile credential storage platform-specific. |
+| Medium residual | Browser access tokens remain in `localStorage`, so script injection can steal the short-lived access credential. Refresh tokens are now cookie-backed and are not persisted by the frontend. | Partially mitigated. A cookie-only browser access-token migration would further reduce token exposure; retain platform-specific secure storage for mobile. |
 | Medium residual | Upload streaming and basic content validation are implemented. DOCX archive expansion limits and comprehensive MIME/content validation need additional hardening. | Partially mitigated; broader malicious archive/type tests remain open. |
 | High | No independent API-client identity or OAuth 2.0 client credentials implementation was found. | Open. User sessions must not serve as machine credentials. |
 | High | `ProgressTracker` is process-local and jobs are not durably indexed by owner; multi-worker deployments can lose progress and cannot consistently authorize historical jobs. | Partially mitigated only for in-process records. Persist job ownership/state and query by owner in the database. |
@@ -65,13 +66,13 @@ Executed on 2026-10-30 using the repository's Python 3.11 interpreter:
 pytest tests/test_auth.py tests/test_auth_service.py tests/test_refresh_auth.py \
   tests/test_indexing_authorization.py tests/test_storage.py \
   tests/test_oauth_fail_closed.py tests/test_crawler_ssrf.py \
-  tests/test_upload_validation.py -q
-30 passed, 35 warnings
+  tests/test_upload_validation.py tests/test_csrf_cookie_auth.py -q --show-capture=no
+32 passed, 37 warnings
 ```
 
 Warnings include existing Pydantic/Strawberry deprecations and an unawaited
-coroutine warning in `tests/conftest.py` database cleanup. No full test suite
-or CI run was completed; no production readiness claim is made.
+coroutine warning in `tests/conftest.py` database cleanup. No frontend build,
+full test suite or CI run was completed; no production readiness claim is made.
 
 ## Remaining deliverables
 

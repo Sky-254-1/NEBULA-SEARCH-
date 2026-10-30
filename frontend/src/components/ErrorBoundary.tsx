@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { getCsrfHeaders } from '@/utils/csrf';
 
 interface Props {
   children: ReactNode;
@@ -65,7 +66,9 @@ class ErrorBoundary extends Component<Props, State> {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...getCsrfHeaders(),
       },
+      credentials: 'include',
       body: JSON.stringify({
         error_id: errorId,
         message: error.message,

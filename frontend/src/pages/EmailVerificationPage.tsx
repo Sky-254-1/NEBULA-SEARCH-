@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams, Link } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { getCsrfHeaders } from '@/utils/csrf';
 
 export const EmailVerificationPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -20,6 +21,8 @@ export const EmailVerificationPage: React.FC = () => {
       try {
         const response = await fetch(`/api/v1/auth/verify-email?token=${token}`, {
           method: 'POST',
+          headers: getCsrfHeaders(),
+          credentials: 'include',
         });
         if (response.ok) {
           setStatus('success');

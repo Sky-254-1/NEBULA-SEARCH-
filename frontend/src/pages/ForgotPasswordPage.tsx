@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { getCsrfHeaders } from '@/utils/csrf';
 
 export const ForgotPasswordPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -19,7 +20,8 @@ export const ForgotPasswordPage: React.FC = () => {
     try {
       const response = await fetch('/api/v1/auth/forgot-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
+        credentials: 'include',
         body: JSON.stringify({ email }),
       });
       if (!response.ok) throw new Error('Failed to send reset email');

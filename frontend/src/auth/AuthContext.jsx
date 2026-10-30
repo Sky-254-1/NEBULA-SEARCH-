@@ -28,10 +28,6 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let active = true;
     async function restore() {
-      if (!tokens?.access_token) {
-        setLoading(false);
-        return;
-      }
       try {
         const me = await api.me();
         if (active) setUser(me);

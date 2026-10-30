@@ -44,7 +44,7 @@ export const useAuthStore = create<AuthStore>()(
           
           set({
             accessToken: response.access_token,
-            refreshToken: response.refresh_token,
+            refreshToken: null,
             isAuthenticated: true,
             isLoading: false,
           });
@@ -112,16 +112,11 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       refreshTokenAction: async () => {
-        const { refreshToken } = get();
-        if (!refreshToken) {
-          throw new Error('No refresh token available');
-        }
-
         try {
-          const response: AuthResponse = await authApi.refreshToken({ refresh_token: refreshToken });
+          const response: AuthResponse = await authApi.refreshToken({});
           set({
             accessToken: response.access_token,
-            refreshToken: response.refresh_token,
+            refreshToken: null,
             isAuthenticated: true,
           });
         } catch (error) {
@@ -144,17 +139,13 @@ export const useAuthStore = create<AuthStore>()(
         } catch (error) {
           console.error('Failed to fetch user:', error);
           // If we can't fetch user, we might need to refresh token
-          const { refreshToken } = get();
-          if (refreshToken) {
-            try {
-              await get().refreshTokenAction();
-              // Retry fetching user
-              const user = await authApi.getCurrentUser();
-              set({ user });
-            } catch (refreshError) {
-              console.error('Token refresh failed:', refreshError);
-              await get().logout();
-            }
+          try {
+            await get().refreshTokenAction();
+            const user = await authApi.getCurrentUser();
+            set({ user });
+          } catch (refreshError) {
+            console.error('Token refresh failed:', refreshError);
+            await get().logout();
           }
         }
       },
@@ -171,10 +162,14 @@ export const useAuthStore = create<AuthStore>()(
       name: 'auth-storage',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+      }),
+      version: 2,
+      migrate: (persistedState: any) => ({
+        ...persistedState,
+        accessToken: null,
+        refreshToken: null,
       }),
     }
   )

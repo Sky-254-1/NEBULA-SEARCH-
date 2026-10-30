@@ -11,13 +11,10 @@ export function createAuthApi(authedFetch, setTokens, getTokens, clearTokens) {
       return data;
     },
     logout: async () => {
-      const tokens = getTokens();
-      if (tokens?.refresh_token) {
-        await authedFetch('/auth/logout', {
-          method: 'POST',
-          body: JSON.stringify({ refresh_token: tokens.refresh_token }),
-        }).catch(() => null);
-      }
+      await authedFetch('/auth/logout', {
+        method: 'POST',
+        body: JSON.stringify({}),
+      }).catch(() => null);
       clearTokens();
     },
     me: () => authedFetch('/auth/me'),

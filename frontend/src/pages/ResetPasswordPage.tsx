@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Lock, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { getCsrfHeaders } from '@/utils/csrf';
 
 export const ResetPasswordPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -35,7 +36,8 @@ export const ResetPasswordPage: React.FC = () => {
     try {
       const response = await fetch('/api/v1/auth/reset-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
+        credentials: 'include',
         body: JSON.stringify({ token, password }),
       });
       if (response.ok) {

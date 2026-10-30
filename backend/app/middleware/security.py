@@ -179,14 +179,16 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
             if path.startswith(prefix):
                 return await call_next(request)
 
-        # Fast-path 3: pure API-token auth is not susceptible to CSRF
+        # A bearer-only API request is not susceptible to CSRF. If cookies are
+        # present as well, require the double-submit token because cookie auth
+        # may take precedence in the authentication dependency.
         auth_header = request.headers.get("Authorization", "")
-        if auth_header.startswith("Bearer "):
+        has_cookie_auth = bool(request.cookies)
+        if auth_header.startswith("Bearer ") and not has_cookie_auth:
             return await call_next(request)
 
         # Fast-path 4: no auth header AND no cookie -> not a browser session;
         # defer to the auth layer which will return 401, rather than a 403.
-        has_cookie_auth = bool(request.cookies)
         if not auth_header and not has_cookie_auth:
             return await call_next(request)
 

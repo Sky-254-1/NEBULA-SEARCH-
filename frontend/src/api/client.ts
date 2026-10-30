@@ -40,6 +40,7 @@ class APIClient {
     this.client = axios.create({
       baseURL: API_BASE_URL,
       timeout: API_TIMEOUT,
+      withCredentials: true,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -120,6 +121,11 @@ class APIClient {
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
         }
+        const method = (config.method || 'get').toLowerCase();
+        if (['post', 'put', 'patch', 'delete'].includes(method) && config.headers) {
+          const csrfToken = this.getCsrfToken();
+          if (csrfToken) config.headers['X-CSRF-Token'] = csrfToken;
+        }
         return config;
       },
       (error: AxiosError) => Promise.reject(error)
@@ -146,7 +152,11 @@ class APIClient {
         }
 
         // If error is 401 and we haven't retried yet
-        if (error.response.status === 401 && !originalRequest._retry) {
+        const authPath = originalRequest.url || '';
+        const isAuthEntryPoint = ['/auth/login', '/auth/refresh', '/auth/signup'].some((path) =>
+          authPath.includes(path)
+        );
+        if (error.response.status === 401 && !originalRequest._retry && !isAuthEntryPoint) {
           originalRequest._retry = true;
 
           try {
@@ -156,9 +166,8 @@ class APIClient {
               return this.client(originalRequest);
             }
           } catch (refreshError) {
-            // Refresh failed, clear auth and redirect to login
+            // A failed cookie refresh clears credentials; route guards decide where to go.
             this.clearTokens();
-            window.location.href = '/login';
             return Promise.reject(refreshError);
           }
         }
@@ -204,13 +213,14 @@ class APIClient {
     return localStorage.getItem('access_token');
   }
 
-  private getRefreshToken(): string | null {
-    return localStorage.getItem('refresh_token');
+  private getCsrfToken(): string | null {
+    const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
+    return match ? decodeURIComponent(match[1]) : null;
   }
 
-  private setTokens(accessToken: string, refreshToken: string): void {
-    localStorage.setItem('access_token', accessToken);
-    localStorage.setItem('refresh_token', refreshToken);
+  private setTokens(accessToken: string, _refreshToken?: string): void {
+    if (accessToken) localStorage.setItem('access_token', accessToken);
+    localStorage.removeItem('refresh_token');
   }
 
   private clearTokens(): void {
@@ -224,16 +234,11 @@ class APIClient {
       return this.refreshTokenPromise;
     }
 
-    const refreshToken = this.getRefreshToken();
-    if (!refreshToken) {
-      return null;
-    }
-
     this.refreshTokenPromise = this.client
-      .post<AuthResponse>('/auth/refresh', { refresh_token: refreshToken })
+      .post<AuthResponse>('/auth/refresh', {})
       .then((response) => {
-        const { access_token, refresh_token } = response.data;
-        this.setTokens(access_token, refresh_token);
+        const { access_token } = response.data;
+        this.setTokens(access_token);
         return access_token;
       })
       .catch((error) => {
@@ -253,8 +258,8 @@ class APIClient {
       password,
     });
     
-    const { access_token, refresh_token } = response.data;
-    this.setTokens(access_token, refresh_token);
+    const { access_token } = response.data;
+    if (access_token) this.setTokens(access_token);
     
     return response.data;
   }
@@ -268,9 +273,7 @@ class APIClient {
 
   public async logout(): Promise<void> {
     try {
-      await this.client.post('/auth/logout', {
-        refresh_token: this.getRefreshToken(),
-      });
+      await this.client.post('/auth/logout', {});
     } finally {
       this.clearTokens();
     }
@@ -291,6 +294,15 @@ class APIClient {
 
   public isAuthenticated(): boolean {
     return !!this.getAccessToken();
+  }
+
+  public setAccessToken(accessToken: string): void {
+    this.setTokens(accessToken);
+  }
+
+  public async refreshSession(): Promise<void> {
+    const token = await this.refreshAccessToken();
+    if (!token) throw new Error('No active browser session');
   }
 
   // Generic request methods

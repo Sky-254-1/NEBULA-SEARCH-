@@ -10,26 +10,41 @@ export class ApiError extends Error {
 export function createAuthedFetch(getTokens, setTokens, clearTokens) {
   return async function authedFetch(path, options = {}) {
     const tokens = getTokens();
+    const csrfToken = document.cookie
+      .split('; ')
+      .find((cookie) => cookie.startsWith('csrf_token='))
+      ?.slice('csrf_token='.length);
     const headers = {
       'Content-Type': 'application/json',
       ...(options.headers || {}),
     };
+    const method = (options.method || 'GET').toUpperCase();
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) && csrfToken) {
+      headers['X-CSRF-Token'] = decodeURIComponent(csrfToken);
+    }
     if (tokens?.access_token) {
       headers.Authorization = `Bearer ${tokens.access_token}`;
     }
 
-    let response = await fetch(`${API_BASE}${path}`, { ...options, headers });
-    if (response.status === 401 && tokens?.refresh_token) {
+    let response = await fetch(`${API_BASE}${path}`, { ...options, headers, credentials: 'include' });
+    const authEntryPoint = ['/auth/login', '/auth/signup', '/auth/refresh'].some((entry) => path.includes(entry));
+    if (response.status === 401 && !authEntryPoint) {
       const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: tokens.refresh_token }),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(csrfToken ? { 'X-CSRF-Token': decodeURIComponent(csrfToken) } : {}),
+        },
+        credentials: 'include',
+        body: JSON.stringify({}),
       });
       if (refreshRes.ok) {
         const refreshed = await refreshRes.json();
         setTokens(refreshed);
         headers.Authorization = `Bearer ${refreshed.access_token}`;
-        response = await fetch(`${API_BASE}${path}`, { ...options, headers });
+        response = await fetch(`${API_BASE}${path}`, { ...options, headers, credentials: 'include' });
+      } else {
+        clearTokens();
       }
     }
 

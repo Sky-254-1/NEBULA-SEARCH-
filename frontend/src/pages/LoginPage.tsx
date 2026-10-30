@@ -5,6 +5,7 @@ import { Mail, Lock, Eye, EyeOff, AlertCircle, Fingerprint, Shield, Loader2 } fr
 import { useAuthStore } from '@/state';
 import { toast } from 'react-hot-toast';
 import { NebulaLogo } from '@/components/NebulaLogo';
+import { apiClient } from '@/api/client';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -51,16 +52,10 @@ export const LoginPage: React.FC = () => {
       const email = prompt('Enter your email to use biometric login:');
       if (!email) return;
 
-      const startResp = await fetch('/api/v1/auth/webauthn/login/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: email }),
-      });
-      const startData = await startResp.json();
-      if (!startResp.ok) {
-        toast.error(startData?.detail || 'No biometric credential found');
-        return;
-      }
+      const startData = await apiClient.post<{ challenge: string; rp_id: string; credential_id: string }>(
+        '/auth/webauthn/login/start',
+        { username: email }
+      );
 
       // Convert challenge to ArrayBuffer
       const challenge = Uint8Array.from(atob(startData.challenge), (c) => c.charCodeAt(0));
@@ -84,25 +79,18 @@ export const LoginPage: React.FC = () => {
 
       // Send assertion to backend
       const authResponse = assertion.response as AuthenticatorAssertionResponse;
-      const completeResp = await fetch('/api/v1/auth/webauthn/login/complete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const completeData = await apiClient.post<{ access_token: string }>(
+        '/auth/webauthn/login/complete',
+        {
           credential_id: startData.credential_id,
           authenticator_data: btoa(String.fromCharCode(...new Uint8Array(authResponse.authenticatorData))),
           client_data_json: btoa(String.fromCharCode(...new Uint8Array(authResponse.clientDataJSON))),
           signature: btoa(String.fromCharCode(...new Uint8Array(authResponse.signature))),
-        }),
-      });
-      const completeData = await completeResp.json();
-      if (!completeResp.ok) {
-        toast.error(completeData?.detail || 'Biometric login failed');
-        return;
-      }
+        }
+      );
 
-      // Store tokens and navigate
-      localStorage.setItem('access_token', completeData.access_token);
-      localStorage.setItem('refresh_token', completeData.refresh_token);
+      // Keep the short-lived access token; refresh credentials remain in HttpOnly cookies.
+      apiClient.setAccessToken(completeData.access_token);
       window.location.href = '/dashboard';
     } catch (error) {
       console.error('Biometric login error:', error);

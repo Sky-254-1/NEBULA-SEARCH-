@@ -1,7 +1,7 @@
 """Multi-Factor Authentication routes."""
 
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from app.database import get_db
 from app.database.repositories.audit import AuditRepository
@@ -253,6 +253,7 @@ async def regenerate_backup_codes(
 @router.post("/verify-login")
 async def verify_mfa_login(
     request: Request,
+    response: Response,
     mfa_pending_token: str,
     token: str,
     db=Depends(get_db)
@@ -315,6 +316,9 @@ async def verify_mfa_login(
         device_name=request.headers.get("user-agent"),
         ip_address=ip,
     )
+
+    from app.routes.auth import _set_auth_cookies
+    _set_auth_cookies(response, access_token, refresh_token)
 
     if settings.enable_audit_logs:
         audit = AuditRepository(db)

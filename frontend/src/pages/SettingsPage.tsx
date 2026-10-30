@@ -4,6 +4,7 @@ import { Settings as SettingsIcon, User, Bell, Shield, Palette, Globe, Save, Bel
 import { useSettingsStore } from '@/state';
 import { useAuthStore } from '@/state';
 import { toast } from 'react-hot-toast';
+import { getCsrfHeaders } from '@/utils/csrf';
 
 export const SettingsPage: React.FC = () => {
   const { settings, theme, language, fetchSettings, updateSettings, setTheme, setLanguage, clearError } = useSettingsStore();
@@ -48,7 +49,8 @@ export const SettingsPage: React.FC = () => {
 
       const resp = await fetch('/api/v1/notifications/push/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
+        credentials: 'include',
         body: JSON.stringify({ token, platform: 'web' }),
       });
       if (resp.ok) {
@@ -67,7 +69,11 @@ export const SettingsPage: React.FC = () => {
 
   const handleRemoveDevice = async (sessionId: string) => {
     try {
-      const resp = await fetch(`/api/v1/search/federated/devices/${sessionId}`, { method: 'DELETE' });
+      const resp = await fetch(`/api/v1/search/federated/devices/${sessionId}`, {
+        method: 'DELETE',
+        headers: getCsrfHeaders(),
+        credentials: 'include',
+      });
       if (resp.ok) {
         setDevices((prev) => prev.filter((d) => d.session_id !== sessionId));
         toast.success('Device removed');

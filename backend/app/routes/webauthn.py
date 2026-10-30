@@ -4,7 +4,7 @@ import secrets
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel
 
 from app.config import get_settings
@@ -179,7 +179,7 @@ async def webauthn_login_start(body: WebAuthnLoginStart, db=Depends(get_db)):
 
 
 @router.post("/login/complete")
-async def webauthn_login_complete(body: WebAuthnLoginComplete, db=Depends(get_db)):
+async def webauthn_login_complete(body: WebAuthnLoginComplete, response: Response, db=Depends(get_db)):
     """Complete WebAuthn login with production-grade verification."""
     if not settings.enable_webauthn:
         raise HTTPException(status_code=404, detail="WebAuthn is not enabled")
@@ -256,6 +256,9 @@ async def webauthn_login_complete(body: WebAuthnLoginComplete, db=Depends(get_db
         device_name="WebAuthn Biometric",
         ip_address=None,
     )
+
+    from app.routes.auth import _set_auth_cookies
+    _set_auth_cookies(response, access_token, refresh_token)
     
     return {
         "access_token": access_token,
