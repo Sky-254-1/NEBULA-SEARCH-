@@ -154,6 +154,13 @@ metrics, scheduler, and dead-letter routes require an administrator token.
 Dead-letter list, delete, and retry operations currently return `501` because
 the application has no durable dead-letter repository wired to those routes.
 
+### Document pagination
+
+`GET /api/v1/documents/?page=1&page_size=20` returns only the authenticated
+user's requested page. Page size must be between 1 and 100 and page must be at
+least 1. The response `pagination.total` is counted independently of the page;
+ordering is stable by creation time and document ID.
+
 ---
 
 ### Logout

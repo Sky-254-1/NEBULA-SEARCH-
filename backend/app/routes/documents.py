@@ -85,14 +85,10 @@ async def list_documents(
     user_id = await _user_id(db, email)
     docs = DocumentRepository(db)
     
-    # Get all documents (in production, add pagination to repository)
-    rows = await docs.list_for_user(user_id)
-    total = len(rows)
-    
-    # Apply pagination
-    start_idx = pagination.offset
-    end_idx = start_idx + pagination.limit
-    paginated_rows = rows[start_idx:end_idx]
+    rows = await docs.list_for_user(
+        user_id, limit=pagination.limit, offset=pagination.offset
+    )
+    total = await docs.count_for_user(user_id)
     
     # Create pagination metadata
     pagination_meta = PaginationMeta(
@@ -113,7 +109,7 @@ async def list_documents(
                 indexed_at=r.get("indexed_at"),
                 created_at=str(r["created_at"]),
             )
-            for r in paginated_rows
+            for r in rows
         ],
         pagination=pagination_meta,
     )

@@ -27,14 +27,26 @@ class DocumentRepository:
         )
         return row["id"] if row else 0
 
-    async def list_for_user(self, user_id: int, limit: int = 50) -> list[dict]:
+    async def list_for_user(
+        self, user_id: int, limit: int = 50, offset: int = 0
+    ) -> list[dict]:
+        """Return one stable, owner-scoped page of documents."""
         rows = await self._db.fetchall(
             "SELECT id, filename, content_type, storage_path, indexed_at, created_at, "
             "status, content_hash, error_message "
-            "FROM documents WHERE user_id = ? ORDER BY created_at DESC LIMIT ?",
-            (user_id, limit),
+            "FROM documents WHERE user_id = ? "
+            "ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?",
+            (user_id, limit, offset),
         )
         return [dict(row) for row in rows]
+
+    async def count_for_user(self, user_id: int) -> int:
+        """Count all documents owned by the user, independently of page size."""
+        row = await self._db.fetchone(
+            "SELECT COUNT(*) AS count FROM documents WHERE user_id = ?",
+            (user_id,),
+        )
+        return int(row["count"]) if row else 0
 
     async def get_by_id(self, doc_id: int, user_id: int):
         return await self._db.fetchone(
