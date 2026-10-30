@@ -83,7 +83,9 @@ output artifacts collected as tests, and a pre-existing untracked backend test
 that fails during import. A second run restricted to `tests/` completed with
 **149 passed, 6 failed, 16 errors**: live-server E2E tests could not connect to
 localhost and two search tests use stale call signatures. No frontend build or
-CI run was completed; no production readiness claim is made.
+CI run was completed. Those broad-suite runs preceded the latest durable-job
+and crawler-response changes; the 40-test focused run was executed after them.
+No production readiness claim is made.
 
 ## Remaining deliverables
 
