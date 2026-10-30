@@ -1,5 +1,6 @@
 """Documents domain: upload, list, delete documents."""
 
+import asyncio
 import json
 import mimetypes
 import uuid
@@ -21,6 +22,9 @@ router = APIRouter(prefix="/api/v1/documents", tags=["Documents"])
 settings = get_settings()
 
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+UPLOAD_READ_TIMEOUT_SECONDS = 60
+MAX_DOCX_UNCOMPRESSED_BYTES = 50 * 1024 * 1024
+MAX_DOCX_ENTRIES = 1000
 ALLOWED_EXTENSIONS = {".txt", ".md", ".json", ".csv", ".pdf", ".html", ".htm", ".docx"}
 
 
@@ -38,13 +42,14 @@ async def _store_upload_stream(file: UploadFile, destination: Path) -> int:
     prefix = bytearray()
     try:
         with destination.open("xb") as output:
-            while chunk := await file.read(64 * 1024):
-                size += len(chunk)
-                if size > MAX_UPLOAD_BYTES:
-                    raise HTTPException(status_code=413, detail="File too large (max 10MB)")
-                if len(prefix) < 1024:
-                    prefix.extend(chunk[: 1024 - len(prefix)])
-                output.write(chunk)
+            async with asyncio.timeout(UPLOAD_READ_TIMEOUT_SECONDS):
+                while chunk := await file.read(64 * 1024):
+                    size += len(chunk)
+                    if size > MAX_UPLOAD_BYTES:
+                        raise HTTPException(status_code=413, detail="File too large (max 10MB)")
+                    if len(prefix) < 1024:
+                        prefix.extend(chunk[: 1024 - len(prefix)])
+                    output.write(chunk)
 
         ext = destination.suffix.lower()
         if ext == ".pdf" and b"%PDF-" not in prefix:
@@ -53,8 +58,24 @@ async def _store_upload_stream(file: UploadFile, destination: Path) -> int:
             if not prefix.startswith(b"PK\x03\x04"):
                 raise HTTPException(status_code=400, detail="Invalid DOCX content")
             with zipfile.ZipFile(destination) as archive:
-                if "[Content_Types].xml" not in archive.namelist() or "word/document.xml" not in archive.namelist():
+                members = archive.infolist()
+                names = {member.filename for member in members}
+                if "[Content_Types].xml" not in names or "word/document.xml" not in names:
                     raise HTTPException(status_code=400, detail="Invalid DOCX content")
+                if len(members) > MAX_DOCX_ENTRIES:
+                    raise HTTPException(status_code=400, detail="DOCX archive contains too many entries")
+                total_uncompressed = 0
+                for member in members:
+                    member_path = Path(member.filename)
+                    if member_path.is_absolute() or ".." in member.filename.replace("\\", "/").split("/"):
+                        raise HTTPException(status_code=400, detail="Invalid DOCX archive path")
+                    if (member.external_attr >> 16) & 0o170000 == 0o120000:
+                        raise HTTPException(status_code=400, detail="Invalid DOCX archive entry")
+                    total_uncompressed += member.file_size
+                    if total_uncompressed > MAX_DOCX_UNCOMPRESSED_BYTES:
+                        raise HTTPException(status_code=400, detail="DOCX archive expands beyond the allowed size")
+                    if member.file_size > max(member.compress_size, 1) * 100:
+                        raise HTTPException(status_code=400, detail="DOCX archive compression ratio is unsafe")
         elif ext == ".json":
             with destination.open("r", encoding="utf-8-sig") as source:
                 json.load(source)
@@ -65,12 +86,18 @@ async def _store_upload_stream(file: UploadFile, destination: Path) -> int:
                         raise HTTPException(status_code=400, detail="Invalid text file content")
         return size
     except UnicodeDecodeError as exc:
+        destination.unlink(missing_ok=True)
         raise HTTPException(status_code=400, detail="File must contain valid UTF-8 text") from exc
     except json.JSONDecodeError as exc:
+        destination.unlink(missing_ok=True)
         raise HTTPException(status_code=400, detail="Invalid JSON file content") from exc
     except zipfile.BadZipFile as exc:
+        destination.unlink(missing_ok=True)
         raise HTTPException(status_code=400, detail="Invalid DOCX content") from exc
-    except Exception:
+    except TimeoutError as exc:
+        destination.unlink(missing_ok=True)
+        raise HTTPException(status_code=408, detail="Upload timed out") from exc
+    except BaseException:
         destination.unlink(missing_ok=True)
         raise
 
