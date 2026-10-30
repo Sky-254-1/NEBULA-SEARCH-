@@ -73,8 +73,13 @@ pytest tests/test_auth.py tests/test_auth_service.py tests/test_refresh_auth.py 
 ```
 
 Warnings include existing Pydantic/Strawberry deprecations and an unawaited
-coroutine warning in `tests/conftest.py` database cleanup. No frontend build,
-full test suite or CI run was completed; no production readiness claim is made.
+coroutine warning in `tests/conftest.py` database cleanup. A later upload and
+pagination run passed **8 tests**. A repository-wide `pytest -q` attempt did
+not complete: collection stopped with **72 errors**. The collection included
+tests from the nested `NEBULA-SEARCH--main` checkout that import modules absent
+there, binary `.txt` output artifacts collected as tests, and a pre-existing
+untracked backend test that fails during import. No frontend build or CI run
+was completed; no production readiness claim is made.
 
 ## Remaining deliverables
 
