@@ -7,14 +7,14 @@ dead-letter indexing operations are not production-ready; see the security
 audit in `docs/audits/AUTHENTICATION_SECURITY_REMEDIATION.md` for current
 coverage and known gaps.
 
-The Nebula Search Engine provides a comprehensive, enterprise-grade authentication and authorization system with support for:
+The backend currently implements these authentication and authorization features:
 
 - **Local Authentication**: Email/password with secure hashing
 - **JWT Tokens**: Access and refresh tokens with rotation
 - **Email Verification**: Secure email verification flow
 - **Password Reset**: Secure password recovery
 - **Multi-Factor Authentication (MFA)**: TOTP authenticator apps with backup codes
-- **OAuth Integration**: Google, GitHub, Microsoft, Apple
+- **OAuth/OIDC**: disabled until provider identity verification and account persistence are implemented
 - **Session Management**: Multiple active sessions with device tracking
 - **Role-Based Access Control (RBAC)**: Granular permission system
 - **Audit Logging**: Comprehensive security event logging
@@ -637,138 +637,14 @@ Authorization: Bearer <access_token>
 
 ---
 
-## OAuth Integration
+## OAuth/OIDC
 
-### Get Authorization URL
-
-#### GET /oauth/{provider}/authorize
-
-Get OAuth authorization URL.
-
-**Path Parameters:**
-- `provider` (required): OAuth provider (google, github, microsoft, apple)
-
-**Response (200 OK):**
-```json
-{
-  "authorization_url": "https://accounts.google.com/o/oauth2/v2/auth?...",
-  "state": "random_state_token"
-}
-```
-
-**Supported Providers:**
-- `google`
-- `github`
-- `microsoft`
-- `apple`
-
----
-
-### OAuth Callback
-
-#### GET /oauth/{provider}/callback
-
-Handle OAuth callback (automatically called by provider).
-
-**Query Parameters:**
-- `code` (required): Authorization code
-- `state` (required): State parameter
-
-**Response (200 OK):**
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "bearer",
-  "user": {
-    "email": "user@example.com",
-    "role": "user"
-  }
-}
-```
-
-**Features:**
-- Creates new user if doesn't exist
-- Links OAuth account to existing user
-- Prevents duplicate accounts
-- Creates session and tokens
-
----
-
-### Link OAuth Account
-
-#### POST /oauth/link
-
-Link OAuth account to current user.
-
-**Headers:**
-```
-Authorization: Bearer <access_token>
-```
-
-**Request Parameters:**
-- `provider` (required): OAuth provider
-- `code` (required): Authorization code
-
-**Response (200 OK):**
-```json
-{
-  "message": "OAuth account linked to google"
-}
-```
-
----
-
-### Unlink OAuth Account
-
-#### DELETE /oauth/unlink
-
-Unlink OAuth account from current user.
-
-**Headers:**
-```
-Authorization: Bearer <access_token>
-```
-
-**Request Parameters:**
-- `provider` (required): OAuth provider
-
-**Response (200 OK):**
-```json
-{
-  "message": "OAuth account unlinked from google"
-}
-```
-
-**Features:**
-- Requires password to be set
-- Cannot unlink if it's the only login method
-
----
-
-### Get Linked OAuth Accounts
-
-#### GET /oauth/accounts
-
-Get linked OAuth accounts for current user.
-
-**Headers:**
-```
-Authorization: Bearer <access_token>
-```
-
-**Response (200 OK):**
-```json
-{
-  "accounts": [
-    {
-      "provider": "google",
-      "provider_user_id": "123456789",
-      "created_at": "2024-01-01T00:00:00Z"
-    }
-  ]
-}
-```
+OAuth authorization, callback, link, unlink and linked-account routes currently
+return `501 Not Implemented`. The repository does not yet have verified
+provider identity handling or a working OAuth identity store. The routes fail
+closed so an unverified email cannot create a session or link an account.
+Google, GitHub, Microsoft and Apple login are not available until those
+provider-specific checks and migrations are implemented.
 
 ---
 

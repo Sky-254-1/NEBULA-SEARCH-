@@ -1,6 +1,9 @@
 """Documents domain: upload, list, delete documents."""
 
+import json
+import mimetypes
 import uuid
+import zipfile
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
@@ -27,6 +30,49 @@ async def _user_id(db, email: str) -> int:
     if not user_id:
         raise HTTPException(status_code=404, detail="User not found")
     return user_id
+
+
+async def _store_upload_stream(file: UploadFile, destination: Path) -> int:
+    """Write a bounded upload incrementally and validate the actual file bytes."""
+    size = 0
+    prefix = bytearray()
+    try:
+        with destination.open("xb") as output:
+            while chunk := await file.read(64 * 1024):
+                size += len(chunk)
+                if size > MAX_UPLOAD_BYTES:
+                    raise HTTPException(status_code=413, detail="File too large (max 10MB)")
+                if len(prefix) < 1024:
+                    prefix.extend(chunk[: 1024 - len(prefix)])
+                output.write(chunk)
+
+        ext = destination.suffix.lower()
+        if ext == ".pdf" and b"%PDF-" not in prefix:
+            raise HTTPException(status_code=400, detail="Invalid PDF content")
+        if ext == ".docx":
+            if not prefix.startswith(b"PK\x03\x04"):
+                raise HTTPException(status_code=400, detail="Invalid DOCX content")
+            with zipfile.ZipFile(destination) as archive:
+                if "[Content_Types].xml" not in archive.namelist() or "word/document.xml" not in archive.namelist():
+                    raise HTTPException(status_code=400, detail="Invalid DOCX content")
+        elif ext == ".json":
+            with destination.open("r", encoding="utf-8-sig") as source:
+                json.load(source)
+        elif ext in {".txt", ".md", ".markdown", ".csv", ".html", ".htm"}:
+            with destination.open("r", encoding="utf-8-sig") as source:
+                for text_chunk in iter(lambda: source.read(8192), ""):
+                    if "\x00" in text_chunk:
+                        raise HTTPException(status_code=400, detail="Invalid text file content")
+        return size
+    except UnicodeDecodeError as exc:
+        raise HTTPException(status_code=400, detail="File must contain valid UTF-8 text") from exc
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=400, detail="Invalid JSON file content") from exc
+    except zipfile.BadZipFile as exc:
+        raise HTTPException(status_code=400, detail="Invalid DOCX content") from exc
+    except Exception:
+        destination.unlink(missing_ok=True)
+        raise
 
 
 @router.get("/", response_model=DocumentListResponse)
@@ -87,25 +133,22 @@ async def upload_document(
 
     user_id = await _user_id(db, email)
 
-    content = await file.read()
-    if len(content) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="File too large (max 10MB)")
-
     upload_dir = settings.storage_uploads / str(user_id)
     upload_dir.mkdir(parents=True, exist_ok=True)
     safe_name = f"{uuid.uuid4().hex}{ext}"
     dest = upload_dir / safe_name
-    dest.write_bytes(content)
+    await _store_upload_stream(file, dest)
 
     docs = DocumentRepository(db)
-    doc_id = await docs.create(user_id, file.filename or safe_name, file.content_type, str(dest))
+    content_type = mimetypes.guess_type(file.filename or safe_name)[0] or "application/octet-stream"
+    doc_id = await docs.create(user_id, file.filename or safe_name, content_type, str(dest))
 
     await job_queue.enqueue("index_document", {"document_id": doc_id, "user_id": user_id})
 
     return DocumentResponse(
         id=doc_id,
         filename=file.filename or safe_name,
-        content_type=file.content_type,
+        content_type=content_type,
         created_at="",
     )
 

@@ -8,6 +8,7 @@ from urllib.robotparser import RobotFileParser
 import httpx
 
 from app.config import get_settings
+from app.crawler.security import is_safe_destination
 
 logger = logging.getLogger("nebula.crawler.robots")
 settings = get_settings()
@@ -25,11 +26,17 @@ class RobotsParser:
     async def _fetch_robots(self, netloc: str, scheme: str) -> RobotFileParser | None:
         robots_url = f"{scheme}://{netloc}/robots.txt"
         rp = RobotFileParser()
+        if not await is_safe_destination(robots_url):
+            rp.disallow_all = True
+            self._cache[netloc] = (time.time(), rp)
+            return rp
         try:
-            async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+            async with httpx.AsyncClient(timeout=10, follow_redirects=False) as client:
                 resp = await client.get(robots_url, headers={"User-Agent": self._user_agent})
                 if resp.status_code == 200:
                     rp.parse(resp.text.splitlines())
+                elif 300 <= resp.status_code < 400:
+                    rp.disallow_all = True
                 else:
                     rp.allow_all = True
         except Exception as exc:

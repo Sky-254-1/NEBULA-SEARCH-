@@ -14,6 +14,7 @@ from tenacity import AsyncRetrying, retry_if_exception_type, stop_after_attempt,
 
 from app.config import get_settings
 from app.crawler.robots import RobotsParser
+from app.crawler.security import is_safe_destination
 
 logger = logging.getLogger("nebula.crawler")
 settings = get_settings()
@@ -30,6 +31,8 @@ _URL_BLACKLIST = re.compile(
 )
 
 _CONTENT_TYPES = {"text/html", "text/plain", "application/xhtml+xml"}
+_REDIRECT_STATUSES = {301, 302, 303, 307, 308}
+_MAX_REDIRECTS = 5
 
 
 def normalize_url(url: str) -> str:
@@ -166,6 +169,10 @@ class AsyncCrawler:
             self._domain_timers[domain] = asyncio.get_event_loop().time()
 
     async def _fetch(self, url: str, client: httpx.AsyncClient) -> str | None:
+        if not await is_safe_destination(url):
+            logger.warning("Blocked non-public crawler destination")
+            return None
+
         if self._respect_robots:
             allowed = await self._robots.can_fetch(url)
             if not allowed:
@@ -173,12 +180,26 @@ class AsyncCrawler:
                 return None
 
         try:
-            resp = await client.get(
-                url,
-                headers={"User-Agent": self._user_agent},
-                follow_redirects=True,
-                timeout=30,
-            )
+            current_url = url
+            for redirect_count in range(_MAX_REDIRECTS + 1):
+                # Resolve the host before every request, including each redirect.
+                if not await is_safe_destination(current_url):
+                    logger.warning("Blocked unsafe crawler redirect destination")
+                    return None
+                resp = await client.get(
+                    current_url,
+                    headers={"User-Agent": self._user_agent},
+                    follow_redirects=False,
+                    timeout=30,
+                )
+                if resp.status_code not in _REDIRECT_STATUSES:
+                    break
+                location = resp.headers.get("location")
+                if not location or redirect_count >= _MAX_REDIRECTS:
+                    return None
+                current_url = urljoin(str(resp.url), location)
+            else:
+                return None
             resp.raise_for_status()
             ctype = resp.headers.get("content-type", "").lower()
             if not any(t in ctype for t in _CONTENT_TYPES):
@@ -193,6 +214,10 @@ class AsyncCrawler:
         if self._stopped:
             return []
         norm_url = normalize_url(url)
+        # Reject unsafe input before robots.txt handling or any other request.
+        if not await is_safe_destination(norm_url):
+            logger.warning("Blocked unsafe crawler URL before policy lookup")
+            return []
         if norm_url in self._seen_urls:
             return []
         self._seen_urls.add(norm_url)
