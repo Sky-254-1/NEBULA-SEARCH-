@@ -30,6 +30,7 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
@@ -320,13 +321,35 @@ class DocumentIngester:
             text = re.sub(r'\s+', ' ', text)
             return text.strip()
         except ImportError:
-            logger.warning("beautifulsoup4 not installed, falling back to regex (less secure)")
-            # Fallback: regex-based (less secure, but better than nothing)
-            content = re.sub(r'<script[^>]*>.*?</script>', '', content, flags=re.DOTALL)
-            content = re.sub(r'<style[^>]*>.*?</style>', '', content, flags=re.DOTALL)
-            content = re.sub(r'<[^>]+>', ' ', content)
-            content = re.sub(r'\s+', ' ', content)
-            return content.strip()
+            logger.warning("beautifulsoup4 not installed, falling back to stdlib HTMLParser")
+
+            class _TextExtractor(HTMLParser):
+                def __init__(self) -> None:
+                    super().__init__()
+                    self._skip_depth = 0
+                    self._chunks: List[str] = []
+
+                def handle_starttag(self, tag: str, attrs: List[tuple]) -> None:
+                    if tag.lower() in {"script", "style", "noscript"}:
+                        self._skip_depth += 1
+
+                def handle_endtag(self, tag: str) -> None:
+                    if tag.lower() in {"script", "style", "noscript"} and self._skip_depth > 0:
+                        self._skip_depth -= 1
+
+                def handle_data(self, data: str) -> None:
+                    if self._skip_depth == 0 and data:
+                        self._chunks.append(data)
+
+                def get_text(self) -> str:
+                    return " ".join(self._chunks)
+
+            parser = _TextExtractor()
+            parser.feed(content)
+            parser.close()
+            text = parser.get_text()
+            text = re.sub(r'\s+', ' ', text)
+            return text.strip()
 
     async def _parse_pdf(self, file_path: Path) -> str:
         """Parse PDF file"""
