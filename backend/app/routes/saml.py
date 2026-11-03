@@ -1,5 +1,7 @@
 """SAML 2.0 SSO authentication routes."""
 
+import secrets
+import uuid
 from typing import Optional
 from urllib.parse import urljoin
 

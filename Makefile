@@ -60,7 +60,7 @@ test-e2e: ## Run E2E tests
 lint: ## Run linting on frontend and backend
 	cd frontend && npm run lint
 	@echo "Running mypy on backend..."
-	cd backend && mypy app/ || true
+	cd backend && mypy app/
 
 .PHONY: typecheck
 typecheck: ## Run type checking

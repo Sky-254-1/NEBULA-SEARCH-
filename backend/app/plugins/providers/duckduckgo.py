@@ -22,7 +22,7 @@ class DuckDuckGoSearchProvider(SearchProvider):
         import httpx
         
         url = "https://api.duckduckgo.com/"
-        params = {
+        params: dict[str, str | int] = {
             "q": request.query,
             "format": "json",
             "no_html": 1,

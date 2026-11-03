@@ -10,7 +10,7 @@ const queryClient = new QueryClient();
 
 const withProviders = (component: React.ReactElement) => render(
   <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       {component}
     </BrowserRouter>
   </QueryClientProvider>
@@ -115,7 +115,7 @@ describe('ForgotPasswordPage', () => {
   it('renders the forgot password form', async () => {
     const { ForgotPasswordPage } = await import('@/pages/ForgotPasswordPage');
     render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <ForgotPasswordPage />
       </BrowserRouter>
     );
@@ -130,7 +130,7 @@ describe('ForgotPasswordPage', () => {
     
     const { ForgotPasswordPage } = await import('@/pages/ForgotPasswordPage');
     render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <ForgotPasswordPage />
       </BrowserRouter>
     );
@@ -151,7 +151,7 @@ describe('ForgotPasswordPage', () => {
     
     const { ForgotPasswordPage } = await import('@/pages/ForgotPasswordPage');
     render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <ForgotPasswordPage />
       </BrowserRouter>
     );
@@ -179,7 +179,7 @@ describe('EmailVerificationPage', () => {
   it('shows error when no token provided', async () => {
     const { EmailVerificationPage } = await import('@/pages/EmailVerificationPage');
     render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <EmailVerificationPage />
       </BrowserRouter>
     );
@@ -194,7 +194,7 @@ describe('EmailVerificationPage', () => {
     
     const { EmailVerificationPage } = await import('@/pages/EmailVerificationPage');
     render(
-      <MemoryRouter initialEntries={['/verify-email?token=valid-token']}>
+      <MemoryRouter initialEntries={['/verify-email?token=valid-token']} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <EmailVerificationPage />
       </MemoryRouter>
     );
@@ -216,7 +216,7 @@ describe('MFAPage', () => {
   it('renders the MFA form', async () => {
     const { MFAPage } = await import('@/pages/MFAPage');
     render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <MFAPage />
       </BrowserRouter>
     );
@@ -229,7 +229,7 @@ describe('MFAPage', () => {
   it('accepts 6-digit code input', async () => {
     const { MFAPage } = await import('@/pages/MFAPage');
     render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <MFAPage />
       </BrowserRouter>
     );
@@ -243,7 +243,7 @@ describe('MFAPage', () => {
   it('only accepts numeric input', async () => {
     const { MFAPage } = await import('@/pages/MFAPage');
     render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <MFAPage />
       </BrowserRouter>
     );
@@ -281,7 +281,7 @@ describe('BottomNav', () => {
   it('renders all navigation items', async () => {
     const { BottomNav } = await import('@/components/layout/BottomNav');
     render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <BottomNav />
       </BrowserRouter>
     );
@@ -296,7 +296,7 @@ describe('BottomNav', () => {
   it('has correct aria-labels', async () => {
     const { BottomNav } = await import('@/components/layout/BottomNav');
     render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <BottomNav />
       </BrowserRouter>
     );

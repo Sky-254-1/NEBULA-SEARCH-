@@ -84,6 +84,24 @@ RATE_LIMIT_PER_MINUTE=60
 
 ## Docker Deployment
 
+### Troubleshooting image pulls
+
+If a build fails while pulling a base image or layer, first verify the Docker
+daemon is running with `docker info`, then test a pull directly:
+
+```bash
+docker pull python:3.11.9-slim-bookworm
+```
+
+If the pull fails because `registry-1.docker.io` or
+`production.cloudfront.docker.com` cannot be resolved, check DNS and HTTPS
+connectivity from the machine running Docker, along with any configured VPN,
+firewall, or corporate proxy. Docker Desktop uses its own network and proxy
+settings, so successful DNS resolution from the host does not guarantee that
+the Docker daemon can reach the registry. Correct the Docker Desktop DNS or
+proxy configuration for your network, restart Docker Desktop, and retry the
+pull before rebuilding. Do not hard-code transient registry CDN IP addresses.
+
 ### Production docker-compose.yml
 
 ```yaml

@@ -193,9 +193,9 @@ class SuggestionService:
         """Get semantic suggestions using embeddings."""
         # Try to use existing vector search infrastructure
         try:
-            from app.hybrid.semantic import semantic_index
-            if semantic_index and hasattr(semantic_index, "search"):
-                results = await semantic_index.search(query, top_k=5)
+            from app.search.semantic.engine import semantic_engine
+            if semantic_engine and hasattr(semantic_engine, "search"):
+                results = await semantic_engine.search(query, top_k=5)
                 return [
                     {
                         "text": r.get("text", r.get("query", "")),
@@ -316,5 +316,4 @@ class SuggestionService:
         # This is a placeholder that would integrate with the vector store
         # to generate semantic suggestions for all queries
         return 0
-
 

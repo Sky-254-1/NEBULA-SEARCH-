@@ -56,10 +56,10 @@ class BM25Engine:
         # Index statistics
         self.doc_count = 0
         self.avg_doc_length = 0.0
-        self.doc_freq = Counter()
-        self.doc_lengths = {}
-        self.field_doc_freq = defaultdict(Counter)
-        self.field_doc_lengths = defaultdict(dict)
+        self.doc_freq: Counter[str] = Counter()
+        self.doc_lengths: dict[Any, int] = {}
+        self.field_doc_freq: defaultdict[str, Counter[str]] = defaultdict(Counter)
+        self.field_doc_lengths: defaultdict[str, dict[Any, int]] = defaultdict(dict)
         
         # Stop words (basic set)
         self.stop_words = {

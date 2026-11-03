@@ -17,7 +17,7 @@
     "mobile:build:web": "cd frontend && npm run build && cd ../mobile && npx cap copy"
   },
   "devDependencies": {
-    "@playwright/test": "^1.61.1",
+    "@playwright/test": "^1.64.1",
     "@types/node": "^20.17.0",
     "@vitest/coverage-v8": "^4.1.10",
     "playwright": "^1.61.1",

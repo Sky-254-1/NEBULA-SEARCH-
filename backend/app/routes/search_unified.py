@@ -20,6 +20,7 @@ from app.search.intelligence import (
 )
 from app.search.search_service import search_service
 from app.services.ai import synthesize_snippets
+from app.models.schemas import PaginationMeta
 
 logger = logging.getLogger("nebula.search.unified")
 
@@ -90,7 +91,10 @@ class SearchResponse(BaseModel):
     ai_answer: Optional[AIAnswer] = None
     suggestions: Optional[List[str]] = None
     facets: Optional[List[FacetCount]] = None
-    total: int
+    total: int = Field(..., description="Number of matching candidates retrieved for this query")
+    page: int
+    page_size: int
+    pagination: PaginationMeta
     response_time_ms: float
 
 
@@ -227,7 +231,17 @@ async def unified_search(
         ai_answer=ai_answer,
         suggestions=suggestions,
         facets=facets_out,
-        total=len(results),
+        total=response.get("total", len(results)),
+        page=body.page,
+        page_size=body.limit,
+        pagination=PaginationMeta(**response.get("pagination", {
+            "total": response.get("total", len(results)),
+            "page": body.page,
+            "page_size": body.limit,
+            "total_pages": (response.get("total", len(results)) + body.limit - 1) // body.limit,
+            "has_next": body.page * body.limit < response.get("total", len(results)),
+            "has_previous": body.page > 1,
+        })),
         response_time_ms=round(response_time_ms, 2),
     )
 

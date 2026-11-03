@@ -116,7 +116,7 @@ async def _track_search_analytics(
 async def orchestrate_search(
     query: str,
     user_email: Optional[str] = None,
-    backends: List[str] = None,
+    backends: Optional[List[str]] = None,
     include_ai_answer: bool = True,
     include_suggestions: bool = True,
     enable_semantic: bool = True,
@@ -126,14 +126,14 @@ async def orchestrate_search(
     page: int = 1,
     page_size: int = 20,
     include_highlights: bool = True,
-    facets: List[str] = None,
-    filters: Dict[str, Any] = None,
+    facets: Optional[List[str]] = None,
+    filters: Optional[Dict[str, Any]] = None,
     max_results: int = 100,
 ) -> Dict[str, Any]:
     """Orchestrate multi-backend search with deduplication and ranking."""
     _request_start = time.time()
 
-    backends = backends or settings.default_backends
+    backends = backends or getattr(settings, "default_backends", ["wikipedia"])
     backends = [b.strip().lower() for b in backends if b.strip().lower() in ALLOWED_BACKENDS]
 
     if not backends:
@@ -147,8 +147,19 @@ async def orchestrate_search(
         return {
             "query": query,
             "backends": backends,
+            "backends_used": backends,
             "results": [],
             "total": 0,
+            "page": page,
+            "page_size": page_size,
+            "pagination": {
+                "total": 0,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": 0,
+                "has_next": False,
+                "has_previous": page > 1,
+            },
             "suggestions": [],
             "ai_answer": None,
             "facets": None,
@@ -162,7 +173,9 @@ async def orchestrate_search(
     tasks = []
     for variant in query_variants:
         for backend in backends:
-            tasks.append(run_web_search(variant, backend))
+            tasks.append(
+                run_web_search(variant, backend, page=1, page_size=max_results)
+            )
 
     results_list = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -217,10 +230,19 @@ async def orchestrate_search(
         "query": query,
         "mode": "orchestrated",
         "backends": backends,
+        "backends_used": backends,
         "results": paginated_results,
         "total": total,
         "page": page,
         "page_size": page_size,
+        "pagination": {
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (total + page_size - 1) // page_size,
+            "has_next": end_idx < total,
+            "has_previous": page > 1,
+        },
         "suggestions": suggestions,
         "ai_answer": ai_answer,
         "facets": facets_out,
@@ -235,12 +257,12 @@ async def generate_ai_answer(query: str, snippets: List[str]) -> Optional[Dict[s
 
     # Use OpenAI if configured, otherwise fallback to DuckDuckGo AI
     try:
-        from app.services.ai import generate_answer
-        answer = await generate_answer(query, snippets)
+        from app.services.ai import synthesize_snippets
+        synthesis = await synthesize_snippets(query, snippets)
         return {
-            "answer": answer,
+            "answer": synthesis.synthesis,
             "provider": "openai" if settings.ai_provider == "openai" else "fallback",
-            "citations": [],
+            "citations": synthesis.sources,
         }
     except Exception as e:
         logger.warning(f"AI answer generation failed: {e}")

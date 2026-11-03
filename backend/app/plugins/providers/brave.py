@@ -30,7 +30,7 @@ class BraveSearchProvider(SearchProvider):
             "Accept": "application/json",
             "X-Subscription-Token": api_key,
         }
-        params = {
+        params: dict[str, str | int] = {
             "q": request.query,
             "count": request.max_results,
         }

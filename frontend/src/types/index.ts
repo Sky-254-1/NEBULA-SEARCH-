@@ -73,6 +73,7 @@ export interface ActivityResponse {
 // Search Types
 // ============================================
 export interface SearchResult {
+  id?: number;
   // Vector / document result fields
   document_id?: number;
   chunk_id?: number;
@@ -84,6 +85,8 @@ export interface SearchResult {
   title?: string;
   url?: string;
   snippet?: string;
+  source?: string;
+  highlights?: Array<{ text: string; start: number; end: number }>;
   // Shared ranking field — present on both shapes
   score: number;
   combined_score?: number;
@@ -94,7 +97,11 @@ export interface OrchestratedSearchResponse {
   query: string;
   results: SearchResult[];
   backends_used: string[];
+  backends?: string[];
   total: number;
+  page?: number;
+  page_size?: number;
+  pagination?: PaginationMeta;
 }
 
 // Search v2 Types
@@ -105,6 +112,7 @@ export interface IntelligentSearchResponse {
   total: number;
   page: number;
   page_size: number;
+  pagination?: PaginationMeta;
   spell_corrected: boolean;
   intent: string;
   backends: string[];
@@ -113,6 +121,18 @@ export interface IntelligentSearchResponse {
     personalization_enabled: boolean;
     diversity_enabled: boolean;
   };
+}
+
+export interface UnifiedSearchResponse {
+  query: string;
+  mode: 'web' | 'vector' | 'hybrid' | 'ai';
+  results: SearchResult[];
+  total: number;
+  page: number;
+  page_size: number;
+  pagination: PaginationMeta;
+  ai_answer?: { answer: string; provider: string; citations?: Array<Record<string, any>> };
+  suggestions?: string[];
 }
 
 export interface SearchSuggestion {

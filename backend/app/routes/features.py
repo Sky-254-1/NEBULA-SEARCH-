@@ -55,7 +55,7 @@ async def list_saved_searches(email: str = Depends(get_current_user), db=Depends
 async def create_saved_search(body: SavedSearchCreate, email: str = Depends(get_current_user), db=Depends(get_db)):
     user_id = await _get_user_id(email, db)
     repo = SavedSearchRepository(db)
-    search_id = await repo.create(user_id, body.query, body.filters, body.label)
+    search_id = await repo.create(user_id, body.query, filters=body.filters)
     row = await repo.get_by_id(search_id, user_id)
     if not row:
         raise HTTPException(status_code=500, detail="Failed to create saved search")
@@ -120,6 +120,8 @@ async def update_collection(collection_id: int, body: CollectionUpdate, email: s
         is_public=body.is_public,
     )
     row = await repo.get_by_id(collection_id, user_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Collection not found")
     return CollectionResponse(**row)
 
 
@@ -201,6 +203,8 @@ async def update_bookmark(bookmark_id: int, body: BookmarkUpdate, email: str = D
         raise HTTPException(status_code=404, detail="Bookmark not found")
     await repo.update(bookmark_id, user_id, title=body.title, snippet=body.snippet, tags=body.tags)
     row = await repo.get_by_id(bookmark_id, user_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Bookmark not found")
     return BookmarkResponse(**row)
 
 
@@ -224,7 +228,7 @@ async def list_notifications(limit: int = Query(50, ge=1, le=200), email: str = 
     user_id = await _get_user_id(email, db)
     repo = NotificationRepository(db)
     rows = await repo.list_for_user(user_id, limit)
-    unread = await repo.unread_count(user_id)
+    unread = await repo.get_unread_count(user_id)
     return NotificationListResponse(notifications=[NotificationResponse(**r) for r in rows], unread_count=unread)
 
 

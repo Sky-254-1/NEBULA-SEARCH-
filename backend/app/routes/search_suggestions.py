@@ -1,6 +1,7 @@
 """Search suggestions and autocomplete API."""
 
 import logging
+from collections import Counter
 from typing import List, Optional
 
 from fastapi import APIRouter, Query
@@ -72,7 +73,7 @@ async def expand_query(
                 # Find related terms from co-occurrence
                 docs = list(inverted_index_builder._index[token].keys())[:5]
                 for doc_id in docs:
-                    doc_tf = inverted_index_builder._term_frequencies.get(doc_id, {})
+                    doc_tf = inverted_index_builder._term_frequencies.get(doc_id, Counter())
                     for term, freq in doc_tf.most_common(3):
                         if term != token and term not in synonyms:
                             synonyms.append(term)

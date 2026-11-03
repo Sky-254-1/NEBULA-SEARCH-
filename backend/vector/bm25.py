@@ -77,10 +77,10 @@ class BM25Okapi:
         self.avgdl = sum(self.doc_len) / self.corpus_size if self.corpus_size > 0 else 0.0
 
         # Compute IDF
-        self.idf = {}
-        for term, freq in df.items():
-            idf = math.log(1 + (self.corpus_size - freq + 0.5) / (freq + 0.5))
-            self.idf[term] = idf
+        idf_map: dict[str, float] = {}
+        for term, term_df in df.items():
+            idf_map[term] = math.log(1 + (self.corpus_size - term_df + 0.5) / (term_df + 0.5))
+        self.idf = idf_map
 
     def score(self, query: str, doc_index: int) -> float:
         """Compute BM25 score for a single document."""
@@ -99,7 +99,7 @@ class BM25Okapi:
             if term not in self.idf:
                 continue
 
-            tf = doc_freq.get(term, 0)
+            tf = float(doc_freq.get(term, 0))
             tf = (tf * (self.k1 + 1)) / (tf + self.k1 * (1 - self.b + self.b * doc_len / self.avgdl))
             score += self.idf[term] * tf
 

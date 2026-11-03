@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
     if os.name != "nt":
         for sig in (signal.SIGTERM, signal.SIGINT):
-            loop.add_signal_handler(sig, lambda s=sig: _handle_signal(s))
+            loop.add_signal_handler(sig, _handle_signal, sig)
 
     try:
         loop.run_until_complete(main())

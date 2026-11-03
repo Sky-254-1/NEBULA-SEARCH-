@@ -32,3 +32,12 @@ class SearchRepository:
         """Return total search log count."""
         row = await self._db.fetchone("SELECT COUNT(*) as count FROM search_logs")
         return int(row["count"]) if row else 0
+
+    async def get_suggestions(self, query: str, limit: int = 5) -> list[str]:
+        """Return recent distinct queries matching a prefix."""
+        rows = await self._db.fetchall(
+            "SELECT DISTINCT query FROM search_logs "
+            "WHERE query LIKE ? ORDER BY searched_at DESC LIMIT ?",
+            (f"{query}%", limit),
+        )
+        return [str(row["query"]) for row in rows]

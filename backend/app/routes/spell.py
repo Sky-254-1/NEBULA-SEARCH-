@@ -7,7 +7,6 @@ import time
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.config import get_settings
 from app.database import get_db
@@ -19,7 +18,6 @@ from app.services.spell_service import SpellService, SpellResult, normalize_text
 
 logger = logging.getLogger("nebula.spell")
 router = APIRouter(prefix="/api/v1/search", tags=["Search"])
-security = HTTPBearer(auto_error=False)
 
 settings = get_settings()
 
@@ -161,28 +159,13 @@ async def spell_suggestions(
 )
 async def rebuild_spell_dictionary(
     background_tasks: BackgroundTasks,
-    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    email: str = Depends(get_current_user),
     db=Depends(get_db),
 ):
     """Rebuild the spell dictionary from indexed documents.
 
     Requires admin authentication.
     """
-    # Auth check
-    email = None
-    if credentials:
-        try:
-            email = await get_current_user(credentials.credentials)
-        except Exception as exc:
-            logger.debug("Spell auth user extraction failed: %s", exc)
-
-    if not email:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
     # Try to check admin role (best-effort)
     try:
         users_repo = __import_from("app.database.repositories.user", "UserRepository")

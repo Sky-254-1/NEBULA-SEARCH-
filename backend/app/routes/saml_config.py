@@ -1,6 +1,6 @@
 """SAML configuration helper and examples."""
 
-from typing import Optional
+from typing import Any, Optional
 from fastapi import APIRouter
 from pydantic import BaseModel
 
@@ -18,7 +18,7 @@ class SAMLConfig(BaseModel):
 
 
 # Example configurations for common IdPs
-EXAMPLE_CONFIGS = {
+EXAMPLE_CONFIGS: dict[str, dict[str, Any]] = {
     "azure_ad": {
         "name": "Azure Active Directory",
         "entity_id": "https://login.microsoftonline.com/{tenant_id}/v2.0",

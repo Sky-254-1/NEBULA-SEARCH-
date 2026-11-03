@@ -7,7 +7,7 @@ and advanced ranking.
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.database import get_db
 from app.database.repositories.search import SearchRepository
@@ -57,6 +57,8 @@ async def get_suggestions(
     if email:
         users = UserRepository(db)
         user_id = await users.get_id_by_email(email)
+        if user_id is None:
+            raise HTTPException(status_code=404, detail="User not found")
 
     suggestions = await query_suggestion_engine.get_suggestions(q, user_id, limit, db=db)
 
@@ -131,6 +133,8 @@ async def intelligent_search(
     # Get user
     users = UserRepository(db)
     user_id = await users.get_id_by_email(email)
+    if user_id is None:
+        raise HTTPException(status_code=404, detail="User not found")
 
     original_query = q
 
@@ -143,7 +147,14 @@ async def intelligent_search(
 
     # 2. Get initial results from orchestrator
     backend_list = [b.strip() for b in backends.split(",") if b.strip()]
-    search_response = await orchestrate_search(q, backend_list, 1, page_size * 2)
+    candidate_limit = min(page * page_size + 1, 1000)
+    search_response = await orchestrate_search(
+        query=q,
+        backends=backend_list,
+        page=1,
+        page_size=candidate_limit,
+        max_results=candidate_limit,
+    )
 
     results = search_response.get("results", [])
 
@@ -159,6 +170,14 @@ async def intelligent_search(
             "total": 0,
             "page": page,
             "page_size": page_size,
+            "pagination": {
+                "total": 0,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": 0,
+                "has_next": False,
+                "has_previous": page > 1,
+            },
             "spell_corrected": original_query != q,
             "intent": intent_classifier.classify(q),
         }
@@ -211,6 +230,7 @@ async def intelligent_search(
     # 8. Pagination
     start = (page - 1) * page_size
     page_results = ranked_results[start : start + page_size]
+    total_results = len(ranked_results)
 
     # 9. Log search
     search_repo = SearchRepository(db)
@@ -227,9 +247,17 @@ async def intelligent_search(
         "query": q,
         "original_query": original_query,
         "results": page_results,
-        "total": len(ranked_results),
+        "total": total_results,
         "page": page,
         "page_size": page_size,
+        "pagination": {
+            "total": total_results,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (total_results + page_size - 1) // page_size,
+            "has_next": start + len(page_results) < total_results,
+            "has_previous": page > 1,
+        },
         "spell_corrected": original_query != q,
         "intent": intent,
         "backends": backend_list,
@@ -254,7 +282,13 @@ async def semantic_search(
     Returns results based on semantic similarity only.
     """
     # Get base results first
-    search_response = await orchestrate_search(q, ["wikipedia"], 1, top_k * 2)
+    search_response = await orchestrate_search(
+        query=q,
+        backends=["wikipedia"],
+        page=1,
+        page_size=top_k * 2,
+        max_results=top_k * 2,
+    )
     results = search_response.get("results", [])
 
     if not results:
@@ -323,6 +357,8 @@ async def log_click(
 
     users = UserRepository(db)
     user_id = await users.get_id_by_email(email)
+    if user_id is None:
+        raise HTTPException(status_code=404, detail="User not found")
 
     # Log for analytics
     await search_analytics.log_search_event(
@@ -359,6 +395,8 @@ async def get_search_profile(
 
     users = UserRepository(db)
     user_id = await users.get_id_by_email(email)
+    if user_id is None:
+        raise HTTPException(status_code=404, detail="User not found")
 
     profile = await personalization_engine.get_user_profile(user_id)
     history = await search_analytics.get_user_search_history(user_id, limit=20)

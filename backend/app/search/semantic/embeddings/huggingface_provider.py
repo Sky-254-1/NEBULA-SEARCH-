@@ -6,12 +6,16 @@ Supports both API and local model inference.
 """
 
 import logging
-from typing import Optional
+from typing import Any, Optional, Protocol
 import httpx
 
 from .provider import EmbeddingProvider
 
 logger = logging.getLogger(__name__)
+
+
+class _LocalEmbeddingModel(Protocol):
+    def encode(self, texts: list[str], convert_to_numpy: bool = ...) -> Any: ...
 
 
 class HuggingFaceEmbeddingProvider(EmbeddingProvider):
@@ -75,7 +79,7 @@ class HuggingFaceEmbeddingProvider(EmbeddingProvider):
         self._client = httpx.AsyncClient(timeout=120.0)
         
         # Local model (optional)
-        self._local_model = None
+        self._local_model: _LocalEmbeddingModel | None = None
         if self.use_local:
             self._initialize_local_model()
     
@@ -144,13 +148,17 @@ class HuggingFaceEmbeddingProvider(EmbeddingProvider):
             List of embedding vectors
         """
         try:
+            model = self._local_model
+            if model is None:
+                raise RuntimeError("Local embedding model is not initialized")
+
             # Run in executor to avoid blocking
             import asyncio
             loop = asyncio.get_event_loop()
             
             embeddings = await loop.run_in_executor(
                 None,
-                lambda: self._local_model.encode(texts, convert_to_numpy=True).tolist()
+                lambda: model.encode(texts, convert_to_numpy=True).tolist()
             )
             
             return embeddings

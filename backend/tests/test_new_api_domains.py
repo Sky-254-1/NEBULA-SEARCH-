@@ -5,6 +5,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.services.auth import create_access_token
 from app.config import get_settings
+from app.database import get_db
+from app.main import app
 
 settings = get_settings()
 
@@ -28,7 +30,9 @@ def mock_db():
     db.fetchone = AsyncMock()
     db.fetchall = AsyncMock()
     db.execute = AsyncMock()
-    return db
+    app.dependency_overrides[get_db] = lambda: db
+    yield db
+    app.dependency_overrides.pop(get_db, None)
 
 
 @pytest.fixture
@@ -80,6 +84,7 @@ class TestDocumentsAPI(APITestBase):
                 with patch("app.routes.documents.DocumentRepository") as MockDocRepo:
                     mock_doc_repo = AsyncMock()
                     mock_doc_repo.list_for_user = AsyncMock(return_value=[])
+                    mock_doc_repo.count_for_user = AsyncMock(return_value=0)
                     MockDocRepo.return_value = mock_doc_repo
                     
                     response = self.client.get("/api/v1/documents/", headers=auth_headers_user)
@@ -97,12 +102,13 @@ class TestDocumentsAPI(APITestBase):
                 
                 with patch("app.routes.documents.DocumentRepository") as MockDocRepo:
                     mock_doc_repo = AsyncMock()
-                    # Mock 25 documents
+                    # Return the requested page while reporting all matches.
                     mock_doc_repo.list_for_user = AsyncMock(return_value=[
                         {"id": i, "filename": f"doc{i}.txt", "content_type": "text/plain", 
                          "indexed_at": None, "created_at": "2024-01-01"}
-                        for i in range(1, 26)
+                        for i in range(1, 11)
                     ])
+                    mock_doc_repo.count_for_user = AsyncMock(return_value=25)
                     MockDocRepo.return_value = mock_doc_repo
                     
                     response = self.client.get(
@@ -133,7 +139,7 @@ class TestDocumentsAPI(APITestBase):
             headers=auth_headers_user
         )
         assert response.status_code == 400
-        assert "File type not allowed" in response.json()["detail"]
+        assert "File type not allowed" in response.json()["message"]
     
     def test_delete_document_unauthorized(self):
         """Test deleting document without authentication."""
@@ -217,6 +223,7 @@ class TestNotificationsAPI(APITestBase):
                     mock_notif_repo = AsyncMock()
                     mock_notif_repo.list_for_user = AsyncMock(return_value=[])
                     mock_notif_repo.get_unread_count = AsyncMock(return_value=0)
+                    mock_notif_repo.count_for_user = AsyncMock(return_value=0)
                     MockNotifRepo.return_value = mock_notif_repo
 
                     response = self.client.get("/api/v1/notifications/", headers=auth_headers_user)
@@ -238,6 +245,7 @@ class TestNotificationsAPI(APITestBase):
                     mock_notif_repo = AsyncMock()
                     mock_notif_repo.list_for_user = AsyncMock(return_value=[])
                     mock_notif_repo.get_unread_count = AsyncMock(return_value=0)
+                    mock_notif_repo.count_for_user = AsyncMock(return_value=0)
                     MockNotifRepo.return_value = mock_notif_repo
 
                     response = self.client.get(
@@ -533,6 +541,7 @@ class TestPaginationIntegration(APITestBase):
                          "indexed_at": None, "created_at": "2024-01-01"}
                         for i in range(1, 6)
                     ])
+                    mock_doc_repo.count_for_user = AsyncMock(return_value=5)
                     MockDocRepo.return_value = mock_doc_repo
                     
                     # Request page 1 with page_size 2
@@ -630,6 +639,7 @@ class TestBackwardCompatibility(APITestBase):
                     
                     mock_doc_repo = AsyncMock()
                     mock_doc_repo.list_for_user = AsyncMock(return_value=[])
+                    mock_doc_repo.count_for_user = AsyncMock(return_value=0)
                     MockDocRepo.return_value = mock_doc_repo
                     
                     response = self.client.get("/api/v1/storage/documents", headers=auth_headers_user)

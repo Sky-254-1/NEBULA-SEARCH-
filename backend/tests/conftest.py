@@ -27,6 +27,7 @@ os.environ["RATE_LIMIT_PER_MINUTE"] = "1000"
 os.environ["SIGNUP_RATE_LIMIT"] = "1000"
 os.environ["LOGIN_RATE_LIMIT"] = "1000"
 os.environ["REFRESH_RATE_LIMIT"] = "1000"
+os.environ["REDIS_URL"] = ""
 
 from app.config import get_settings
 from app.database import init_db

@@ -9,6 +9,7 @@ import {
   PopularResponse,
   SearchProfile,
   SearchHistoryItem,
+  UnifiedSearchResponse,
 } from '@/types';
 
 export interface SearchParams {
@@ -24,6 +25,12 @@ export interface SearchParams {
   include_ai_answer?: boolean;
   include_suggestions?: boolean;
   facets?: string[];
+  filters?: {
+    date_range?: Record<string, string>;
+    document_type?: string[];
+    tags?: string[];
+    source?: string;
+  };
 }
 
 export interface LegacySearchParams {
@@ -33,8 +40,8 @@ export interface LegacySearchParams {
 
 export const searchApi = {
   // ── Main unified search (POST /api/v1/search/) ──────────────────────────
-  async search(params: SearchParams): Promise<any> {
-    return apiClient.post('/api/v1/search/', {
+  async search(params: SearchParams): Promise<UnifiedSearchResponse> {
+    return apiClient.post<UnifiedSearchResponse>('/search/', {
       query: params.q,
       mode: params.mode ?? 'hybrid',
       page: params.page ?? 1,
@@ -44,12 +51,13 @@ export const searchApi = {
       spell_check: params.enable_spell_check ?? true,
       include_highlights: true,
       facets: params.facets ?? null,
+      filters: params.filters ?? null,
     });
   },
 
   // ── Intelligent search v2 (GET /api/v2/search/) ────────────────────────
   async intelligentSearch(params: SearchParams): Promise<IntelligentSearchResponse> {
-    return apiClient.get<IntelligentSearchResponse>('/api/v2/search/', {
+    return apiClient.get<IntelligentSearchResponse>('/v2/search/', {
       q: params.q,
       backends: params.backends ?? 'wikipedia',
       page: params.page ?? 1,
@@ -63,30 +71,30 @@ export const searchApi = {
 
   // ── Suggestions & autocomplete ─────────────────────────────────────────
   async getSuggestions(q: string, limit: number = 10): Promise<SuggestionsResponse> {
-    return apiClient.get<SuggestionsResponse>('/api/v1/search/suggestions', { q, limit });
+    return apiClient.get<SuggestionsResponse>('/search/suggestions', { q, limit });
   },
 
   async autocomplete(q: string, limit: number = 10): Promise<AutocompleteResponse> {
-    return apiClient.get<AutocompleteResponse>('/api/v2/search/autocomplete', { q, limit });
+    return apiClient.get<AutocompleteResponse>('/v2/search/autocomplete', { q, limit });
   },
 
   async spellCheck(q: string): Promise<SpellCheckResponse> {
-    return apiClient.get<SpellCheckResponse>('/api/v2/search/spell-check', { q });
+    return apiClient.get<SpellCheckResponse>('/v2/search/spell-check', { q });
   },
 
   // ── Trending & popular ─────────────────────────────────────────────────
   async getTrending(limit: number = 10, hours: number = 24): Promise<TrendingResponse> {
-    return apiClient.get<TrendingResponse>('/api/v2/search/trending', { limit, hours });
+    return apiClient.get<TrendingResponse>('/v2/search/trending', { limit, hours });
   },
 
   async getPopular(limit: number = 10): Promise<PopularResponse> {
-    return apiClient.get<PopularResponse>('/api/v2/search/popular', { limit });
+    return apiClient.get<PopularResponse>('/v2/search/popular', { limit });
   },
 
   // ── Search history ─────────────────────────────────────────────────────
   async getSearchHistory(limit: number = 20): Promise<{ history: SearchHistoryItem[] }> {
     const resp = await apiClient.get<{ success: boolean; data: { history: SearchHistoryItem[] } }>(
-      '/api/v1/search/history',
+      '/search/history',
       { limit },
     );
     // Unwrap the success wrapper if present
@@ -94,7 +102,7 @@ export const searchApi = {
   },
 
   async clearHistory(): Promise<void> {
-    await apiClient.delete('/api/v1/search/history');
+    await apiClient.delete('/search/history');
   },
 
   // ── Saved searches ─────────────────────────────────────────────────────
@@ -105,18 +113,18 @@ export const searchApi = {
   ): Promise<any> {
     const params: Record<string, any> = { query, mode };
     if (filters) params.filters = JSON.stringify(filters);
-    return apiClient.post('/api/v1/search/save', null, { params });
+    return apiClient.post('/search/save', null, { params });
   },
 
   async getSavedSearches(): Promise<any> {
     const resp = await apiClient.get<{ success: boolean; data: { saved: any[] } }>(
-      '/api/v1/search/saved',
+      '/search/saved',
     );
     return (resp as any)?.data?.saved ?? [];
   },
 
   async deleteSavedSearch(searchId: number): Promise<void> {
-    await apiClient.delete(`/api/v1/search/saved/${searchId}`);
+    await apiClient.delete(`/search/saved/${searchId}`);
   },
 
   // ── Analytics click tracking ───────────────────────────────────────────
@@ -127,7 +135,7 @@ export const searchApi = {
     sessionId?: string,
   ): Promise<void> {
     await apiClient.post(
-      '/api/v2/search/click',
+      '/v2/search/click',
       null,
       { params: { query, position, url, session_id: sessionId } },
     );
@@ -135,14 +143,14 @@ export const searchApi = {
 
   // ── Search profile ─────────────────────────────────────────────────────
   async getSearchProfile(): Promise<SearchProfile> {
-    return apiClient.get<SearchProfile>('/api/v2/search/profile');
+    return apiClient.get<SearchProfile>('/v2/search/profile');
   },
 
   // ── Legacy web search (GET /api/v1/search/web) ────────────────────────
   async webSearch(params: LegacySearchParams): Promise<SearchResult[]> {
     try {
       const response = await apiClient.get<{ results?: SearchResult[] }>(
-        '/api/v1/search/web',
+        '/search/web',
         { q: params.q, backend: params.backend },
       );
       return response.results ?? [];

@@ -19,6 +19,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
@@ -33,7 +34,9 @@ from app.middleware.security import (
 from app.middleware.security_enhanced import InputValidationMiddleware, AdvancedRateLimitMiddleware, AuditLoggingMiddleware
 from app.middleware.versioning import VersioningMiddleware
 from app.middleware.response import ResponseStandardizationMiddleware
+from app.middleware.response import error_response
 from app.middleware.rate_limit import RateLimitHeadersMiddleware
+from app.docs.openapi_config import configure_openapi
 from app.services.monitoring import MetricsMiddleware
 from app.routes import admin, ai, audio, auth, crawler, features, health, search, storage, vector
 from app.health_routes import router as health_router
@@ -284,13 +287,13 @@ async def _verify_dependencies() -> list[str]:
 async def _validate_configuration() -> None:
     """Validate application configuration at startup."""
     from app.config_validation import validate_config
-    
+
     result = validate_config(settings)
-    
+
     if result.errors:
         for error in result.errors:
             logger.error("Configuration error: %s", error)
-    
+
     if result.warnings:
         for warning in result.warnings:
             logger.warning("Configuration warning: %s", warning)
@@ -307,21 +310,21 @@ try:
         """Create or return existing Prometheus counter to avoid duplicate registration."""
         # Check if collector already exists in registry
         existing = REGISTRY._names_to_collectors.get(name)
-        if existing is not None:
+        if isinstance(existing, Counter):
             return existing
         return Counter(name, documentation, labelnames or [])
 
     def _safe_gauge(name: str, documentation: str, labelnames: list[str] | None = None) -> Gauge:
         """Create or return existing Prometheus gauge to avoid duplicate registration."""
         existing = REGISTRY._names_to_collectors.get(name)
-        if existing is not None:
+        if isinstance(existing, Gauge):
             return existing
         return Gauge(name, documentation, labelnames or [])
 
     def _safe_histogram(name: str, documentation: str, labelnames: list[str] | None = None, buckets: tuple | None = None) -> Histogram:
         """Create or return existing Prometheus histogram to avoid duplicate registration."""
         existing = REGISTRY._names_to_collectors.get(name)
-        if existing is not None:
+        if isinstance(existing, Histogram):
             return existing
         if buckets:
             return Histogram(name, documentation, labelnames or [], buckets=buckets)
@@ -393,6 +396,10 @@ async def _request_id_middleware(request: Request, call_next):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _ensure_storage_dirs()
+    current_settings = get_settings()
+    if current_settings.app_env == "testing":
+        yield
+        return
     await init_db()
     from app.database.engine import init_pool
     await init_pool()
@@ -401,7 +408,7 @@ async def lifespan(app: FastAPI):
     from app.crawler.scheduler import crawl_scheduler
 
     await crawl_scheduler.start()
-    
+
     # Initialize pgvector for production vector storage
     from vector.storage.pgvector_store import get_pgvector_store
     pgvector_store = get_pgvector_store()
@@ -411,7 +418,7 @@ async def lifespan(app: FastAPI):
 
     # Validate configuration
     await _validate_configuration()
-    
+
     # Verify deps on startup
     issues = await _verify_dependencies()
     if issues:
@@ -435,7 +442,7 @@ async def lifespan(app: FastAPI):
     await close_pool()
     await cache_service.close()
     await job_queue.close()
-    
+
     # Cleanup pgvector connection pool
     from vector.storage.pgvector_store import get_pgvector_store
     pgvector_store = get_pgvector_store()
@@ -596,7 +603,56 @@ app.middleware("http")(_request_id_middleware)
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
-    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+    safe_messages = {
+        401: "Authentication required",
+        403: "You do not have permission to perform this operation",
+        404: "Resource not found",
+        409: "The request conflicts with the current resource state",
+        429: "Rate limit exceeded",
+        500: "Internal server error",
+        502: "An upstream service request failed",
+        503: "Service temporarily unavailable",
+    }
+    detail = exc.detail if isinstance(exc.detail, str) else "Request could not be completed"
+    message = safe_messages.get(exc.status_code, detail)
+    error_code = {
+        401: "UNAUTHORIZED",
+        403: "FORBIDDEN",
+        404: "NOT_FOUND",
+        409: "CONFLICT",
+        422: "VALIDATION_ERROR",
+        429: "RATE_LIMIT_EXCEEDED",
+        500: "INTERNAL_ERROR",
+        502: "UPSTREAM_ERROR",
+        503: "SERVICE_UNAVAILABLE",
+    }.get(exc.status_code, "REQUEST_ERROR")
+    response = error_response(
+        error_code,
+        message,
+        status_code=exc.status_code,
+        request_id=getattr(request.state, "request_id", None),
+    )
+    for name, value in (exc.headers or {}).items():
+        response.headers[name] = value
+    return response
+
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_exception_handler(request: Request, exc: RequestValidationError):
+    validation_errors = [
+        {
+            "field": ".".join(str(part) for part in error.get("loc", ()) if part != "body"),
+            "message": error.get("msg", "Invalid value"),
+        }
+        for error in exc.errors()
+    ]
+    return error_response(
+        "VALIDATION_ERROR",
+        "Request validation failed",
+        status_code=422,
+        validation_errors=validation_errors,
+        request_id=getattr(request.state, "request_id", None),
+    )
 
 
 @app.exception_handler(Exception)
@@ -608,7 +664,15 @@ async def general_exception_handler(request: Request, exc: Exception):
         request.url.path,
         request_id,
     )
-    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+    return error_response(
+        "INTERNAL_ERROR",
+        "Internal server error",
+        status_code=500,
+        request_id=request_id,
+    )
+
+
+configure_openapi(app)
 
 
 # ---------------------------------------------------------------------------
@@ -624,11 +688,15 @@ async def _shutdown(sig: signal.Signals):
             existing.cancel()
 
 
+def _schedule_shutdown(sig: signal.Signals) -> None:
+    asyncio.create_task(_shutdown(sig))
+
+
 if os.name != "nt":  # Signals not fully supported on Windows
     try:
         loop = asyncio.get_event_loop()
         for sig in (signal.SIGTERM, signal.SIGINT):
-            loop.add_signal_handler(sig, lambda s=sig: asyncio.create_task(_shutdown(s)))
+            loop.add_signal_handler(sig, _schedule_shutdown, sig)
     except NotImplementedError:
         pass  # Some event loops don't support add_signal_handler
 

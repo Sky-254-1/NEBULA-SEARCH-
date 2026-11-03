@@ -166,6 +166,10 @@ class AnalyticsService:
         """Get user-specific analytics."""
         return await self._repo.get_user_analytics(user_id, days)
 
+    async def get_search_quality_metrics(self, days: int = 30) -> dict[str, Any]:
+        """Get search quality metrics."""
+        return await self._repo.get_search_quality_metrics(days)
+
     async def get_click_analytics(self, days: int = 7) -> dict[str, Any]:
         """Get click analytics."""
         cache_key = f"analytics:clicks:{days}"

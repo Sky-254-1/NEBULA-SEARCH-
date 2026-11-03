@@ -45,7 +45,7 @@ class DocumentIndexer:
         self.semantic_engine = semantic_engine
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
-        self._cache = {}
+        self._cache: dict[str, object] = {}
     
     async def index_document(
         self,
@@ -123,6 +123,9 @@ class DocumentIndexer:
         
         for doc in documents:
             doc_id = doc.get('id')
+            if not isinstance(doc_id, int):
+                logger.warning("Skipping document with invalid ID: %r", doc_id)
+                continue
             content = doc.get('content', '')
             metadata = doc.get('metadata', {})
             

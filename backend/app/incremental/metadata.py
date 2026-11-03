@@ -304,7 +304,7 @@ class MetadataVersioning:
 
     def __init__(self) -> None:
         """Initialize metadata versioning."""
-        self._versions: Dict[int, Dict[str, Any]] = {}
+        self._versions: Dict[str, Dict[str, Any]] = {}
         self._counters: Dict[str, int] = {}
     
     def create_version(

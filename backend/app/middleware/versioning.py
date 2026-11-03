@@ -59,7 +59,7 @@ class VersioningMiddleware(BaseHTTPMiddleware):
                     response.headers["X-API-Deprecated"] = "true"
                     response.headers["X-API-Deprecation-Date"] = "2026-12-31"
                     response.headers["X-API-Sunset-Date"] = "2027-06-30"
-                    response.headers["X-API-Migration-Guide"] = "/docs/api-migration-v1-to-v2"
+                    response.headers["X-API-Migration-Guide"] = "/docs"
                 
                 return response
         

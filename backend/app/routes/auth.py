@@ -5,6 +5,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from typing import Literal
 
 from app.database import get_db
 from app.database.repositories.audit import AuditRepository
@@ -34,12 +35,23 @@ router = APIRouter(prefix="/api/v1/auth", tags=["Auth"])
 def _set_auth_cookies(response: Response, access_token: str, refresh_token: str):
     if not settings.auth_cookie_mode:
         return
+    cookie_samesite: Literal["lax", "strict", "none"]
+    configured_samesite = settings.cookie_samesite.lower()
+    if configured_samesite == "lax":
+        cookie_samesite = "lax"
+    elif configured_samesite == "strict":
+        cookie_samesite = "strict"
+    elif configured_samesite == "none":
+        cookie_samesite = "none"
+    else:
+        raise ValueError(f"Unsupported cookie SameSite value: {settings.cookie_samesite}")
+
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
         secure=settings.cookie_secure,
-        samesite=settings.cookie_samesite,
+        samesite=cookie_samesite,
         max_age=settings.jwt_expiry_minutes * 60,
     )
     response.set_cookie(

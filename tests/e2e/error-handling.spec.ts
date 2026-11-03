@@ -3,7 +3,7 @@ import crypto from 'crypto';
 
 const SUFFIX = crypto.randomBytes(4).toString('hex');
 const EMAIL = `err-test-${SUFFIX}@test.nebula`;
-const PASS = 'ErrP1!';
+const PASS = 'ErrPass1!';
 
 test.beforeAll(async ({ request }) => {
   const res = await request.post('http://localhost:8000/api/v1/auth/signup', {

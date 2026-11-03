@@ -165,7 +165,7 @@ class FilterSet:
             return "", ()
         
         conditions = []
-        params = []
+        params: list[Any] = []
         
         for i, filter_cond in enumerate(self.filters):
             sql_fragment, filter_params = filter_cond.to_sql(i)
@@ -260,11 +260,11 @@ def parse_filter_params(
         
         # Parse value based on operator
         try:
+            parsed_value: Any
+            parsed_value2: Any = None
             if operator in [FilterOperator.IN, FilterOperator.NIN]:
-                # Split by | for list
                 parsed_value = [v.strip() for v in value.split("|")]
             elif operator == FilterOperator.BETWEEN:
-                # Split by | for range
                 parts = value.split("|")
                 if len(parts) != 2:
                     raise ValueError("BETWEEN requires two values separated by |")
@@ -272,7 +272,6 @@ def parse_filter_params(
                 parsed_value2 = parts[1].strip()
             else:
                 parsed_value = value
-                parsed_value2 = None
             
             if operator == FilterOperator.BETWEEN:
                 filter_set.add(field, operator, parsed_value, parsed_value2)

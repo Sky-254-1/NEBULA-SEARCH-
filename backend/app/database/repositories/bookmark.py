@@ -9,7 +9,9 @@ class BookmarkRepository:
             "INSERT INTO bookmarks (user_id, title, url, snippet, tags) VALUES (?, ?, ?, ?, ?) RETURNING id",
             (user_id, title, url, snippet, ",".join(tags) if tags else None),
         )
-        return row["id"] if row else None
+        if row is None:
+            raise RuntimeError("Bookmark insert did not return an ID")
+        return row["id"]
 
     async def list_for_user(self, user_id: int, limit: int = 50) -> list[dict]:
         rows = await self.db.fetchall(

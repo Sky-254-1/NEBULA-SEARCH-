@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from app.config import get_settings
 from app.database import get_db
 from app.database.repositories.document import DocumentRepository
+from app.database.repositories.user import UserRepository
 from app.services.auth import get_current_user
 
 settings = get_settings()
@@ -28,8 +29,12 @@ async def get_document_preview(document_id: int, page: int = 1, email: str = Dep
     if not settings.enable_document_preview:
         raise HTTPException(status_code=404, detail="Document preview is not enabled")
     
+    user_id = await UserRepository(db).get_id_by_email(email)
+    if user_id is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
     docs = DocumentRepository(db)
-    document = await docs.get_by_id(document_id)
+    document = await docs.get_by_id(document_id, user_id)
     
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -80,8 +85,12 @@ async def get_document_preview(document_id: int, page: int = 1, email: str = Dep
 @router.get("/{document_id}/metadata")
 async def get_document_metadata(document_id: int, email: str = Depends(get_current_user), db=Depends(get_db)):
     """Get document metadata for preview."""
+    user_id = await UserRepository(db).get_id_by_email(email)
+    if user_id is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
     docs = DocumentRepository(db)
-    document = await docs.get_by_id(document_id)
+    document = await docs.get_by_id(document_id, user_id)
     
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")

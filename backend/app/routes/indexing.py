@@ -4,7 +4,7 @@ import logging
 import uuid
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
 
 from app.indexing.config import JobPriority, JobStatus
@@ -12,13 +12,14 @@ from app.indexing.health import get_worker_health_monitor
 from app.indexing.metrics import get_metrics_collector
 from app.indexing.progress import progress_tracker
 from app.indexing.queue import indexing_queue
+from app.indexing.retry import get_retry_handler
 from app.indexing.scheduler import get_scheduler
 from app.indexing.tasks import submit_index_task
 from app.database import get_db
 from app.database.repositories.document import DocumentRepository
 from app.database.repositories.indexing_job import IndexingJobRepository
 from app.database.repositories.user import UserRepository
-from app.models.schemas import APIResponse
+from app.models.schemas import APIResponse, PaginationMeta
 from app.services.auth import get_current_user, require_admin
 
 logger = logging.getLogger("nebula.indexing.routes")
@@ -78,8 +79,14 @@ class RetryRequest(BaseModel):
 
 
 # Endpoints
+@router.post("/jobs", response_model=APIResponse, status_code=status.HTTP_202_ACCEPTED)
 @router.post("/start", response_model=APIResponse)
-async def start_indexing(request: StartIndexRequest, email: str = Depends(get_current_user), db=Depends(get_db)) -> APIResponse:
+async def start_indexing(
+    request: StartIndexRequest,
+    response: Response,
+    email: str = Depends(get_current_user),
+    db=Depends(get_db),
+) -> APIResponse:
     """
     Start indexing a document.
     
@@ -111,6 +118,7 @@ async def start_indexing(request: StartIndexRequest, email: str = Depends(get_cu
         # Track progress
         progress_tracker.create(job_id, user_id=user_id, document_id=request.document_id)
         progress_tracker.update_status(job_id, JobStatus.QUEUED)
+        response.headers["Location"] = f"/api/v1/indexing/jobs/{job_id}"
         
         return APIResponse(
             status="success",
@@ -141,12 +149,19 @@ async def reindex_documents(request: ReindexRequest, email: str = Depends(get_cu
     try:
         user_id = await _owner_context(db, email)
         job_ids = []
-        
+
         if request.document_ids:
+            # Validate all IDs before creating jobs so a rejected batch has
+            # no partial queue side effects.
+            documents_repo = DocumentRepository(db)
+            documents = []
             for doc_id in request.document_ids:
-                document = await DocumentRepository(db).get_by_id(doc_id, user_id)
-                if not document:
+                document = await documents_repo.get_by_id(doc_id, user_id)
+                if document is None:
                     raise HTTPException(status_code=404, detail="Document not found")
+                documents.append((doc_id, document))
+
+            for doc_id, document in documents:
                 job_id = str(uuid.uuid4())
                 jobs = IndexingJobRepository(db)
                 await jobs.create(job_id, user_id, doc_id, document["filename"], request.priority)
@@ -181,6 +196,7 @@ async def reindex_documents(request: ReindexRequest, email: str = Depends(get_cu
         )
 
 
+@router.post("/jobs/{job_id}/cancel", response_model=APIResponse)
 @router.post("/cancel/{job_id}", response_model=APIResponse)
 async def cancel_job(job_id: str, email: str = Depends(get_current_user), db=Depends(get_db)) -> APIResponse:
     """
@@ -227,10 +243,15 @@ async def cancel_job(job_id: str, email: str = Depends(get_current_user), db=Dep
         )
 
 
+@router.post("/jobs/{job_id}/retry", response_model=APIResponse)
 @router.post("/retry/{job_id}", response_model=APIResponse)
-async def retry_job(job_id: str, _admin=Depends(require_admin)) -> APIResponse:
+async def retry_job(
+    job_id: str,
+    email: str = Depends(get_current_user),
+    db=Depends(get_db),
+) -> APIResponse:
     """
-    Retry a failed job from dead-letter queue.
+    Retry an eligible failed job owned by the current user.
     
     Args:
         job_id: Job ID to retry
@@ -238,11 +259,65 @@ async def retry_job(job_id: str, _admin=Depends(require_admin)) -> APIResponse:
     Returns:
         APIResponse
     """
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Dead-letter retry is not supported")
+    user_id = await _owner_context(db, email)
+    jobs = IndexingJobRepository(db)
+    record = await jobs.get_for_user(job_id, user_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if record["status"] != JobStatus.FAILED:
+        raise HTTPException(status_code=409, detail="Job is not in a retryable state")
+
+    retry_handler = get_retry_handler()
+    retry_count = int(record.get("retry_count") or 0)
+    if not retry_handler.should_retry(
+        Exception(record.get("error_message") or ""), retry_count
+    ):
+        raise HTTPException(status_code=409, detail="Job is not eligible for retry")
+
+    document = await DocumentRepository(db).get_by_id(record["document_id"], user_id)
+    if not document:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if not await jobs.reserve_retry_for_user(job_id, user_id, retry_handler.max_retries):
+        raise HTTPException(status_code=409, detail="Job is not eligible for retry")
+
+    next_retry_count = retry_count + 1
+    try:
+        queued_id = await submit_index_task(
+            document_id=record["document_id"],
+            user_id=user_id,
+            job_id=job_id,
+            filename=document["filename"],
+            file_path=document["storage_path"],
+            priority=record.get("priority") or JobPriority.NORMAL,
+            retry_count=next_retry_count,
+        )
+        if queued_id != job_id:
+            raise RuntimeError("Queue returned a different job identifier")
+    except Exception as exc:
+        await jobs.set_status(job_id, JobStatus.FAILED, retry_count=next_retry_count)
+        raise HTTPException(
+            status_code=503,
+            detail="Job retry could not be queued",
+        ) from exc
+
+    await jobs.set_status(job_id, JobStatus.QUEUED, retry_count=next_retry_count)
+    progress_tracker.create(job_id, user_id=user_id, document_id=record["document_id"])
+    progress_tracker.update_status(job_id, JobStatus.QUEUED)
+    return APIResponse(
+        status="success",
+        message="Job retry queued",
+        data={"job_id": job_id, "status": JobStatus.QUEUED},
+    )
 
 
 @router.get("/jobs", response_model=APIResponse)
-async def get_jobs(email: str = Depends(get_current_user), db=Depends(get_db)) -> APIResponse:
+async def get_jobs(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    email: str = Depends(get_current_user),
+    db=Depends(get_db),
+) -> APIResponse:
     """
     Get all indexing jobs.
     
@@ -252,7 +327,11 @@ async def get_jobs(email: str = Depends(get_current_user), db=Depends(get_db)) -
     try:
         user_id = await _owner_context(db, email)
         # Query durable job records by owner so completed jobs remain private and visible.
-        jobs = await IndexingJobRepository(db).list_for_user(user_id, limit=100)
+        repository = IndexingJobRepository(db)
+        jobs = await repository.list_for_user(
+            user_id, limit=page_size, offset=(page - 1) * page_size
+        )
+        total = await repository.count_for_user(user_id)
         
         # Add progress info
         for job in jobs:
@@ -273,7 +352,17 @@ async def get_jobs(email: str = Depends(get_current_user), db=Depends(get_db)) -
         return APIResponse(
             status="success",
             message="Jobs retrieved",
-            data={"jobs": jobs},
+            data={
+                "jobs": jobs,
+                "pagination": PaginationMeta(
+                    total=total,
+                    page=page,
+                    page_size=page_size,
+                    total_pages=(total + page_size - 1) // page_size,
+                    has_next=page * page_size < total,
+                    has_previous=page > 1,
+                ).model_dump(),
+            },
         )
     except HTTPException:
         raise
@@ -285,6 +374,7 @@ async def get_jobs(email: str = Depends(get_current_user), db=Depends(get_db)) -
         )
 
 
+@router.get("/jobs/{job_id}", response_model=APIResponse)
 @router.get("/job/{job_id}", response_model=APIResponse)
 async def get_job(job_id: str, email: str = Depends(get_current_user), db=Depends(get_db)) -> APIResponse:
     """
@@ -316,6 +406,7 @@ async def get_job(job_id: str, email: str = Depends(get_current_user), db=Depend
         )
 
 
+@router.get("/jobs/{job_id}/progress", response_model=APIResponse)
 @router.get("/progress/{job_id}", response_model=APIResponse)
 async def get_job_progress(job_id: str, email: str = Depends(get_current_user), db=Depends(get_db)) -> APIResponse:
     """

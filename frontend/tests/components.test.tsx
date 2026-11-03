@@ -51,7 +51,7 @@ const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 const wrap = (ui: React.ReactElement) =>
   render(
     <QueryClientProvider client={qc}>
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>{ui}</AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>

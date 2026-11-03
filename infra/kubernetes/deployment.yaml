@@ -26,6 +26,13 @@ spec:
         ports:
         - containerPort: 8000
           protocol: TCP
+        envFrom:
+        - secretRef:
+            name: nebula-provider-keys
+            optional: true
+        - configMapRef:
+            name: nebula-provider-config
+            optional: true
         env:
         - name: DATABASE_URL
           valueFrom:

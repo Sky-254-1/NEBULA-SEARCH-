@@ -18,12 +18,13 @@ class JobQueue:
         self._paused = False
 
     async def connect(self) -> None:
-        if not settings.redis_url:
+        current_settings = get_settings()
+        if not current_settings.redis_url or current_settings.app_env == "testing":
             return
         try:
             import redis.asyncio as redis
 
-            self._redis = redis.from_url(settings.redis_url, decode_responses=True)
+            self._redis = redis.from_url(current_settings.redis_url, decode_responses=True)
             await self._redis.ping()
             logger.info("Job queue connected to Redis")
         except Exception as exc:

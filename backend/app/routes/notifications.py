@@ -1,6 +1,7 @@
 """Notification management endpoints."""
 
 import logging
+import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -36,10 +37,13 @@ async def list_notifications(
     notif_repo = NotificationRepository(db)
 
     rows = await notif_repo.list_for_user(
-        user_id, limit=pagination.limit, unread_only=unread_only
+        user_id,
+        limit=pagination.limit,
+        unread_only=unread_only,
+        offset=pagination.offset,
     )
     unread_count = await notif_repo.get_unread_count(user_id)
-    total = unread_count if unread_only else len(rows)
+    total = await notif_repo.count_for_user(user_id, unread_only=unread_only)
 
     notifications = [
         {
@@ -48,7 +52,7 @@ async def list_notifications(
             "category": r["category"],
             "title": r["title"],
             "message": r["message"],
-            "data": r.get("data") or {},
+            "data": _notification_data(r.get("data")),
             "read": bool(r["is_read"]),
             "read_at": r.get("read_at"),
             "expires_at": r.get("expires_at"),
@@ -62,7 +66,7 @@ async def list_notifications(
         page=pagination.page,
         page_size=pagination.page_size,
         total_pages=(total + pagination.page_size - 1) // pagination.page_size,
-        has_next=pagination.page < (total + pagination.page_size - 1) // pagination.page_size,
+        has_next=pagination.offset + len(rows) < total,
         has_previous=pagination.page > 1,
     )
 
@@ -72,6 +76,19 @@ async def list_notifications(
         "unread_count": unread_count,
         "pagination": pagination_meta,
     }
+
+
+def _notification_data(value):
+    """Return notification metadata as JSON across SQLite and PostgreSQL."""
+    if isinstance(value, dict):
+        return value
+    if not value:
+        return {}
+    try:
+        decoded = json.loads(value)
+    except (TypeError, json.JSONDecodeError):
+        return {}
+    return decoded if isinstance(decoded, dict) else {}
 
 
 @router.get("/unread-count")

@@ -213,7 +213,7 @@ class AuditLoggingMiddleware(BaseHTTPMiddleware):
 
         request_id = getattr(request.state, "request_id", "unknown")
         user = getattr(request.state, "user", None)
-        user_id = str(user.id) if user else None
+        user_id = int(user.id) if user else None
 
         response = await call_next(request)
 
@@ -225,9 +225,10 @@ class AuditLoggingMiddleware(BaseHTTPMiddleware):
                 db = await connect()
                 try:
                     repo = AuditRepository(db)
-                    await repo.log(
+                    await repo.create(
                         user_id=user_id,
                         action=f"{request.method} {request.url.path}",
+                        resource=request.url.path,
                         status="failed" if response.status_code >= 500 else "denied",
                         ip=request.client.host if request.client else None,
                         user_agent=request.headers.get("user-agent"),

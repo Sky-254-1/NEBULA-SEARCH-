@@ -86,7 +86,7 @@ class IntentDetector:
         }
         
         # Get the intent with highest score
-        max_intent = max(scores, key=scores.get)
+        max_intent = max(scores, key=lambda name: scores[name])
         max_score = scores[max_intent]
         
         # Calculate confidence (how much this intent dominates)

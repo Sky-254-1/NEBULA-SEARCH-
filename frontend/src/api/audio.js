@@ -5,7 +5,9 @@
 
 import { getCsrfHeaders } from '../utils/csrf';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE = (import.meta.env.VITE_API_URL || '')
+  .replace(/\/(?:api\/)?v[12]\/??$/, '')
+  .replace(/\/$/, '');
 
 /**
  * Get authentication token from localStorage

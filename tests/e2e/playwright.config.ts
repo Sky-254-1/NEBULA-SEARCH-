@@ -34,6 +34,7 @@ export default defineConfig({
       env: {
         JWT_SECRET: process.env.JWT_SECRET || 'e2e-test-secret',
         APP_ENV: 'testing',
+        AUTH_COOKIE_MODE: 'false',
         DATABASE_URL: process.env.DATABASE_URL || 'e2e_test.db',
         RATE_LIMIT_PER_MINUTE: '10000',
         SIGNUP_RATE_LIMIT: '10000',

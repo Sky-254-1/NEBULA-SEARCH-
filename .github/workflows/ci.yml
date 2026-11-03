@@ -42,12 +42,11 @@ jobs:
           APP_ENV: testing
           DATABASE_URL: test_nebula.db
         run: |
+          set -o pipefail
           python -m pytest tests/ -v --tb=short --cov=app --cov-report=term-missing \
             --cov-report=xml \
-            --ignore=tests/test_async.py \
             --ignore=tests/e2e/ \
-            --ignore=tests/performance/ \
-            --k="not test_chunk_text" 2>&1 | tee pytest_output.txt
+            --ignore=tests/performance/ 2>&1 | tee pytest_output.txt
 
       - name: Coverage validation
         working-directory: backend
@@ -61,18 +60,10 @@ jobs:
         working-directory: backend
         run: python scripts/ci_verify_imports.py
 
-      - name: mypy type-check baseline ceiling
+      - name: mypy type-check
         working-directory: backend
         run: |
-          python -m mypy app --config-file mypy.ini > mypy_report.txt || true
-          echo "===== mypy report (first 200 lines) ====="
-          head -n 200 mypy_report.txt
-          COUNT=$(grep -c "error:" mypy_report.txt || echo 0)
-          echo "mypy_error_count=$COUNT"
-          if [ "$COUNT" -gt 150 ]; then
-            echo "Mypy error ceiling breached: $COUNT > 150"
-            exit 1
-          fi
+          python -m mypy app --config-file mypy.ini
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
@@ -81,15 +72,17 @@ jobs:
           flags: backend
           name: backend-coverage
 
-      - name: Run security hardening tests
+      - name: Run authorization, OAuth, rate-limit, and indexing regressions
         working-directory: backend
+        env:
+          JWT_SECRET: ci-test-secret
+          APP_ENV: testing
+          DATABASE_URL: test_nebula.db
         run: |
-          if [ -f test_security_fixes.py ]; then
-            python -m pytest test_security_fixes.py -v
-            echo "Security hardening tests passed"
-          else
-            echo "Security test file not found"
-          fi
+          python -m pytest ../tests/test_indexing_authorization.py \
+            ../tests/test_graphql_authorization.py \
+            ../tests/test_oauth_fail_closed.py \
+            ../tests/test_rate_limit_atomic.py -v --tb=short
 
       - name: Backup test results
         if: always()
@@ -154,9 +147,14 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup E2E environment
+        env:
+          POSTGRES_PASSWORD: ci-postgres-secret-with-sufficient-entropy
+          JWT_SECRET: ci-jwt-secret-with-sufficient-entropy-123456
+          MINIO_ROOT_USER: ci-minio-user
+          MINIO_ROOT_PASSWORD: ci-minio-secret-with-sufficient-entropy
         run: |
           echo "Setting up E2E testing environment..."
-          docker compose down -v || true
+          docker compose down -v
           docker compose up -d postgres redis
           sleep 30
 
@@ -204,6 +202,11 @@ jobs:
 
       - name: Stop test services
         if: always()
+        env:
+          POSTGRES_PASSWORD: ci-postgres-secret-with-sufficient-entropy
+          JWT_SECRET: ci-jwt-secret-with-sufficient-entropy-123456
+          MINIO_ROOT_USER: ci-minio-user
+          MINIO_ROOT_PASSWORD: ci-minio-secret-with-sufficient-entropy
         run: |
           echo "Stopping test services..."
           docker compose down -v
@@ -222,15 +225,16 @@ jobs:
       - name: Run Bandit (Python security)
         run: |
           pip install bandit
-          bandit -r backend/app/ -f json -o bandit-report.json || true
+          bandit -r backend/app/ -ll -f json -o bandit-report.json
 
       - name: Check dependencies for vulnerabilities
         working-directory: backend
         run: |
-          pip install safety
-          safety check -r requirements.txt || true
+          pip install pip-audit
+          python -m pip_audit -r requirements.txt
 
       - name: Upload security report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: security-reports

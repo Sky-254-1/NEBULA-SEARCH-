@@ -7,8 +7,8 @@ export interface UploadDocumentParams {
 }
 
 export const storageApi = {
-  async getDocuments(): Promise<DocumentListResponse> {
-    return apiClient.get<DocumentListResponse>('/documents');
+  async getDocuments(params?: { page?: number; page_size?: number }): Promise<DocumentListResponse> {
+    return apiClient.get<DocumentListResponse>('/documents/', params);
   },
 
   async uploadDocument(params: UploadDocumentParams): Promise<DocumentResponse> {

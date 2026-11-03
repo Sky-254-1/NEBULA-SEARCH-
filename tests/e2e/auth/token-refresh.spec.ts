@@ -13,13 +13,15 @@ test('refresh with valid token returns new tokens', async ({ request }) => {
   const login = await request.post('http://localhost:8000/api/v1/auth/login', {
     data: { email: EMAIL, password: PASS },
   });
-  const { refresh_token } = await login.json();
+  const loginBody = await login.json();
+  expect(login.ok(), JSON.stringify(loginBody)).toBeTruthy();
+  const { refresh_token } = loginBody;
 
   const refresh = await request.post('http://localhost:8000/api/v1/auth/refresh', {
     data: { refresh_token },
   });
-  expect(refresh.ok()).toBeTruthy();
   const body = await refresh.json();
+  expect(refresh.ok(), JSON.stringify(body)).toBeTruthy();
   expect(body.access_token).toBeTruthy();
   expect(body.refresh_token).toBeTruthy();
 });

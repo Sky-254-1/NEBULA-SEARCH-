@@ -15,7 +15,7 @@ async def test_document_upload_list_delete_cycle(e2e_client: AsyncClient, e2e_au
         headers=headers,
         files={"file": ("e2e_test.txt", b"E2E test content for Nebula Search.", "text/plain")},
     )
-    assert upload_resp.status_code == 200
+    assert upload_resp.status_code == 201
     doc = upload_resp.json()
     doc_id = doc["id"]
     assert doc["filename"] == "e2e_test.txt"
@@ -51,7 +51,7 @@ async def test_upload_multiple_types(e2e_client: AsyncClient, e2e_auth: dict):
             headers=headers,
             files={"file": (fname, content, ct)},
         )
-        assert resp.status_code == 200, f"Failed for {fname}: {resp.text}"
+        assert resp.status_code == 201, f"Failed for {fname}: {resp.text}"
 
 
 @pytest.mark.asyncio

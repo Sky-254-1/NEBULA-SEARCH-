@@ -10,9 +10,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.database.engine import get_db
+from app.database.engine import DatabaseConnection, get_db
 from app.services.research import ResearchService
 
 router = APIRouter(prefix="/research", tags=["Research"])
@@ -48,7 +46,7 @@ class ProjectResponse(BaseModel):
     is_archived: bool
     created_at: datetime
     updated_at: datetime
-    owner_id: UUID
+    owner_id: int
     note_count: int
     bookmark_count: int
 
@@ -83,7 +81,7 @@ class NoteResponse(BaseModel):
     tags: list[str]
     created_at: datetime
     updated_at: datetime
-    author_id: UUID
+    author_id: int
 
     class Config:
         from_attributes = True
@@ -107,7 +105,7 @@ class BookmarkResponse(BaseModel):
     description: Optional[str]
     tags: list[str]
     created_at: datetime
-    user_id: UUID
+    user_id: int
 
     class Config:
         from_attributes = True
@@ -166,7 +164,7 @@ class ResearchSummary(BaseModel):
 async def create_project(
     data: ProjectCreate,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: DatabaseConnection = Depends(get_db),
 ):
     """Create a new research project."""
     # Get current user from auth token
@@ -194,7 +192,7 @@ async def create_project(
 @router.get("/projects", response_model=list[ProjectResponse])
 async def list_projects(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: DatabaseConnection = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     include_archived: bool = False,
@@ -223,7 +221,7 @@ async def list_projects(
 async def get_project(
     project_id: UUID,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: DatabaseConnection = Depends(get_db),
 ):
     """Get a specific research project."""
     from app.services.auth import get_current_user
@@ -246,7 +244,7 @@ async def update_project(
     project_id: UUID,
     data: ProjectUpdate,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: DatabaseConnection = Depends(get_db),
 ):
     """Update a research project."""
     from app.services.auth import get_current_user
@@ -274,7 +272,7 @@ async def update_project(
 async def delete_project(
     project_id: UUID,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: DatabaseConnection = Depends(get_db),
 ):
     """Delete a research project."""
     from app.services.auth import get_current_user
@@ -301,7 +299,7 @@ async def delete_project(
 async def create_note(
     data: NoteCreate,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: DatabaseConnection = Depends(get_db),
 ):
     """Create a research note."""
     from app.services.auth import get_current_user
@@ -330,7 +328,7 @@ async def create_note(
 async def list_notes(
     project_id: UUID,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: DatabaseConnection = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     tags: Optional[list[str]] = Query(None),
@@ -361,7 +359,7 @@ async def update_note(
     note_id: UUID,
     data: NoteUpdate,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: DatabaseConnection = Depends(get_db),
 ):
     """Update a research note."""
     from app.services.auth import get_current_user
@@ -389,7 +387,7 @@ async def update_note(
 async def delete_note(
     note_id: UUID,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: DatabaseConnection = Depends(get_db),
 ):
     """Delete a research note."""
     from app.services.auth import get_current_user
@@ -416,7 +414,7 @@ async def delete_note(
 async def create_bookmark(
     data: BookmarkCreate,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: DatabaseConnection = Depends(get_db),
 ):
     """Create a research bookmark."""
     from app.services.auth import get_current_user
@@ -445,7 +443,7 @@ async def create_bookmark(
 async def list_bookmarks(
     project_id: UUID,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: DatabaseConnection = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
 ):
@@ -473,7 +471,7 @@ async def list_bookmarks(
 async def delete_bookmark(
     bookmark_id: UUID,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: DatabaseConnection = Depends(get_db),
 ):
     """Delete a research bookmark."""
     from app.services.auth import get_current_user
@@ -500,7 +498,7 @@ async def delete_bookmark(
 async def create_citation(
     data: CitationCreate,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: DatabaseConnection = Depends(get_db),
 ):
     """Create a citation."""
     from app.services.auth import get_current_user
@@ -515,6 +513,7 @@ async def create_citation(
     citation = await research_service.create_citation(
         db=db,
         project_id=data.project_id,
+        user_id=user["id"],
         note_id=data.note_id,
         source_type=data.source_type,
         title=data.title,
@@ -531,7 +530,7 @@ async def create_citation(
 async def list_citations(
     project_id: UUID,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: DatabaseConnection = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
 ):
@@ -564,7 +563,7 @@ async def list_citations(
 async def ai_research_query(
     query_data: ResearchQuery,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: DatabaseConnection = Depends(get_db),
 ):
     """
     Perform AI-assisted research query.
@@ -594,7 +593,7 @@ async def export_project(
     project_id: UUID,
     request: Request,
     format: str = Query("markdown", pattern="^(markdown|pdf|csv|json)$"),
-    db: AsyncSession = Depends(get_db),
+    db: DatabaseConnection = Depends(get_db),
 ):
     """Export research project in various formats."""
     from app.services.auth import get_current_user

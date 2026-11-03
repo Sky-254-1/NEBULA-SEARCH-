@@ -229,6 +229,7 @@ async def submit_index_task(
     file_path: Optional[str] = None,
     priority: str = JobPriority.NORMAL,
     job_id: Optional[str] = None,
+    retry_count: int = 0,
 ) -> str:
     """
     Submit document for indexing.
@@ -264,7 +265,7 @@ async def submit_index_task(
         "priority": task.priority,
         "payload": task.payload,
         "created_at": task.created_at,
-        "retry_count": 0,
+        "retry_count": retry_count,
     }
     
     return await indexing_queue.enqueue(job)

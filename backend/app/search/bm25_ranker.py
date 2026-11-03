@@ -3,7 +3,7 @@
 import logging
 import math
 from collections import Counter
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger("nebula.search.bm25")
 
@@ -22,7 +22,7 @@ class BM25Ranker:
         self.k1 = k1
         self.b = b
         self._corpus_stats = None
-        self._document_stats = {}
+        self._document_stats: dict[Any, Any] = {}
     
     async def initialize(self, db):
         """Load corpus statistics from database."""
@@ -38,8 +38,8 @@ class BM25Ranker:
         self,
         query_terms: List[str],
         documents: List[Dict[str, Any]],
-        term_frequencies: Dict[int, Dict[str, int]],
-        document_lengths: Dict[int, int],
+        term_frequencies: Dict[Any, Dict[str, float]],
+        document_lengths: Dict[Any, int],
     ) -> List[Dict[str, Any]]:
         """
         Rank documents using BM25 algorithm.
@@ -94,7 +94,7 @@ class BM25Ranker:
         self,
         query_terms: List[str],
         documents: List[Dict[str, Any]],
-        field_weights: Dict[str, float] = None,
+        field_weights: Optional[Dict[str, float]] = None,
     ) -> List[Dict[str, Any]]:
         """
         Rank documents with field-specific boosts.
@@ -111,8 +111,8 @@ class BM25Ranker:
             field_weights = {"title": 2.0, "content": 1.0, "headings": 1.5}
         
         # Extract term frequencies per field
-        term_frequencies = {}
-        document_lengths = {}
+        term_frequencies: Dict[Any, Dict[str, float]] = {}
+        document_lengths: Dict[Any, int] = {}
         
         for doc in documents:
             doc_id = doc.get("id")

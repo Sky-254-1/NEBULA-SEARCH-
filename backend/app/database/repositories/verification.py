@@ -9,7 +9,7 @@ class EmailVerificationRepository:
     def __init__(self, db: DatabaseConnection):
         self._db = db
 
-    async def create(self, user_id: int, token_hash: str, expires_at: datetime, pending_email: str = None) -> int:
+    async def create(self, user_id: int, token_hash: str, expires_at: datetime, pending_email: str | None = None) -> int:
         """Create an email verification token."""
         sql = """INSERT INTO email_verification 
                  (user_id, token_hash, expires_at, pending_email) 
@@ -80,7 +80,7 @@ class PasswordResetRepository:
         self._db = db
 
     async def create(self, user_id: int, token_hash: str, expires_at: datetime, 
-                     ip_address: str = None, user_agent: str = None) -> int:
+                     ip_address: str | None = None, user_agent: str | None = None) -> int:
         """Create a password reset token."""
         sql = """INSERT INTO password_reset 
                  (user_id, token_hash, expires_at, ip_address, user_agent) 

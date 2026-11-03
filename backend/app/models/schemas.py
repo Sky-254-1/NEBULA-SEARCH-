@@ -7,6 +7,13 @@ from pydantic import BaseModel, EmailStr, Field
 
 
 # Base response schemas
+class ValidationErrorDetail(BaseModel):
+    """Safe field-level validation information returned to API clients."""
+
+    field: str
+    message: str
+
+
 class APIResponse(BaseModel):
     """Standard API response envelope."""
     status: str = "success"
@@ -21,7 +28,7 @@ class APIError(BaseModel):
     status: str = "error"
     error_code: str
     message: str
-    validation_errors: list = []
+    validation_errors: list[ValidationErrorDetail] = Field(default_factory=list)
     request_id: Optional[str] = None
     timestamp: float = Field(default_factory=lambda: datetime.now().timestamp())
 
@@ -97,7 +104,11 @@ class OrchestratedSearchResponse(BaseModel):
     query: str
     results: list[SearchResult]
     backends_used: list[str]
+    backends: list[str] = Field(default_factory=list)
     total: int
+    page: int = 1
+    page_size: int = 20
+    pagination: Optional[PaginationMeta] = None
 
 
 # Vector schemas
@@ -129,7 +140,7 @@ class VectorAskResponse(BaseModel):
     """Vector ask response."""
     query: str
     answer: str
-    citations: list[Citation]
+    citations: list["VectorCitationResponse"]
     sources: list[str]
 
 

@@ -170,7 +170,7 @@ class PersonalizationEngine:
         Returns:
             Dictionary mapping interest terms to weights
         """
-        weights = defaultdict(float)
+        weights: dict[str, float] = defaultdict(float)
         now = datetime.now()
 
         for item in search_history:

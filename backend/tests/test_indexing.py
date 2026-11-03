@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import time
 from pathlib import Path
 
 import pytest
@@ -204,6 +205,7 @@ class TestProgress:
         tracker.start("job-1", "worker-1")
         
         progress = tracker.get("job-1")
+        progress.started_at = time.time() - 1
         progress.chunks_processed = 10
         
         speed = progress.speed
@@ -216,11 +218,20 @@ class TestProgress:
         tracker.start("job-1", "worker-1")
         
         progress = tracker.get("job-1")
+        progress.started_at = time.time() - 1
         progress.progress = 50
         
         eta = progress.eta_seconds
         assert eta is not None
         assert eta > 0
+
+    def test_eta_is_unavailable_with_zero_elapsed_time(self, tracker: ProgressTracker) -> None:
+        tracker.create("job-zero-elapsed")
+        progress = tracker.get("job-zero-elapsed")
+        progress.started_at = time.time()
+        progress.progress = 50
+
+        assert progress.eta_seconds is None
 
 
 # ---------------------------------------------------------------------------

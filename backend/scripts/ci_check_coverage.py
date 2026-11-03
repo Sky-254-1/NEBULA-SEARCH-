@@ -16,4 +16,5 @@ try:
     else:
         print(f"Coverage passes threshold (>={THRESHOLD}%)")
 except FileNotFoundError:
-    print("coverage.xml not found, skipping coverage validation")
+    print("coverage.xml not found; run the test suite with coverage before validation")
+    sys.exit(1)

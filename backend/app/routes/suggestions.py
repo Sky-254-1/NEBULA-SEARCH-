@@ -83,6 +83,7 @@ def _sanitize_query(query: str) -> str:
 
 @router.get(
     "",
+    include_in_schema=False,  # /api/v1/search/suggestions is documented by the unified router.
     response_model=SuggestionsResponse,
     summary="Get search suggestions",
     description="Get AI-powered search suggestions combining trending, semantic, and related searches.",
@@ -94,9 +95,10 @@ def _sanitize_query(query: str) -> str:
 )
 async def get_suggestions(
     request: Request,
-    q: str = Query(..., min_length=1, max_length=100, examples={"default": {"value": "machine"}}),
+    q: str = Query(..., min_length=1, max_length=100, openapi_examples={"default": {"value": "machine"}}),
     limit: int = Query(5, ge=1, le=10),
     service: SuggestionService = Depends(_get_suggestion_service),
+    db: DatabaseConnection = Depends(get_db),
 ) -> SuggestionsResponse:
     """Get search suggestions for a query."""
     query = _sanitize_query(q)
@@ -121,10 +123,11 @@ async def get_suggestions(
         import uuid as uuid_module
         session_id = str(uuid_module.uuid4())
 
+    user_id = await UserRepository(db).get_id_by_email(email) if email else None
     result = await service.get_suggestions(
         query=query,
         limit=limit,
-        user_id=email,
+        user_id=user_id,
         session_id=session_id,
     )
 
@@ -138,7 +141,7 @@ async def get_suggestions(
     description="Get trending searches matching the query prefix.",
 )
 async def get_trending(
-    q: str = Query(..., min_length=1, max_length=100, examples={"default": {"value": "machine"}}),
+    q: str = Query(..., min_length=1, max_length=100, openapi_examples={"default": {"value": "machine"}}),
     limit: int = Query(10, ge=1, le=10),
     service: SuggestionService = Depends(_get_suggestion_service),
 ) -> TrendingResponse:
@@ -159,7 +162,7 @@ async def get_trending(
     description="Get related searches based on user behavior and co-occurrence.",
 )
 async def get_related(
-    q: str = Query(..., min_length=1, max_length=100, examples={"default": {"value": "python"}}),
+    q: str = Query(..., min_length=1, max_length=100, openapi_examples={"default": {"value": "python"}}),
     limit: int = Query(10, ge=1, le=10),
     service: SuggestionService = Depends(_get_suggestion_service),
 ) -> RelatedResponse:

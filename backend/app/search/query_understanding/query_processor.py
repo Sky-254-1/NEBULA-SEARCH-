@@ -43,7 +43,7 @@ class QueryProcessor:
             language: Default language code
         """
         self.language = language
-        self._cache: dict[str, Any] = {}
+        self._cache: dict[tuple[Any, ...], Any] = {}
     
     async def process(
         self,

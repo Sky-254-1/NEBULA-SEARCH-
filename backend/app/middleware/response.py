@@ -19,8 +19,8 @@ class ResponseStandardizationMiddleware(BaseHTTPMiddleware):
     """Standardize all API responses with consistent envelope."""
     
     async def dispatch(self, request: Request, call_next) -> Response:
-        # Generate request ID for tracing
-        request_id = str(uuid.uuid4())
+        # Reuse the outer request identifier so the body and header can match.
+        request_id = getattr(request.state, "request_id", None) or request.headers.get("X-Request-ID") or str(uuid.uuid4())
         request.state.request_id = request_id
         
         # Skip standardization for docs and health endpoints

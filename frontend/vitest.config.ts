@@ -23,6 +23,7 @@ export default defineConfig({
       'tests/components.test.tsx',
       'tests/pages.test.tsx',
       'tests/stores.test.ts',
+      'tests/api-client.test.ts',
     ],
     exclude: ['node_modules/**', 'dist/**', '../**/e2e/**', '../tests/**'],
     coverage: {

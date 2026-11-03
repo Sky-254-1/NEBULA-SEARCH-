@@ -9,7 +9,9 @@ class CollectionRepository:
             "INSERT INTO collections (user_id, name, description, is_public) VALUES (?, ?, ?, ?) RETURNING id",
             (user_id, name, description, is_public),
         )
-        return row["id"] if row else None
+        if row is None:
+            raise RuntimeError("Collection insert did not return an ID")
+        return row["id"]
 
     async def list_for_user(self, user_id: int) -> list[dict]:
         return await self.db.fetchall(
@@ -56,7 +58,9 @@ class CollectionRepository:
             "INSERT INTO collection_items (collection_id, document_id, search_result_id, note) VALUES (?, ?, ?, ?) RETURNING id",
             (collection_id, document_id, search_result_id, note),
         )
-        return row["id"] if row else None
+        if row is None:
+            raise RuntimeError("Collection item insert did not return an ID")
+        return row["id"]
 
     async def list_items(self, collection_id: int) -> list[dict]:
         return await self.db.fetchall(

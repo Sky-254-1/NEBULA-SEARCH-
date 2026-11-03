@@ -28,7 +28,7 @@ class SynonymsRepository:
         row = await cursor.fetchone()
         return row[0] if row else 0
 
-    async def get_synonyms(self, term: str, language: str = None) -> list[dict]:
+    async def get_synonyms(self, term: str, language: str | None = None) -> list[dict]:
         """Get synonyms for a term."""
         query = "SELECT * FROM synonyms WHERE term = ?"
         params: list = [term.lower()]
@@ -38,7 +38,7 @@ class SynonymsRepository:
         rows = await self._db.fetchall(query, tuple(params))
         return [dict(row) for row in rows]
 
-    async def expand_query(self, query: str, language: str = None) -> list[str]:
+    async def expand_query(self, query: str, language: str | None = None) -> list[str]:
         """Expand query with synonyms. Returns original terms + synonyms."""
         terms = query.lower().split()
         expanded = set(terms)

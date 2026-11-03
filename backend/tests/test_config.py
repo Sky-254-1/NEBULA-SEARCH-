@@ -93,7 +93,23 @@ class TestSettings:
 
     def test_ai_provider_default(self):
         s = Settings()
-        assert s.ai_provider in ("auto", "openai", "ollama", "gguf")
+        assert s.ai_provider in ("auto", "openai", "gemini", "ollama", "gguf", "duckduckgo")
+
+    def test_external_provider_settings(self):
+        provider_env = {
+            "GOOGLE_API_KEY": "google-test-key",
+            "GOOGLE_SEARCH_CX": "google-test-engine",
+            "BING_API_KEY": "bing-test-key",
+            "GEMINI_API_KEY": "gemini-test-key",
+            "GEMINI_MODEL": "gemini-test-model",
+        }
+        with patch.dict(os.environ, provider_env):
+            s = Settings()
+        assert s.google_api_key == "google-test-key"
+        assert s.google_search_cx == "google-test-engine"
+        assert s.bing_api_key == "bing-test-key"
+        assert s.gemini_api_key == "gemini-test-key"
+        assert s.gemini_model == "gemini-test-model"
 
     def test_indexing_settings(self):
         s = Settings()

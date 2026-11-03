@@ -34,14 +34,14 @@ services:
       - VITE_API_URL=http://localhost:8000
     ports:
       - "3000:3000"
-    command: npm run dev
+    command: npm run dev -- --host 0.0.0.0 --port 3000
 
   postgres:
     ports:
       - "5432:5432"
     environment:
       - POSTGRES_USER=nebula
-      - POSTGRES_PASSWORD=dev_password
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?Set a local development POSTGRES_PASSWORD in .env}
       - POSTGRES_DB=nebula
 
   redis:
@@ -49,6 +49,7 @@ services:
       - "6379:6379"
 
   elasticsearch:
+    image: elasticsearch:8.11.3
     ports:
       - "9200:9200"
       - "9300:9300"
@@ -56,7 +57,11 @@ services:
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
 
-  minio:
+  # The base file names the MinIO service "storage".
+  storage:
     ports:
       - "9000:9000"
       - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set a local development MINIO_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set a local development MINIO_ROOT_PASSWORD in .env}

@@ -5,15 +5,13 @@ services:
     container_name: nebula-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-nebula}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a strong POSTGRES_PASSWORD in the deployment environment}
       POSTGRES_DB: ${POSTGRES_DB:-nebula}
       POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./database/backups:/backups:rw
       - ./database/migrations:/docker-entrypoint-initdb.d:ro
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nebula}"]
       interval: 10s
@@ -61,8 +59,6 @@ services:
       --appendfsync everysec
     volumes:
       - redis-data:/data
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -88,19 +84,19 @@ services:
       dockerfile: docker/Dockerfile.prod
       target: runtime
     container_name: nebula-backend
-    ports:
-      - "${BACKEND_PORT:-8000}:8000"
+    expose:
+      - "8000"
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-nebula}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-nebula}
       REDIS_URL: redis://redis:6379/0
       ELASTICSEARCH_URL: http://elasticsearch:9200
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-nebula}:${RABBITMQ_PASSWORD:-change_me}@rabbitmq:5672/
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-nebula}:${RABBITMQ_PASSWORD:?Set a strong RABBITMQ_PASSWORD}@rabbitmq:5672/
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       APP_ENV: production
       CORS_ORIGINS: ${CORS_ORIGINS:-https://nebula-search.example.com}
       STORAGE_ROOT: /app/storage
       STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: ${JWT_SECRET:?Set a strong JWT_SECRET}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
       LOG_LEVEL: ${LOG_LEVEL:-info}
@@ -152,11 +148,11 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-nebula}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-nebula}
       REDIS_URL: redis://redis:6379/0
       ELASTICSEARCH_URL: http://elasticsearch:9200
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-nebula}:${RABBITMQ_PASSWORD:-change_me}@rabbitmq:5672/
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-nebula}:${RABBITMQ_PASSWORD:?Set a strong RABBITMQ_PASSWORD}@rabbitmq:5672/
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       APP_ENV: production
       STORAGE_ROOT: /app/storage
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: ${JWT_SECRET:?Set a strong JWT_SECRET}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       PYTHONPATH: /app
     volumes:
@@ -198,10 +194,10 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-nebula}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-nebula}
       REDIS_URL: redis://redis:6379/0
       ELASTICSEARCH_URL: http://elasticsearch:9200
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-nebula}:${RABBITMQ_PASSWORD:-change_me}@rabbitmq:5672/
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-nebula}:${RABBITMQ_PASSWORD:?Set a strong RABBITMQ_PASSWORD}@rabbitmq:5672/
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       APP_ENV: production
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: ${JWT_SECRET:?Set a strong JWT_SECRET}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     volumes:
       - scheduler-logs:/app/logs
@@ -309,17 +305,13 @@ services:
     container_name: nebula-storage
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in the deployment environment}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set a strong MINIO_ROOT_PASSWORD in the deployment environment}
       MINIO_BROWSER_REDIRECT_URL: ${MINIO_BROWSER_REDIRECT_URL:-https://nebula-search.example.com}
     volumes:
       - minio-data:/data
-    ports:
-      - "${MINIO_PORT:-9000}:9000"
-      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     networks:
       - nebula-internal
-      - nebula-public
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
@@ -351,11 +343,8 @@ services:
     volumes:
       - ./infra/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
-    ports:
-      - "${PROMETHEUS_PORT:-9090}:9090"
     networks:
       - nebula-internal
-      - nebula-public
     restart: unless-stopped
     deploy:
       resources:
@@ -378,7 +367,7 @@ services:
     environment:
       GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-https://grafana.nebula-search.example.com}
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD}
       GF_INSTALL_PLUGINS: ""
       GF_SMTP_ENABLED: ${SMTP_ENABLED:-false}
       GF_SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com:587}
@@ -388,11 +377,8 @@ services:
       - grafana-data:/var/lib/grafana
       - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
-    ports:
-      - "${GRAFANA_PORT:-3001}:3000"
     networks:
       - nebula-internal
-      - nebula-public
     restart: unless-stopped
     deploy:
       resources:
@@ -421,9 +407,6 @@ services:
       - xpack.security.enrollment.enabled=false
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
-    ports:
-      - "${ELASTICSEARCH_PORT:-9200}:9200"
-      - "${ELASTICSEARCH_HTTP_PORT:-9300}:9300"
     networks:
       - nebula-internal
     restart: unless-stopped
@@ -448,10 +431,7 @@ services:
     container_name: nebula-rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-nebula}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-change_me}
-    ports:
-      - "${RABBITMQ_PORT:-5672}:5672"
-      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Set a strong RABBITMQ_PASSWORD}
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     networks:
@@ -490,8 +470,6 @@ services:
       KAFKA_CFG_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_CFG_MIN_INSYNC_REPLICATION_FACTOR: 1
       KAFKA_CFG_NUM_PARTITIONS: 3
-    ports:
-      - "${KAFKA_PORT:-9092}:9092"
     volumes:
       - kafka-data:/bitnami/kafka
     networks:

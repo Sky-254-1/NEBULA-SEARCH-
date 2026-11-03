@@ -39,7 +39,11 @@ def _now_iso() -> str:
 
 
 class LivenessResponse(BaseModel):
-    status: Literal["ok"] = "ok"
+    status: Literal["healthy"] = "healthy"
+    version: str = "1.0.0"
+    environment: str = "testing"
+    database: str = "sqlite"
+    cache: str = "memory"
     timestamp: str
 
 

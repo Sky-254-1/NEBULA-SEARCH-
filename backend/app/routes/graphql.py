@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 import logging
 
 from app.search.graphql.schema import schema
+from app.services.auth import get_current_user_token_payload
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/graphql", tags=["graphql"])
@@ -21,28 +22,39 @@ async def graphql_endpoint(request: Request):
         if not query:
             raise HTTPException(status_code=400, detail="Query is required")
 
-        # Execute the query
-        result = schema.execute_sync(
+        try:
+            user = await get_current_user_token_payload(request)
+        except HTTPException:
+            user = None
+
+        # Resolvers are asynchronous and protected fields use this verified
+        # principal instead of a caller-supplied user ID.
+        result = await schema.execute(
             query,
             variable_values=variables,
-            context_value={"request": request}
+            context_value={"request": request, "user": user},
         )
 
         if result.errors:
-            logger.error(f"GraphQL errors: {result.errors}")
+            logger.warning("GraphQL request rejected with %d resolver error(s)", len(result.errors))
             return JSONResponse(
-                status_code=400,
+                status_code=200,
                 content={
-                    "errors": [str(error) for error in result.errors],
-                    "data": result.data
+                    "errors": [
+                        {"message": "GraphQL operation could not be completed"}
+                        for _ in result.errors
+                    ],
+                    "data": result.data,
                 }
             )
 
         return {"data": result.data}
 
-    except Exception as e:
-        logger.error(f"GraphQL endpoint error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("GraphQL endpoint failed")
+        raise HTTPException(status_code=400, detail="Invalid GraphQL request")
 
 
 @router.get("/playground")

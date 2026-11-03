@@ -227,7 +227,7 @@ class Deduplicator:
             return []
         
         # Group results by document ID
-        groups = {}
+        groups: dict[Any, list[Dict[str, Any]]] = {}
         for i, result in enumerate(results):
             doc_id = result.get("id", f"unknown_{i}")
             if doc_id not in groups:

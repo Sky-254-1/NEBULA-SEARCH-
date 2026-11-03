@@ -139,7 +139,7 @@ class SemanticEngine:
         distance = np.linalg.norm(vec1 - vec2)
         # Convert distance to similarity (inverse, normalized 0-1)
         # Assuming max distance of sqrt(2) for normalized vectors
-        return 1 / (1 + distance)
+        return float(1 / (1 + distance))
 
     def search(
         self,

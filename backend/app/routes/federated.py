@@ -1,6 +1,5 @@
 """Federated search across devices."""
 
-from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -8,8 +7,9 @@ from pydantic import BaseModel
 
 from app.config import get_settings
 from app.database import get_db
-from app.database.repositories.search import SearchRepository
+from app.database.repositories.user import UserRepository
 from app.services.auth import get_current_user
+from vector.pipeline import hybrid_search
 
 settings = get_settings()
 router = APIRouter(prefix="/api/v1/search/federated", tags=["Federated Search"])
@@ -35,10 +35,14 @@ async def federated_search(body: FederatedSearchRequest, email: str = Depends(ge
     if not settings.enable_federated_search:
         raise HTTPException(status_code=404, detail="Federated search is not enabled")
     
+    user_id = await UserRepository(db).get_id_by_email(email)
+    if user_id is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
     # Get user's sessions/devices
     from app.database.repositories.session import SessionRepository
     sessions_repo = SessionRepository(db)
-    sessions = await sessions_repo.get_user_sessions(email)
+    sessions = await sessions_repo.get_active_for_user(user_id)
     
     # Filter devices if specified
     if body.devices:
@@ -46,9 +50,7 @@ async def federated_search(body: FederatedSearchRequest, email: str = Depends(ge
     
     devices_searched = [s.get("session_id") for s in sessions]
     
-    # Search local index first
-    search_repo = SearchRepository(db)
-    local_results = await search_repo.search(body.query, limit=20)
+    local_results = await hybrid_search(db, user_id, body.query, top_k=20)
     
     # TODO: In production, query remote devices via their APIs
     # For now, return local results with device info
@@ -67,9 +69,13 @@ async def get_user_devices(email: str = Depends(get_current_user), db=Depends(ge
     if not settings.enable_federated_search:
         raise HTTPException(status_code=404, detail="Federated search is not enabled")
     
+    user_id = await UserRepository(db).get_id_by_email(email)
+    if user_id is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
     from app.database.repositories.session import SessionRepository
     sessions_repo = SessionRepository(db)
-    sessions = await sessions_repo.get_user_sessions(email)
+    sessions = await sessions_repo.get_active_for_user(user_id)
     
     devices = []
     for session in sessions:
@@ -91,15 +97,19 @@ async def remove_device(session_id: str, email: str = Depends(get_current_user),
     if not settings.enable_federated_search:
         raise HTTPException(status_code=404, detail="Federated search is not enabled")
     
+    user_id = await UserRepository(db).get_id_by_email(email)
+    if user_id is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
     from app.database.repositories.session import SessionRepository
     sessions_repo = SessionRepository(db)
     
     # Verify device belongs to user
     session = await sessions_repo.get_by_session_id(session_id)
-    if not session or session.get("user_id") != email:
+    if not session or session.get("user_id") != user_id:
         raise HTTPException(status_code=404, detail="Device not found")
     
     # Deactivate session
-    await sessions_repo.deactivate_session(session_id)
+    await sessions_repo.terminate_session(session_id, "Removed by user")
     
     return {"message": "Device removed"}

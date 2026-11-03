@@ -107,6 +107,9 @@ export function HomePage() {
               <option value="wikipedia">Wikipedia</option>
               <option value="wikipedia,brave">Wikipedia + Brave</option>
               <option value="wikipedia,serpapi">Wikipedia + SerpAPI</option>
+              <option value="wikipedia,google">Wikipedia + Google Custom Search</option>
+              <option value="wikipedia,bing">Wikipedia + Bing</option>
+              <option value="wikipedia,duckduckgo">Wikipedia + DuckDuckGo</option>
             </select>
           </label>
           <Link to="/history" className="btn ghost">

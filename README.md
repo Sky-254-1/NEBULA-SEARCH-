@@ -177,9 +177,9 @@ npm run dev
 
 | Category | Features |
 |----------|----------|
-| :mag: Web Search | Wikipedia, Brave Search, SerpAPI backends — parallel orchestration with deduplication & ranking |
+| :mag: Web Search | Wikipedia, Brave, Google Custom Search, SerpAPI, Bing, and DuckDuckGo — parallel orchestration with deduplication & ranking |
 | :floppy_disk: Offline Search | TF-IDF and semantic ranking in the browser via IndexedDB |
-| :robot: AI Answers | OpenAI-compatible API with automatic failover (OpenAI → Ollama → GGUF → DuckDuckGo) |
+| :robot: AI Answers | Gemini and OpenAI with automatic failover to configured local Ollama/GGUF models |
 | :lock: Authentication | Email/password signup, JWT access + refresh tokens, optional 2FA/TOTP, WebAuthn |
 | :busts_in_silhouette: RBAC | Role-based access control (user/admin tiers), rate limit tiers |
 | :shower: Streaming | Server-Sent Events for AI answer streaming |
@@ -623,6 +623,13 @@ REDIS_URL=redis://...
 OPENAI_API_KEY=<your-key>
 BRAVE_API_KEY=<your-key>
 SERPAPI_KEY=<your-key>
+GOOGLE_API_KEY=<your-key>
+GOOGLE_SEARCH_CX=<custom-search-engine-id>
+BING_API_KEY=<your-key>
+GEMINI_API_KEY=<your-key>
+AI_PROVIDER=auto
+OLLAMA_URL=http://localhost:11434
+GGUF_MODEL_PATH=
 
 # Security
 CORS_ORIGINS=https://your-domain.com
@@ -635,6 +642,10 @@ SENTRY_DSN=<your-sentry-dsn>
 OTEL_EXPORTER_OTLP_ENDPOINT=<your-otel-endpoint>
 LOG_LEVEL=INFO
 ```
+
+Keep actual API keys only in an ignored local `.env` file or a secret manager. For production, add `OPENAI_API_KEY`, `BRAVE_API_KEY`, `GOOGLE_API_KEY`, `SERPAPI_KEY`, `BING_API_KEY`, and `GEMINI_API_KEY` as secrets in the GitHub Actions environment named `OpenAI`. Optional provider settings such as `GOOGLE_SEARCH_CX`, `AI_PROVIDER`, `GEMINI_MODEL`, `OLLAMA_URL`, `OLLAMA_MODEL`, and `GGUF_MODEL_PATH` belong in that environment's variables. Deployment transfers keys through a temporary permission-restricted file into a Kubernetes Secret; keys are not build arguments or image contents.
+
+DuckDuckGo requires no API key. Ollama requires an Ollama service reachable from the backend (set `OLLAMA_URL` accordingly), and GGUF requires a mounted model file at `GGUF_MODEL_PATH`; neither is configured by API keys.
 
 ---
 

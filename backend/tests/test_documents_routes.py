@@ -1,6 +1,7 @@
 """Tests for the documents domain routes."""
 
 import io
+import uuid
 import pytest
 from httpx import AsyncClient
 
@@ -40,7 +41,7 @@ async def test_upload_document_txt(async_client: AsyncClient, auth_headers: dict
         headers=auth_headers,
         files={"file": ("hello.txt", b"Hello world content", "text/plain")},
     )
-    assert resp.status_code == 200
+    assert resp.status_code == 201
     body = resp.json()
     assert "id" in body
     assert body["filename"] == "hello.txt"
@@ -78,7 +79,7 @@ async def test_upload_markdown(async_client: AsyncClient, auth_headers: dict):
         headers=auth_headers,
         files={"file": ("readme.md", b"# Hello\nWorld", "text/markdown")},
     )
-    assert resp.status_code == 200
+    assert resp.status_code == 201
     body = resp.json()
     assert body["filename"] == "readme.md"
 
@@ -91,7 +92,7 @@ async def test_upload_json(async_client: AsyncClient, auth_headers: dict):
         headers=auth_headers,
         files={"file": ("data.json", b'{"key": "value"}', "application/json")},
     )
-    assert resp.status_code == 200
+    assert resp.status_code == 201
 
 
 @pytest.mark.asyncio
@@ -109,7 +110,7 @@ async def test_upload_then_delete(async_client: AsyncClient, auth_headers: dict)
         headers=auth_headers,
         files={"file": ("todelete.txt", b"Some content", "text/plain")},
     )
-    assert upload.status_code == 200
+    assert upload.status_code == 201
     doc_id = upload.json()["id"]
 
     delete = await async_client.delete(f"/api/v1/documents/{doc_id}", headers=auth_headers)
@@ -134,27 +135,28 @@ async def test_list_documents_shows_uploaded(async_client: AsyncClient, auth_hea
 @pytest.mark.asyncio
 async def test_delete_other_users_document(async_client: AsyncClient, auth_headers: dict):
     """Cannot delete another user's document."""
-    # Create a second user and upload a document
-    await async_client.post(
-        "/api/v1/auth/signup",
-        json={"email": "other@example.com", "password": "OtherPass1!"},
-    )
-    login = await async_client.post(
-        "/api/v1/auth/login",
-        json={"email": "other@example.com", "password": "OtherPass1!"},
-    )
-    other_token = login.json().get("access_token")
-    if not other_token:
-        pytest.skip("Second user login requires MFA or returns unexpected structure")
+    # Create a fresh second identity directly so MFA policy and account state
+    # from other tests cannot turn an ownership regression into a skipped test.
+    from app.database import connect
+    from app.database.repositories.user import UserRepository
+    from app.services.auth import create_access_token, hash_password
 
+    other_email = f"other-{uuid.uuid4().hex}@example.com"
+    db = await connect()
+    try:
+        users = UserRepository(db)
+        await users.create(other_email, hash_password("OtherPass1!"))
+    finally:
+        await db.close()
+
+    other_token = create_access_token(other_email, role="user")
     other_headers = {"Authorization": f"Bearer {other_token}"}
     upload = await async_client.post(
         "/api/v1/documents/",
         headers=other_headers,
         files={"file": ("private.txt", b"private content", "text/plain")},
     )
-    if upload.status_code != 200:
-        pytest.skip("Upload failed for second user")
+    assert upload.status_code == 201, upload.text
     doc_id = upload.json()["id"]
 
     # Original user tries to delete it

@@ -18,7 +18,10 @@ router = APIRouter(prefix="/api/v1/search", tags=["Search"])
 @router.get("/web", response_model=list[SearchResult], dependencies=[Depends(rate_limit)])
 async def web_search(
     q: str = Query(..., min_length=1, max_length=500, description="Search query"),
-    backend: str = Query("wikipedia", description="Search backend: wikipedia, brave, serpapi"),
+    backend: str = Query(
+        "wikipedia",
+        description="Search backend: wikipedia, brave, serpapi, google, bing, duckduckgo",
+    ),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(10, ge=1, le=50, description="Results per page"),
     email: str = Depends(get_current_user),
@@ -63,7 +66,12 @@ async def orchestrated_search(
 ):
     backend_list = [b.strip() for b in backends.split(",") if b.strip()]
     try:
-        payload = await orchestrate_search(q, backend_list, page, page_size)
+        payload = await orchestrate_search(
+            query=q,
+            backends=backend_list,
+            page=page,
+            page_size=page_size,
+        )
     except httpx.HTTPStatusError as exc:
         raise HTTPException(status_code=502, detail=f"Search backend error: {exc.response.status_code}") from exc
     except httpx.RequestError as exc:
@@ -76,7 +84,9 @@ async def orchestrated_search(
     return payload
 
 
-@router.get("/history")
+# The unified router owns the documented history contract. Keep this alias
+# mounted for existing clients without emitting a duplicate OpenAPI operation.
+@router.get("/history", include_in_schema=False)
 async def search_history(
     limit: int = Query(20, ge=1, le=100),
     email: str = Depends(get_current_user),

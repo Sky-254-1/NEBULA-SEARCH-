@@ -18,7 +18,7 @@ const getDesktopApiBaseUrl = async (): Promise<string | null> => {
   try {
     if (window.nebula?.getApiBaseUrl) {
       const base = await window.nebula.getApiBaseUrl();
-      if (base) return `${base}/api/v1`;
+      if (base) return base;
     }
   } catch {
     // Fall through to default
@@ -26,7 +26,21 @@ const getDesktopApiBaseUrl = async (): Promise<string | null> => {
   return null;
 };
 
-export const API_BASE_URL = (import.meta.env && import.meta.env.VITE_API_URL) || '/api/v1';
+const stripApiVersion = (value: string): string =>
+  value.replace(/\/(?:api\/)?v[12]\/??$/, '').replace(/\/$/, '');
+
+export const API_BASE_URL = stripApiVersion(
+  (import.meta.env && import.meta.env.VITE_API_URL) || '',
+);
+
+/** Resolve shorthand v1 paths and explicit v1/v2 paths against one API origin. */
+export const normalizeApiPath = (path: string): string => {
+  if (/^(?:[a-z][a-z\d+.-]*:)?\/\//i.test(path)) return path;
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+  if (/^\/api\/v[12](?:\/|$)/.test(normalized)) return normalized;
+  if (/^\/v2(?:\/|$)/.test(normalized)) return `/api${normalized}`;
+  return `/api/v1${normalized}`;
+};
 const API_TIMEOUT = 30000;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
@@ -54,7 +68,7 @@ class APIClient {
   private async initDesktopApiUrl(): Promise<void> {
     const desktopBase = await getDesktopApiBaseUrl();
     if (desktopBase) {
-      this.client.defaults.baseURL = desktopBase;
+      this.client.defaults.baseURL = stripApiVersion(desktopBase);
     }
   }
 
@@ -76,27 +90,43 @@ class APIClient {
 
   private async processOfflineQueue(): Promise<void> {
     const queue = this.getOfflineQueue();
-    for (const action of queue) {
-      try {
-        await this.executeQueuedAction(action);
-        this.removeFromOfflineQueue(action.id);
-      } catch (error) {
-        console.error('Failed to process queued action:', error);
+    for (const queuedAction of queue) {
+      let action = queuedAction;
+      while (true) {
+        try {
+          await this.executeQueuedAction(action);
+          this.removeFromOfflineQueue(action.id);
+          break;
+        } catch (error) {
+          if (!action.url || !action.method) {
+            this.removeFromOfflineQueue(action.id);
+            break;
+          }
+
+          const status = (error as AxiosError).response?.status;
+          const retries = (action.retries || 0) + 1;
+          if ((status !== undefined && status >= 400 && status < 500) || retries >= MAX_RETRIES) {
+            this.removeFromOfflineQueue(action.id);
+            console.error('Dropping API request that cannot be replayed:', error);
+            break;
+          }
+
+          action = { ...action, retries };
+          this.replaceOfflineAction(action);
+          await this.delay(RETRY_DELAY * retries);
+        }
       }
     }
   }
 
   private async executeQueuedAction(action: any): Promise<void> {
-    switch (action.type) {
-      case 'search':
-        await this.post('/v2/search', action.payload);
-        break;
-      case 'chat':
-        await this.post('/ai/ask', action.payload);
-        break;
-      default:
-        console.warn('Unknown queued action type:', action.type);
-    }
+    if (!action.url || !action.method) throw new Error('Invalid queued API request');
+    await this.client.request({
+      url: action.url,
+      method: action.method,
+      data: action.data,
+      baseURL: action.baseURL || this.client.defaults.baseURL,
+    });
   }
 
   private getOfflineQueue(): any[] {
@@ -113,10 +143,18 @@ class APIClient {
     localStorage.setItem('offline_queue', JSON.stringify(queue));
   }
 
+  private replaceOfflineAction(action: any): void {
+    const queue = this.getOfflineQueue().map((item) =>
+      item.id === action.id ? action : item,
+    );
+    localStorage.setItem('offline_queue', JSON.stringify(queue));
+  }
+
   private setupInterceptors(): void {
     // Request interceptor to add auth token
     this.client.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
+        if (config.url) config.url = normalizeApiPath(config.url);
         const token = this.getAccessToken();
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
@@ -144,11 +182,16 @@ class APIClient {
           }
           
           // Queue request for later if offline
-          if (originalRequest.method && originalRequest.url && !originalRequest.url.includes('/auth/')) {
+          const method = (originalRequest.method || '').toUpperCase();
+          const route = originalRequest.url || '';
+          const replaySafe = ['GET', 'HEAD', 'OPTIONS'].includes(method) ||
+            (method === 'POST' && route.replace(/\/$/, '').endsWith('/api/v1/search'));
+          if (replaySafe && route && !route.includes('/auth/')) {
             this.queueOfflineAction(originalRequest);
+            return Promise.reject(new Error('Network error - request queued for retry'));
           }
-          
-          return Promise.reject(new Error('Network error - request queued for retry'));
+
+          return Promise.reject(new Error('Network error - request was not safe to queue'));
         }
 
         // If error is 401 and we haven't retried yet
@@ -172,11 +215,18 @@ class APIClient {
           }
         }
 
-        // Retry on 5xx errors
-        if (error.response.status >= 500 && !originalRequest._retry) {
+        // Retry only idempotent methods unless the caller supplied an
+        // Idempotency-Key; replaying arbitrary POSTs can duplicate effects.
+        const retryMethod = (originalRequest.method || 'get').toUpperCase();
+        const hasIdempotencyKey = Boolean(
+          originalRequest.headers?.['Idempotency-Key'] ||
+          originalRequest.headers?.['idempotency-key'],
+        );
+        const retrySafe = ['GET', 'HEAD', 'OPTIONS'].includes(retryMethod) || hasIdempotencyKey;
+        if (error.response.status >= 500 && retrySafe && !originalRequest._retry) {
           originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
           
-          if (originalRequest._retryCount < MAX_RETRIES) {
+          if (originalRequest._retryCount <= MAX_RETRIES) {
             await this.delay(RETRY_DELAY * originalRequest._retryCount);
             return this.client(originalRequest);
           }
@@ -195,6 +245,7 @@ class APIClient {
         type: 'generic',
         method: config.method,
         url: config.url,
+        baseURL: config.baseURL,
         data: config.data,
         timestamp: Date.now(),
         retries: 0,

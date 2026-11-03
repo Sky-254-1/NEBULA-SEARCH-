@@ -166,7 +166,7 @@ class SynonymExpander:
         self.enable_synonyms = enable_synonyms
         self.enable_acronyms = enable_acronyms
         self.max_synonyms_per_word = max_synonyms_per_word
-        self._cache: dict[str, list[str]] = {}
+        self._cache: dict[tuple[str, str, bool, bool], dict] = {}
     
     async def expand(self, query: str) -> dict:
         """

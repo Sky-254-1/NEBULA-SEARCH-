@@ -23,7 +23,7 @@ class MFAService:
         return pyotp.random_base32()
 
     @staticmethod
-    def get_totp_uri(secret: str, email: str, issuer: str = None) -> str:
+    def get_totp_uri(secret: str, email: str, issuer: str | None = None) -> str:
         """Generate TOTP URI for QR code."""
         issuer = issuer or getattr(settings, 'mfa_issuer', settings.jwt_issuer)
         return pyotp.totp.TOTP(secret).provisioning_uri(

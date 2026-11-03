@@ -24,12 +24,14 @@ logger = logging.getLogger("nebula.indexing.worker")
 settings = get_settings()
 
 
-async def _persist_job_status(job_id: str, status: str) -> None:
+async def _persist_job_status(
+    job_id: str, status: str, retry_count: int | None = None
+) -> None:
     """Persist lifecycle status without making a DB outage lose worker progress."""
     db = None
     try:
         db = await connect()
-        await IndexingJobRepository(db).set_status(job_id, status)
+        await IndexingJobRepository(db).set_status(job_id, status, retry_count)
     except Exception:
         logger.exception("Failed to persist indexing job status for %s", job_id)
     finally:
@@ -152,15 +154,21 @@ class Worker:
                     job["retry_count"] = retry_count + 1
                     job["error"] = str(exc)
                     
-                    # Calculate delay
-                    delay = retry_handler.get_delay(retry_count)
-                    job["next_retry_time"] = time.time() + delay
-                    
-                    # Re-enqueue with delay
-                    await indexing_queue.enqueue(job)
-                    progress_tracker.update_status(job_id, "RETRYING")
-                    await _persist_job_status(job_id, "RETRYING")
-                    metrics.record_retry()
+                    # The queue has no delayed-delivery primitive. Queue the
+                    # retry immediately and only report QUEUED after enqueue
+                    # succeeds; never advertise a delay the worker ignores.
+                    try:
+                        queued_id = await indexing_queue.enqueue(job)
+                        if queued_id != job_id:
+                            raise RuntimeError("Queue returned a different job identifier")
+                    except Exception:
+                        logger.exception("Unable to enqueue retry for job %s", job_id)
+                    else:
+                        progress_tracker.update_status(job_id, "QUEUED")
+                        await _persist_job_status(
+                            job_id, "QUEUED", retry_count=job["retry_count"]
+                        )
+                        metrics.record_retry()
                 
                 else:
                     # Move to dead-letter queue

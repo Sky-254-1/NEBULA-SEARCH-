@@ -52,13 +52,21 @@ class SearchService:
                 processed_query = corrected
 
         results: list[dict] = []
-        ai_answer = None
+        ai_answer: dict[str, Any] | None = None
         suggestions = None
         facets = None
+        requested_end = page * page_size
+        candidate_limit = min(requested_end + 1, 1000)
+        start_idx = (page - 1) * page_size
 
         try:
             if mode == "web":
-                web_results = await run_web_search(processed_query, backend="wikipedia", page=page, page_size=page_size)
+                web_results = await run_web_search(
+                    processed_query,
+                    backend="wikipedia",
+                    page=1,
+                    page_size=candidate_limit,
+                )
                 results = [
                     {
                         "id": i,
@@ -71,13 +79,15 @@ class SearchService:
                     for i, r in enumerate(web_results, 1)
                 ]
             elif mode == "vector":
-                results = await vector_hybrid_search(db, user_id, processed_query, top_k=page_size)
+                results = await vector_hybrid_search(
+                    db, user_id, processed_query, top_k=candidate_limit
+                )
                 for i, r in enumerate(results, 1):
                     r.setdefault("source", "vector")
                     r.setdefault("id", r.get("chunk_id", i))
             elif mode == "hybrid":
                 web_results, vector_results = await _gather(
-                    processed_query, db, user_id, page_size
+                    processed_query, db, user_id, candidate_limit
                 )
                 results = web_results + vector_results
                 results.sort(key=lambda x: x.get("score", 0.0), reverse=True)
@@ -97,8 +107,12 @@ class SearchService:
                         ranked = await personalization_engine.personalize_results(user_id, processed_query, ranked)
                     except Exception as exc:
                         logger.debug("Personalization failed: %s", exc)
-                start_idx = (page - 1) * page_size
+                if filters:
+                    ranked = _apply_filters(ranked, filters)
+                total = len(ranked)
                 results = ranked[start_idx : start_idx + page_size]
+            else:
+                total = 0
 
             if include_ai_answer and mode != "ai" and results:
                 try:
@@ -115,9 +129,6 @@ class SearchService:
                     ]
                 except Exception:
                     suggestions = []
-
-            if filters:
-                results = _apply_filters(results, filters)
 
         except Exception as exc:
             logger.exception("Search failed: %s", exc)
@@ -139,13 +150,23 @@ class SearchService:
             "ai_answer": ai_answer,
             "suggestions": suggestions,
             "facets": facets,
-            "total": len(results),
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "pagination": {
+                "total": total,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": (total + page_size - 1) // page_size,
+                "has_next": start_idx + len(results) < total,
+                "has_previous": page > 1,
+            },
             "response_time_ms": round(elapsed, 2),
         }
 
 
 async def _gather(query: str, db, user_id: int, page_size: int) -> tuple[list[dict], list[dict]]:
-    half = max(page_size // 2, 1)
+    half = max((page_size + 1) // 2, 1)
     web_task = run_web_search(query, backend="wikipedia", page=1, page_size=half)
     vector_task = vector_hybrid_search(db, user_id, query, top_k=half)
     web_results, vector_results = await __import__("asyncio").gather(web_task, vector_task, return_exceptions=True)

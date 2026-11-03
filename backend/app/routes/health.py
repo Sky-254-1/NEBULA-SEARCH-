@@ -7,4 +7,4 @@ router = APIRouter(tags=["Health"])
 
 @router.get("/")
 async def root():
-    return {"message": "Nebula Search API is running.", "docs": "/docs", "version": "1.0.0"}
+    return {"message": "Nebula Search API is running.", "docs": "/docs", "version": "1.1.0"}

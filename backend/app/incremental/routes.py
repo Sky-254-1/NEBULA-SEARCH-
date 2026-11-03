@@ -1,7 +1,7 @@
 """API routes for incremental re-indexing."""
 
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
@@ -61,7 +61,7 @@ async def get_reindex_status() -> APIResponse:
         # Placeholder for db session
         db_session = None
         
-        stats = {}
+        stats: dict[str, Any] = {}
         if db_session:
             stats = await service.get_stats(db_session)
         
@@ -97,14 +97,16 @@ async def get_reindex_stats() -> APIResponse:
         
         # Placeholder for db session
         db_session = None
-        stats = {}
+        stats: dict[str, Any] = {}
         
         if db_session:
             stats = await service.get_stats(db_session)
         
         # Get event metrics
         event_manager = get_event_manager()
-        metrics = event_manager.get_metrics()
+        metrics = {
+            "events_in_history": len(event_manager.get_history()),
+        }
         
         return APIResponse(
             status="success",
@@ -194,7 +196,7 @@ async def reindex_document(
         # Placeholder for db session and file path
         db_session = None
         file_path = None
-        metadata = {}
+        metadata: dict[str, Any] = {}
         
         # Run reindex
         result = await service.reindex_document(

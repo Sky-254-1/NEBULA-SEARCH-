@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Any, Optional, List
 
 from app.database import get_db
 from app.database.repositories.audit import AuditRepository
@@ -407,7 +407,7 @@ async def list_active_sessions(
     
     # Get all sessions (in production, add filtering and pagination)
     # For now, return placeholder
-    sessions = []
+    sessions: list[dict[str, Any]] = []
     total = 0
     
     pagination_meta = PaginationMeta(

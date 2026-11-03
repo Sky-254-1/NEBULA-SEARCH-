@@ -83,10 +83,11 @@ async def run_migrations() -> None:
                     continue
                 # For SQLite, handle ALTER TABLE ADD COLUMN with idempotency check
                 if not settings.uses_postgres and _is_add_column_statement(statement):
-                    statement = await _make_add_column_idempotent(db, statement)
-                    if statement is None:
+                    idempotent_statement = await _make_add_column_idempotent(db, statement)
+                    if idempotent_statement is None:
                         # Column already exists, skip
                         continue
+                    statement = idempotent_statement
                 try:
                     await db.execute(statement)
                 except Exception as exc:
@@ -108,7 +109,7 @@ async def run_migrations() -> None:
                 "INSERT INTO schema_migrations (filename, version) VALUES ($1, $2)"
                 if settings.uses_postgres
                 else "INSERT INTO schema_migrations (filename, version) VALUES (?, ?)",
-                [filename, version],
+                (filename, version),
             )
         
         # Re-enable foreign key constraints for SQLite after migrations

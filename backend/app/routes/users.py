@@ -263,7 +263,8 @@ async def upload_avatar(
     avatar_dir = settings.storage_uploads / "avatars"
     avatar_dir.mkdir(parents=True, exist_ok=True)
     
-    ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
+    original_filename = file.filename or ""
+    ext = original_filename.split(".")[-1] if "." in original_filename else "jpg"
     filename = f"{user['id']}_{datetime.now().timestamp()}.{ext}"
     dest = avatar_dir / filename
     dest.write_bytes(content)

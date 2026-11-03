@@ -185,11 +185,11 @@ class UserRepository:
         await self._db.commit()
 
     async def update_mfa(
-        self, 
-        user_id: int, 
-        mfa_enabled: bool, 
-        mfa_secret: str = None, 
-        mfa_backup_codes: list = None
+        self,
+        user_id: int,
+        mfa_enabled: bool,
+        mfa_secret: str | None = None,
+        mfa_backup_codes: list | None = None
     ) -> None:
         """Update MFA settings."""
         now = datetime.now(timezone.utc).isoformat()
@@ -276,3 +276,47 @@ class UserRepository:
             "SELECT COUNT(*) AS cnt FROM users WHERE is_deleted = FALSE"
         )
         return row["cnt"] if row else 0
+
+    async def update(self, user_id: int, fields: dict) -> None:
+        """Update allowed user columns from a mapping of column -> value."""
+        if not fields:
+            return
+        allowed = {
+            "push_token",
+            "push_platform",
+            "push_device_id",
+            "push_token_updated_at",
+            "webauthn_credential_id",
+            "webauthn_public_key",
+            "webauthn_sign_count",
+            "webauthn_aaguid",
+            "email",
+            "role",
+            "is_active",
+        }
+        assignments: list[str] = []
+        values: list = []
+        for key, value in fields.items():
+            if key not in allowed:
+                continue
+            assignments.append(f"{key} = ?")
+            values.append(value)
+        if not assignments:
+            return
+        values.append(user_id)
+        await self._db.execute(
+            f"UPDATE users SET {', '.join(assignments)} WHERE id = ?",  # nosec B608
+            tuple(values),
+        )
+        await self._db.commit()
+
+    async def get_by_webauthn_credential_id(self, credential_id: str):
+        """Look up a user by stored WebAuthn credential id."""
+        return await self._db.fetchone(
+            """SELECT id, email, hashed_password, role, email_verified,
+                      is_active, is_locked, failed_login_attempts, last_login,
+                      created_at, updated_at, password_changed_at,
+                      mfa_enabled, mfa_secret, mfa_backup_codes
+               FROM users WHERE webauthn_credential_id = ? AND is_deleted = FALSE""",
+            (credential_id,),
+        )

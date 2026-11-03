@@ -1,5 +1,6 @@
 """Notification repository."""
 from datetime import datetime, timezone
+import json
 
 from app.database.engine import DatabaseConnection
 
@@ -20,7 +21,7 @@ class NotificationRepository:
         await self._db.execute(
             "INSERT INTO notifications "
             "(user_id, type, category, title, message, data) VALUES (?, ?, ?, ?, ?, ?)",
-            (user_id, notif_type, category, title, message, data or {}),
+            (user_id, notif_type, category, title, message, json.dumps(data or {})),
         )
         await self._db.commit()
         row = await self._db.fetchone(
@@ -30,8 +31,13 @@ class NotificationRepository:
         )
         return row["id"] if row else 0
 
-    async def list_for_user(self, user_id: int, limit: int = 50,
-                            unread_only: bool = False) -> list[dict]:
+    async def list_for_user(
+        self,
+        user_id: int,
+        limit: int = 50,
+        unread_only: bool = False,
+        offset: int = 0,
+    ) -> list[dict]:
         query = (
             "SELECT id, type, category, title, message, data, is_read, "
             "read_at, created_at, expires_at "
@@ -40,10 +46,21 @@ class NotificationRepository:
         params: list = [user_id]
         if unread_only:
             query += "AND is_read = FALSE "
-        query += "ORDER BY created_at DESC LIMIT ?"
-        params.append(limit)
+        query += "ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?"
+        params.extend((limit, offset))
         rows = await self._db.fetchall(query, tuple(params))
         return [dict(row) for row in rows]
+
+    async def count_for_user(self, user_id: int, unread_only: bool = False) -> int:
+        query = (
+            "SELECT COUNT(*) AS count FROM notifications "
+            "WHERE user_id = ? AND is_deleted = FALSE"
+        )
+        params: tuple = (user_id,)
+        if unread_only:
+            query += " AND is_read = FALSE"
+        row = await self._db.fetchone(query, params)
+        return int(row["count"]) if row else 0
 
     async def get_unread_count(self, user_id: int) -> int:
         row = await self._db.fetchone(

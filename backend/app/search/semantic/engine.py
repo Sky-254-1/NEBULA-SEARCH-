@@ -13,6 +13,7 @@ from typing import Optional
 import numpy as np
 
 from .embeddings import (
+    EmbeddingProvider,
     OpenAIEmbeddingProvider,
     CohereEmbeddingProvider,
     HuggingFaceEmbeddingProvider,
@@ -55,9 +56,9 @@ class SemanticEngine:
             **kwargs: Additional configuration
         """
         self.config = kwargs
-        self._embedding_provider = None
+        self._embedding_provider: EmbeddingProvider | None = None
         self._vector_store = vector_store
-        self._cache = {}
+        self._cache: dict[tuple[str, int, float, str], list[dict]] = {}
         self._vector_store_backend = kwargs.get("vector_store_backend") or "local"
 
         # Initialize embedding provider
@@ -176,7 +177,7 @@ class SemanticEngine:
             await vector_store.upsert(collection_name, vectors)
             logger.info(f"Indexed {len(vectors)} documents")
         
-        return [doc.get('id') for doc in documents]
+        return [str(doc['id']) for doc in documents if doc.get('id') is not None]
     
     async def search(
         self,

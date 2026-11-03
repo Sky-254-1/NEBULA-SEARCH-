@@ -42,6 +42,8 @@ class JobProgress:
             return None
         
         elapsed = time.time() - self.started_at
+        if elapsed <= 0:
+            return None
         rate = self.progress / elapsed  # percent per second
         remaining = 100 - self.progress
         

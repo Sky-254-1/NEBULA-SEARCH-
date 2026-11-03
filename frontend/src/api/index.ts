@@ -3,4 +3,8 @@ export { apiClient } from './client';
 export { authApi } from './auth';
 export { searchApi } from './search';
 export { vectorApi } from './vector';
+export { indexingApi } from './indexing';
 export { aiApi } from './ai';
+
+// Export utility functions for testing
+export { normalizeApiPath } from './client';

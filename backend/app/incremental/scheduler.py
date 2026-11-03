@@ -316,6 +316,9 @@ class IncrementalScheduler:
         return False
 
 
+_scheduler_instance: IncrementalScheduler | None = None
+
+
 def get_scheduler(config: Optional[IncrementalConfig] = None) -> IncrementalScheduler:
     """
     Get global scheduler instance.
@@ -326,8 +329,8 @@ def get_scheduler(config: Optional[IncrementalConfig] = None) -> IncrementalSche
     Returns:
         IncrementalScheduler instance
     """
-    # Singleton pattern
-    if not hasattr(get_scheduler, "_instance"):
-        get_scheduler._instance = IncrementalScheduler(config)
+    global _scheduler_instance
+    if _scheduler_instance is None:
+        _scheduler_instance = IncrementalScheduler(config)
     
-    return get_scheduler._instance
+    return _scheduler_instance

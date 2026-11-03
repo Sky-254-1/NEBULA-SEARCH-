@@ -8,6 +8,7 @@ from fastapi import Query
 from pydantic import BaseModel
 
 from app.config import get_settings
+from app.database.engine import DatabaseConnection
 
 settings = get_settings()
 logger = logging.getLogger("nebula.pagination")
@@ -50,7 +51,7 @@ class PaginatedResponse:
     
     def to_dict(self, request=None) -> dict:
         """Convert to dictionary with optional links."""
-        result = {
+        result: dict[str, Any] = {
             "items": self.items,
             "pagination": {
                 "total": self.total,
@@ -89,7 +90,7 @@ def paginate_query(
     """
     # Add LIMIT and OFFSET
     paginated_query = f"{query} LIMIT ? OFFSET ?"
-    query_params = params.offset, params.limit
+    query_params: tuple[Any, ...] = (params.offset, params.limit)
     
     return paginated_query, query_params
 
@@ -115,7 +116,7 @@ def paginate_cursor_query(
     if cursor:
         # Add WHERE clause for cursor
         paginated_query = f"{query} WHERE {cursor_field} > ? ORDER BY {cursor_field} ASC LIMIT ?"
-        query_params = (cursor, limit)
+        query_params: tuple[Any, ...] = (cursor, limit)
     else:
         # First page - no cursor
         paginated_query = f"{query} ORDER BY {cursor_field} ASC LIMIT ?"
@@ -195,6 +196,8 @@ def create_cursor_pagination_response(
 
 class PaginationMixin:
     """Mixin to add pagination capabilities to repository classes."""
+
+    _db: DatabaseConnection
     
     async def paginate(
         self,

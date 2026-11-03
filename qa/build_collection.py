@@ -164,7 +164,7 @@ add(f3, test(req("POST /api/v1/indexing/start (no auth -> expect 401)","POST","{
   "pm.test('Indexing start without auth returns 401 (security requirement)', function () { pm.expect(pm.response.code).to.equal(401); });"
 ]))
 add(f3, test(req("POST /api/v1/indexing/start (valid auth)","POST","{{baseUrl}}/api/v1/indexing/start",
-  headers=[{"key":"content-type","value":"application/json"},{"key":"Authorization","value":"Bearer {{accessTokenUserA}}"]},
+  headers=[{"key":"content-type","value":"application/json"},{"key":"Authorization","value":"Bearer {{accessTokenUserA}}"}],
   raw_body='{"document_id": 1, "priority": "normal"}'), [
   "pm.test('Indexing start returns 200', function () { pm.expect(pm.response.code).to.equal(200); });",
   "pm.test('Job id present', function () { var json = pm.response.json(); pm.expect(json.data.job_id).to.exist; pm.environment.set('indexingJobId', json.data.job_id); });"
@@ -174,7 +174,7 @@ add(f3, test(req("GET /api/v1/indexing/job/{job_id}","GET","{{baseUrl}}/api/v1/i
   "pm.test('Get job returns 200', function () { pm.expect(pm.response.code).to.equal(200); });"
 ]))
 add(f3, test(req("POST /api/v1/indexing/retry/{job_id}","POST","{{baseUrl}}/api/v1/indexing/retry/{{indexingJobId}}",
-  headers=[{"key":"content-type","value":"application/json"},{"key":"Authorization","value":"Bearer {{accessTokenUserA}}"]},
+  headers=[{"key":"content-type","value":"application/json"},{"key":"Authorization","value":"Bearer {{accessTokenUserA}}"}],
   raw_body='{"job_id": "{{indexingJobId}}"}'), [
   "pm.test('Retry returns 200 or honest 4xx/5xx', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409,500]); });",
   "pm.test('Retry response has message', function () { var json = pm.response.json(); pm.expect(json.message).to.exist; });"
@@ -189,7 +189,7 @@ add(f4, test(req("GET /api/v1/users/profile (valid user A)","GET","{{baseUrl}}/a
   "pm.test('Profile has id/email/role', function () { var json = pm.response.json(); pm.expect(json.id).to.exist; pm.expect(json.email).to.exist; pm.environment.set('userAId', json.id); });"
 ]))
 add(f4, test(req("PUT /api/v1/users/profile (update user A)","PUT","{{baseUrl}}/api/v1/users/profile",
-  headers=[{"key":"content-type","value":"application/json"},{"key":"Authorization","value":"Bearer {{accessTokenUserA}}"]},
+  headers=[{"key":"content-type","value":"application/json"},{"key":"Authorization","value":"Bearer {{accessTokenUserA}}"}],
   raw_body='{"first_name": "QA", "last_name": "UserA"}'), [
   "pm.test('Update profile returns 200', function () { pm.expect(pm.response.code).to.equal(200); });"
 ]))
@@ -210,23 +210,23 @@ add(f5, test(req("GET /api/v1/search/web (no auth -> 401)","GET","{{baseUrl}}/ap
   "pm.test('Search web without auth returns 401', function () { pm.expect(pm.response.code).to.equal(401); });"
 ]))
 add(f5, test(req("GET /api/v1/search/web (valid user A)","GET","{{baseUrl}}/api/v1/search/web?q=nebula&backend=wikipedia&page=1&page_size=5",
-  headers=[{"key":"Authorization","value":"Bearer {{accessTokenUserA}}"]},
+  headers=[{"key":"Authorization","value":"Bearer {{accessTokenUserA}}"}],
   query=[{"key":"q","value":"nebula"},{"key":"backend","value":"wikipedia"},{"key":"page","value":"1"},{"key":"page_size","value":"5"}]), [
   "pm.test('Search web returns 200', function () { pm.expect(pm.response.code).to.equal(200); });",
   "pm.test('Search results is array', function () { var json = pm.response.json(); pm.expect(json).to.be.an('array'); });"
 ]))
 add(f5, test(req("GET /api/v1/search/web (invalid backend -> 400)","GET","{{baseUrl}}/api/v1/search/web?q=nebula&backend=notabackend",
-  headers=[{"key":"Authorization","value":"Bearer {{accessTokenUserA}}"]},
+  headers=[{"key":"Authorization","value":"Bearer {{accessTokenUserA}}"}],
   query=[{"key":"q","value":"nebula"},{"key":"backend","value":"notabackend"}]), [
   "pm.test('Invalid backend returns 400', function () { pm.expect(pm.response.code).to.equal(400); });"
 ]))
 add(f5, test(req("GET /api/v1/search/web (missing q -> 422)","GET","{{baseUrl}}/api/v1/search/web?backend=wikipedia",
-  headers=[{"key":"Authorization","value":"Bearer {{accessTokenUserA}}"]},
+  headers=[{"key":"Authorization","value":"Bearer {{accessTokenUserA}}"}],
   query=[{"key":"backend","value":"wikipedia"}]), [
   "pm.test('Missing q returns 422', function () { pm.expect(pm.response.code).to.equal(422); });"
 ]))
 add(f5, test(req("GET /api/v2/search/ (intelligent search)","GET","{{baseUrl}}/api/v2/search/?q=nebula",
-  headers=[{"key":"Authorization","value":"Bearer {{accessTokenUserA}}"]},
+  headers=[{"key":"Authorization","value":"Bearer {{accessTokenUserA}}"}],
   query=[{"key":"q","value":"nebula"}]), [
   "pm.test('V2 search returns 200', function () { pm.expect(pm.response.code).to.equal(200); });"
 ]))
@@ -262,19 +262,19 @@ add(f7, test(req("GET /graphql/schema (introspection endpoint)","GET","{{baseUrl
 f8 = folder("08 — Security / Rate Limiting / Input Validation")
 add(c["item"], f8)
 add(f8, test(req("GET /api/v1/search/web?q=<script> (XSS attempt)","GET","{{baseUrl}}/api/v1/search/web?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E",
-  headers=[{"key":"Authorization","value":"Bearer {{accessTokenUserA}}"]},
+  headers=[{"key":"Authorization","value":"Bearer {{accessTokenUserA}}"}],
   query=[{"key":"q","value":"<script>alert(1)</script>"}]), [
   "pm.test('XSS input not reflected / no 500', function () { pm.expect(pm.response.code).not.to.equal(500); });",
   "pm.test('Response does not contain raw script tag', function () { var body = pm.response.text(); pm.expect(body).not.to.include('<script>'); });"
 ]))
 add(f8, test(req("GET /api/v1/search/web?q=1 OR 1=1 (SQLi attempt)","GET","{{baseUrl}}/api/v1/search/web?q=1%20OR%201%3D1",
-  headers=[{"key":"Authorization","value":"Bearer {{accessTokenUserA}}"]},
+  headers=[{"key":"Authorization","value":"Bearer {{accessTokenUserA}}"}],
   query=[{"key":"q","value":"1 OR 1=1"}]), [
   "pm.test('SQLi input does not cause 500', function () { pm.expect(pm.response.code).not.to.equal(500); });",
   "pm.test('No stack trace in error body', function () { var body = pm.response.text(); pm.expect(body).not.to.match(/Traceback|Stack trace|line [0-9]+ in /i); });"
 ]))
 add(f8, test(req("GET /api/v1/search/web (rate limit check)","GET","{{baseUrl}}/api/v1/search/web?q=ratelimit&backend=wikipedia",
-  headers=[{"key":"Authorization","value":"Bearer {{accessTokenUserA}}"]},
+  headers=[{"key":"Authorization","value":"Bearer {{accessTokenUserA}}"}],
   query=[{"key":"q","value":"ratelimit"},{"key":"backend","value":"wikipedia"}]), [
   "pm.test('Rate limit response is 429 or includes rate headers', function () { var code = pm.response.code; pm.expect(code).to.be.oneOf([200,429]); if (code === 429) { pm.expect(pm.response.headers.get('retry-after')).to.exist; } });"
 ]))

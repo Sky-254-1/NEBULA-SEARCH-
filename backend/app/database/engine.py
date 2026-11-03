@@ -147,11 +147,12 @@ class PostgresPooledConnection(DatabaseConnection):
 async def init_pool() -> None:
     """Initialize PostgreSQL connection pool."""
     global _postgres_pool
-    if not settings.uses_postgres:
+    current_settings = get_settings()
+    if not current_settings.uses_postgres:
         return
     try:
         import asyncpg
-        url = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+        url = current_settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
         _postgres_pool = await asyncpg.create_pool(
             url,
             min_size=5,
@@ -181,16 +182,17 @@ async def close_pool() -> None:
 
 
 async def connect() -> DatabaseConnection:
-    if settings.uses_postgres:
+    current_settings = get_settings()
+    if current_settings.uses_postgres:
         # Try to use pool if available
         if _postgres_pool:
             return await get_pooled_connection()
         # Fallback to direct connection
         import asyncpg
-        url = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+        url = current_settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
         conn = await asyncpg.connect(url)
         return PostgresConnection(conn)
-    conn = await aiosqlite.connect(settings.db_path)
+    conn = await aiosqlite.connect(current_settings.db_path)
     conn.row_factory = aiosqlite.Row
     return SQLiteConnection(conn)
 

@@ -29,7 +29,7 @@ class BingSearchProvider(SearchProvider):
         headers = {
             "Ocp-Apim-Subscription-Key": api_key,
         }
-        params = {
+        params: dict[str, str | int | bool] = {
             "q": request.query,
             "count": request.max_results,
             "textDecorations": False,

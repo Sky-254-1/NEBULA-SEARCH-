@@ -574,6 +574,21 @@ class HybridRanker:
         self.feature_stats["total_ranked"] += len(ranked_results)
         return ranked_results
 
+    async def rank(
+        self,
+        query: str,
+        results: List[Dict[str, Any]],
+        enable_diversity: bool = True,
+        user_profile: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
+        """Rank results (async entrypoint used by search services)."""
+        return await self.rank_async(
+            query=query,
+            results=results,
+            enable_diversity=enable_diversity,
+            user_profile=user_profile,
+        )
+
     def rank_hybrid(self, documents: List[Dict[str, Any]], query_terms: List[str]) -> List[Tuple[int, float]]:
         """Rank using hybrid approach (synchronous version)."""
         if not documents or not query_terms:

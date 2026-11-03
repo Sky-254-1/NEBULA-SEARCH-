@@ -1,4 +1,8 @@
-const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
+const configuredApiBase = import.meta.env.VITE_API_URL || '';
+const apiOrigin = configuredApiBase
+  .replace(/\/(?:api\/)?v[12]\/??$/, '')
+  .replace(/\/$/, '');
+const API_BASE = `${apiOrigin}/api/v1`;
 
 export class ApiError extends Error {
   constructor(message, status) {
@@ -52,7 +56,7 @@ export function createAuthedFetch(getTokens, setTokens, clearTokens) {
       let detail = response.statusText;
       try {
         const body = await response.json();
-        detail = body.detail || detail;
+        detail = body.message || body.detail || detail;
       } catch {
         /* ignore */
       }

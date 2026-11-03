@@ -98,7 +98,7 @@ export const useSearchStore = create<SearchStore>()(
             enable_semantic: options?.enable_semantic ?? true,
             enable_personalization: options?.enable_personalization ?? true,
           });
-          const results = response.results || response.data?.results || [];
+          const results = response.results || [];
           set({ results, isSearching: false });
         } catch (error) {
           set({

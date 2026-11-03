@@ -140,7 +140,7 @@ class IntentClassifier:
         
         # Get intent with highest score
         if scores:
-            best_intent = max(scores, key=scores.get)
+            best_intent = max(scores, key=lambda name: scores[name])
             confidence = scores[best_intent]
         else:
             best_intent = 'informational'

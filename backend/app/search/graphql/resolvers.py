@@ -3,13 +3,9 @@
 import logging
 from typing import List, Optional
 
-from app.config import get_settings
-from app.search.search_service import search_service
-from app.search.ranking import hybrid_ranker
-from app.models.search import SearchRequest
+from app.services.search import run_web_search, sanitize_query
 
 logger = logging.getLogger(__name__)
-settings = get_settings()
 
 
 class GraphQLResolvers:
@@ -20,24 +16,22 @@ class GraphQLResolvers:
                             search_type: str = "hybrid", enable_reranking: bool = True,
                             enable_diversity: bool = False) -> dict:
         """Resolve search query."""
-        request = SearchRequest(
-            query=query,
+        sanitized_query = sanitize_query(query)
+        results = await run_web_search(
+            sanitized_query,
+            backend="wikipedia",
             page=page,
             page_size=page_size,
-            filters=filters or {},
-            search_type=search_type
         )
 
-        results = await search_service.search(request)
-
         return {
-            "query": query,
-            "total": results.total,
+            "query": sanitized_query,
+            "total": len(results),
             "page": page,
             "page_size": page_size,
-            "documents": results.documents,
-            "facets": results.facets,
-            "suggestions": results.suggestions
+            "documents": results,
+            "facets": {},
+            "suggestions": [],
         }
 
     @staticmethod

@@ -65,8 +65,8 @@ class BM25Scorer:
         self.b = b
         self.doc_count = 0
         self.avg_doc_length = 0.0
-        self.doc_freq = Counter()
-        self.doc_lengths = {}
+        self.doc_freq: Counter[str] = Counter()
+        self.doc_lengths: dict[Any, int] = {}
     
     def index_documents(self, documents: List[Dict[str, Any]]):
         """Index documents for BM25 scoring"""

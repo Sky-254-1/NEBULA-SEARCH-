@@ -1,25 +1,49 @@
 """GraphQL schema for Nebula Search API with real service integration."""
 
-from typing import List, Optional, Any
+from typing import List, NewType, Optional
 from datetime import datetime
 
 import strawberry
 import json
+from graphql import GraphQLError
+from strawberry.schema.config import StrawberryConfig
+from strawberry.types import Info
 
-from app.services.search import run_web_search, sanitize_query
-from app.config import get_settings
-
-settings = get_settings()
-
-# JSON scalar for dict types
-JSON = strawberry.scalar(
-    lambda v: v,
+JSONValue = NewType("JSONValue", object)
+JSON_SCALAR = strawberry.scalar(
     serialize=lambda v: v,
     parse_value=lambda v: v,
     name="JSON",
     description="Arbitrary JSON value",
 )
 
+from app.services.search import run_web_search, sanitize_query
+from app.config import get_settings
+
+settings = get_settings()
+
+
+async def _history_owner(info: Info, requested_user_id: Optional[str]):
+    """Resolve an authenticated owner and reject attempts to choose another."""
+    principal = info.context.get("user")
+    email = principal.get("sub") if isinstance(principal, dict) else None
+    if not email:
+        raise GraphQLError("Authentication required")
+
+    from app.database.engine import connect
+    from app.database.repositories.user import UserRepository
+
+    db = await connect()
+    try:
+        user_id = await UserRepository(db).get_id_by_email(email)
+        if user_id is None:
+            raise GraphQLError("Authentication required")
+        if requested_user_id is not None and requested_user_id != str(user_id):
+            raise GraphQLError("Access denied")
+        return db, user_id
+    except BaseException:
+        await db.close()
+        raise
 
 @strawberry.type
 class DocumentType:
@@ -33,7 +57,7 @@ class DocumentType:
     published_date: Optional[str] = None
     author: Optional[str] = None
     tags: Optional[List[str]] = None
-    metadata: Optional[JSON] = None
+    metadata: Optional[JSONValue] = None
 
 
 @strawberry.type
@@ -44,7 +68,7 @@ class SearchResult:
     page: int
     page_size: int
     documents: List[DocumentType]
-    facets: Optional[JSON] = None
+    facets: Optional[JSONValue] = None
     suggestions: Optional[List[str]] = None
 
 
@@ -63,7 +87,7 @@ class NodeType:
     """Graph node type for knowledge graph."""
     id: str
     label: str
-    properties: JSON
+    properties: JSONValue
     type: str
     score: float
 
@@ -72,7 +96,7 @@ class NodeType:
 class KnowledgeGraphType:
     """Knowledge graph query result."""
     nodes: List[NodeType]
-    edges: List[JSON]
+    edges: List[JSONValue]
 
 
 @strawberry.type
@@ -82,7 +106,7 @@ class AINodeType:
     content: str
     type: str
     score: float
-    context: Optional[JSON] = None
+    context: Optional[JSONValue] = None
 
 
 @strawberry.type
@@ -100,7 +124,7 @@ class SearchInput:
     query: str
     page: Optional[int] = 1
     page_size: Optional[int] = 20
-    filters: Optional[JSON] = None
+    filters: Optional[JSONValue] = None
     search_type: Optional[str] = "hybrid"
     enable_reranking: Optional[bool] = True
     enable_diversity: Optional[bool] = False
@@ -152,27 +176,33 @@ class Query:
         )
 
     @strawberry.field
-    async def search_history(self, user_id: Optional[str] = None, limit: int = 10) -> List[SearchHistoryType]:
+    async def search_history(
+        self, info: Info, user_id: Optional[str] = None, limit: int = 10
+    ) -> List[SearchHistoryType]:
         """Get search history for a user."""
-        from app.database.engine import connect
-        from app.database.repositories.search import SearchRepository
+        from app.database.repositories.search_history import SearchHistoryRepository
 
-        db = await connect()
+        if limit < 1 or limit > 100:
+            raise GraphQLError("Limit must be between 1 and 100")
+        db, owner_id = await _history_owner(info, user_id)
         try:
-            repo = SearchRepository(db)
-            history = await repo.get_history(user_id=user_id, limit=limit)
+            history = await SearchHistoryRepository(db).get_user_history(
+                user_id=owner_id, limit=limit
+            )
             return [
                 SearchHistoryType(
                     id=str(item.get("id", "")),
                     query=item.get("query", ""),
-                    results_count=item.get("results_count", 0),
-                    timestamp=item.get("timestamp", datetime.now()),
-                    user_id=user_id,
+                    results_count=item.get("result_count", 0),
+                    timestamp=(
+                        datetime.fromisoformat(item["created_at"].replace("Z", "+00:00"))
+                        if isinstance(item.get("created_at"), str)
+                        else item.get("created_at", datetime.now())
+                    ),
+                    user_id=str(owner_id),
                 )
                 for item in history
             ]
-        except Exception:
-            return []
         finally:
             await db.close()
 
@@ -182,12 +212,13 @@ class Query:
         return KnowledgeGraphType(nodes=[], edges=[])
 
     @strawberry.field
-    async def ai_search(self, query: str, context: Optional[JSON] = None) -> AISearchResultType:
+    async def ai_search(self, query: str, context: Optional[JSONValue] = None) -> AISearchResultType:
         """Perform AI-enhanced search."""
         from app.services.ai import get_ai_answer
 
         try:
-            answer = await get_ai_answer(query)
+            answer_text, _provider = await get_ai_answer(query)
+            answer = answer_text or "AI search unavailable. Please try again later."
         except Exception:
             answer = "AI search unavailable. Please try again later."
 
@@ -214,7 +245,7 @@ class Query:
             await db.close()
 
     @strawberry.field
-    def facets(self, query: str, field: str, limit: int = 10) -> Optional[JSON]:
+    def facets(self, query: str, field: str, limit: int = 10) -> Optional[JSONValue]:
         """Get search facets/filters."""
         return None
 
@@ -224,48 +255,50 @@ class Mutation:
     """GraphQL mutations for Nebula Search."""
 
     @strawberry.mutation
-    async def save_search(self, query: str, results_count: int, user_id: Optional[str] = None) -> SearchHistoryType:
+    async def save_search(
+        self,
+        info: Info,
+        query: str,
+        results_count: int,
+        user_id: Optional[str] = None,
+    ) -> SearchHistoryType:
         """Save a search to history."""
-        from app.database.engine import connect
-        from app.database.repositories.search import SearchRepository
+        from app.database.repositories.search_history import SearchHistoryRepository
 
-        db = await connect()
+        db, owner_id = await _history_owner(info, user_id)
         try:
-            repo = SearchRepository(db)
-            saved = await repo.save_search(query, results_count, user_id)
-            return SearchHistoryType(
-                id=str(saved.get("id", "")),
+            saved_id = await SearchHistoryRepository(db).record_search(
+                user_id=owner_id,
                 query=query,
-                results_count=results_count,
-                timestamp=datetime.now(),
-                user_id=user_id,
+                result_count=results_count,
             )
-        except Exception:
             return SearchHistoryType(
-                id="temp-id",
+                id=str(saved_id),
                 query=query,
                 results_count=results_count,
                 timestamp=datetime.now(),
-                user_id=user_id,
+                user_id=str(owner_id),
             )
         finally:
             await db.close()
 
     @strawberry.mutation
-    async def clear_search_history(self, user_id: Optional[str] = None) -> bool:
+    async def clear_search_history(self, info: Info, user_id: Optional[str] = None) -> bool:
         """Clear search history for a user."""
-        from app.database.engine import connect
-        from app.database.repositories.search import SearchRepository
+        from app.database.repositories.search_history import SearchHistoryRepository
 
-        db = await connect()
+        db, owner_id = await _history_owner(info, user_id)
         try:
-            repo = SearchRepository(db)
-            await repo.clear_history(user_id=user_id)
+            await SearchHistoryRepository(db).clear_user_history(user_id=owner_id)
             return True
-        except Exception:
-            return False
         finally:
             await db.close()
 
 
-schema = strawberry.Schema(query=Query, mutation=Mutation)
+schema = strawberry.Schema(
+    query=Query,
+    mutation=Mutation,
+    config=StrawberryConfig(
+        scalar_map={JSONValue: JSON_SCALAR},
+    ),
+)

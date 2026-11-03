@@ -77,20 +77,26 @@ class ParallelRetriever:
         
         # Execute retrievals in parallel
         try:
-            bm25_results, semantic_results = await asyncio.gather(
+            bm25_result: List[Dict[str, Any]] | BaseException
+            semantic_result: List[Dict[str, Any]] | BaseException
+            bm25_result, semantic_result = await asyncio.gather(
                 self._retrieve_bm25(query, documents),
                 self._retrieve_semantic(query_vector, documents),
                 return_exceptions=True,
             )
             
             # Handle exceptions
-            if isinstance(bm25_results, Exception):
-                logger.error(f"BM25 retrieval failed: {bm25_results}")
-                bm25_results = []
+            if isinstance(bm25_result, BaseException):
+                logger.error(f"BM25 retrieval failed: {bm25_result}")
+                bm25_results: List[Dict[str, Any]] = []
+            else:
+                bm25_results = bm25_result
             
-            if isinstance(semantic_results, Exception):
-                logger.error(f"Semantic retrieval failed: {semantic_results}")
-                semantic_results = []
+            if isinstance(semantic_result, BaseException):
+                logger.error(f"Semantic retrieval failed: {semantic_result}")
+                semantic_results: List[Dict[str, Any]] = []
+            else:
+                semantic_results = semantic_result
             
         except asyncio.TimeoutError:
             logger.error("Retrieval timeout")

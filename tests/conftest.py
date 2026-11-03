@@ -32,6 +32,7 @@ os.environ["RATE_LIMIT_PER_MINUTE"] = "1000"
 os.environ["SIGNUP_RATE_LIMIT"] = "1000"
 os.environ["LOGIN_RATE_LIMIT"] = "1000"
 os.environ["REFRESH_RATE_LIMIT"] = "1000"
+os.environ["REDIS_URL"] = ""
 
 from app.config import get_settings
 from app.database import init_db
@@ -45,30 +46,21 @@ def pytest_sessionstart() -> None:
     get_settings.cache_clear()
 
 
-def _close_db_connections() -> None:
+async def _close_db_connections() -> None:
     """Release pooled SQLite handles before deleting test DB files."""
-    import asyncio
-
-    async def _close() -> None:
-        from app.database.engine import close_pool
-
-        try:
-            await close_pool()
-        except Exception:
-            pass
-
+    from app.database.engine import close_pool
     try:
-        asyncio.run(_close())
+        await close_pool()
     except Exception:
         pass
     gc.collect()
 
 
-def _safe_unlink_db(db_path: Path) -> None:
+async def _safe_unlink_db(db_path: Path) -> None:
     """Remove test database file; tolerate Windows file locks."""
     if not db_path.exists():
         return
-    _close_db_connections()
+    await _close_db_connections()
     for attempt in range(8):
         try:
             db_path.unlink()
@@ -85,10 +77,10 @@ def _safe_unlink_db(db_path: Path) -> None:
 @pytest_asyncio.fixture(autouse=True)
 async def setup_db() -> AsyncGenerator[None, None]:
     db_path = Path(get_settings().db_path)
-    _safe_unlink_db(db_path)
+    await _safe_unlink_db(db_path)
     await init_db()
     yield
-    _safe_unlink_db(db_path)
+    await _safe_unlink_db(db_path)
 
 
 @pytest_asyncio.fixture

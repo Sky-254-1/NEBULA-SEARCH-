@@ -90,18 +90,18 @@ class HybridMetrics:
         self.duplicates_removed_sum = 0
         
         # Query tracking
-        self.query_counts = defaultdict(int)
+        self.query_counts: defaultdict[str, int] = defaultdict(int)
         self.recent_queries: deque = deque(maxlen=100)
         
         # Intent tracking
-        self.intent_counts = defaultdict(int)
+        self.intent_counts: defaultdict[str, int] = defaultdict(int)
         
         # Error tracking
-        self.error_counts = defaultdict(int)
+        self.error_counts: defaultdict[str, int] = defaultdict(int)
         
         # Time-based metrics
-        self.hourly_searches = defaultdict(int)
-        self.daily_searches = defaultdict(int)
+        self.hourly_searches: defaultdict[str, int] = defaultdict(int)
+        self.daily_searches: defaultdict[str, int] = defaultdict(int)
 
     def record_search(self, metrics: SearchMetrics):
         """

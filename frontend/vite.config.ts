@@ -73,8 +73,6 @@ function secureConfigureServer(server: any): any {
     server.fs.allow = ALLOWED_PATHS.filter(p => fs.existsSync(p));
   }
   
-  server.host = '127.0.0.1';
-  
   return server;
 }
 
@@ -209,9 +207,6 @@ export default defineConfig({
       output: {
         manualChunks: (id: string) => {
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') || id.includes('react-hook-form') || id.includes('@hookform')) {
-              return 'vendor-react';
-            }
             if (id.includes('@tanstack')) {
               return 'vendor-query';
             }
@@ -224,7 +219,16 @@ export default defineConfig({
             if (id.includes('zustand') || id.includes('idb') || id.includes('react-markdown') || id.includes('react-syntax') || id.includes('react-virtuoso') || id.includes('workbox')) {
               return 'vendor-features';
             }
-            return 'vendor';
+            if (
+              id.includes('/react/') ||
+              id.includes('/react-dom/') ||
+              id.includes('/react-router') ||
+              id.includes('/react-hook-form/') ||
+              id.includes('/@hookform/') ||
+              id.includes('/scheduler/')
+            ) {
+              return 'vendor-react';
+            }
           }
           return undefined;
         },

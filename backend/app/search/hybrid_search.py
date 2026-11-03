@@ -100,25 +100,26 @@ class HybridSearchEngine:
             logger.warning(f"Web search failed: {e}")
         
         # Fetch vector results (semantic search)
-        try:
-            from vector.pipeline import hybrid_search as vector_hybrid_search
-            vector_raw = await vector_hybrid_search(db, user_id, query, top_k=top_k)
-            
-            vector_results = [
-                {
-                    "id": r.get("chunk_id", f"vec_{i}"),
-                    "title": r.get("filename", ""),
-                    "snippet": r.get("content", "")[:200],
-                    "content": r.get("content", ""),
-                    "url": r.get("url", ""),
-                    "source": "vector",
-                    "lexical_score": r.get("keyword_score", 0.0),
-                    "semantic_score": r.get("vector_score", 0.5),
-                }
-                for i, r in enumerate(vector_raw, 1)
-            ]
-        except Exception as e:
-            logger.warning(f"Vector search failed: {e}")
+        if user_id is not None:
+            try:
+                from vector.pipeline import hybrid_search as vector_hybrid_search
+                vector_raw = await vector_hybrid_search(db, user_id, query, top_k=top_k)
+
+                vector_results = [
+                    {
+                        "id": r.get("chunk_id", f"vec_{i}"),
+                        "title": r.get("filename", ""),
+                        "snippet": r.get("content", "")[:200],
+                        "content": r.get("content", ""),
+                        "url": r.get("url", ""),
+                        "source": "vector",
+                        "lexical_score": r.get("keyword_score", 0.0),
+                        "semantic_score": r.get("vector_score", 0.5),
+                    }
+                    for i, r in enumerate(vector_raw, 1)
+                ]
+            except Exception as e:
+                logger.warning(f"Vector search failed: {e}")
         
         # Merge results
         merged = self._merge_results(web_results, vector_results, top_k)

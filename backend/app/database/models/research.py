@@ -14,10 +14,11 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     ForeignKey,
+    Integer,
     JSON,
 )
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.engine import Base
 
@@ -27,16 +28,17 @@ class ResearchProject(Base):
     __tablename__ = "research_projects"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    owner_id = Column(Integer, nullable=False)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     tags = Column(JSON, nullable=False, default=list)
     is_archived = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
     # Relationships
-    owner = relationship("User", back_populates="research_projects")
     notes = relationship("ResearchNote", back_populates="project", cascade="all, delete-orphan")
     bookmarks = relationship("ResearchBookmark", back_populates="project", cascade="all, delete-orphan")
     citations = relationship("ResearchCitation", back_populates="project", cascade="all, delete-orphan")
@@ -51,17 +53,18 @@ class ResearchNote(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     project_id = Column(UUID(as_uuid=True), ForeignKey("research_projects.id"), nullable=False)
-    author_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    author_id = Column(Integer, nullable=False)
     title = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
     source_url = Column(Text, nullable=True)
     tags = Column(JSON, nullable=False, default=list)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
     # Relationships
     project = relationship("ResearchProject", back_populates="notes")
-    author = relationship("User", back_populates="research_notes")
     citations = relationship("ResearchCitation", back_populates="note", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
@@ -74,7 +77,7 @@ class ResearchBookmark(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     project_id = Column(UUID(as_uuid=True), ForeignKey("research_projects.id"), nullable=False)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, nullable=False)
     url = Column(Text, nullable=False)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
@@ -83,7 +86,6 @@ class ResearchBookmark(Base):
 
     # Relationships
     project = relationship("ResearchProject", back_populates="bookmarks")
-    user = relationship("User", back_populates="research_bookmarks")
 
     def __repr__(self) -> str:
         return f"<ResearchBookmark {self.title}>"

@@ -4,13 +4,11 @@ services:
     container_name: nebula-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-nebula}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nebula}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:-nebula}
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./database/backups:/backups:rw
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nebula}"]
       interval: 10s
@@ -33,8 +31,6 @@ services:
       --maxmemory-policy allkeys-lru
       --save ""
       --appendonly no
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -49,15 +45,15 @@ services:
       context: .
       dockerfile: docker/Dockerfile
     container_name: nebula-backend
-    ports:
-      - "${BACKEND_PORT:-8000}:8000"
+    expose:
+      - "8000"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-nebula}:${POSTGRES_PASSWORD:-nebula}@postgres:5432/${POSTGRES_DB:-nebula}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-nebula}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-nebula}
       REDIS_URL: redis://redis:6379/0
       APP_ENV: production
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
       STORAGE_ROOT: /app/storage
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OLLAMA_URL: ${OLLAMA_URL:-http://localhost:11434}
     volumes:
@@ -90,11 +86,11 @@ services:
     container_name: nebula-worker
     command: ["python", "-m", "app.indexing.worker_entrypoint"]
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-nebula}:${POSTGRES_PASSWORD:-nebula}@postgres:5432/${POSTGRES_DB:-nebula}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-nebula}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-nebula}
       REDIS_URL: redis://redis:6379/0
       APP_ENV: production
       STORAGE_ROOT: /app/storage
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
     volumes:
       - nebula-storage:/app/storage
     depends_on:
@@ -124,9 +120,9 @@ services:
     container_name: nebula-scheduler
     command: ["python", "-m", "app.indexing.scheduler_entrypoint"]
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-nebula}:${POSTGRES_PASSWORD:-nebula}@postgres:5432/${POSTGRES_DB:-nebula}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-nebula}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-nebula}
       APP_ENV: production
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       REDIS_URL: redis://redis:6379/0
     depends_on:
       postgres:
@@ -153,8 +149,8 @@ services:
       context: .
       dockerfile: docker/frontend.Dockerfile
     container_name: nebula-frontend
-    ports:
-      - "${FRONTEND_PORT:-3000}:80"
+    expose:
+      - "80"
     depends_on:
       backend:
         condition: service_healthy
@@ -204,16 +200,12 @@ services:
     container_name: nebula-storage
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
     volumes:
       - minio-data:/data
-    ports:
-      - "${MINIO_PORT:-9000}:9000"
-      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     networks:
       - nebula-internal
-      - nebula-public
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
@@ -236,11 +228,8 @@ services:
     volumes:
       - ./infra/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
-    ports:
-      - "${PROMETHEUS_PORT:-9090}:9090"
     networks:
       - nebula-internal
-      - nebula-public
     restart: unless-stopped
     deploy:
       resources:

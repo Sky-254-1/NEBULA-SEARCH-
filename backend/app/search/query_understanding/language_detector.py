@@ -122,7 +122,7 @@ class LanguageDetector:
         
         # Return language with highest score
         if scores:
-            return max(scores, key=scores.get)
+            return max(scores, key=lambda lang: scores[lang])
         
         return None
     

@@ -23,11 +23,11 @@ class RobotsParser:
         self._cache: dict[str, tuple[float, RobotFileParser]] = {}
         self._delay_cache: dict[str, float] = {}
 
-    async def _fetch_robots(self, netloc: str, scheme: str) -> RobotFileParser | None:
+    async def _fetch_robots(self, netloc: str, scheme: str) -> RobotFileParser:
         robots_url = f"{scheme}://{netloc}/robots.txt"
         rp = RobotFileParser()
         if not await is_safe_destination(robots_url):
-            rp.disallow_all = True
+            rp.parse(["User-agent: *", "Disallow: /"])
             self._cache[netloc] = (time.time(), rp)
             return rp
         try:
@@ -36,12 +36,12 @@ class RobotsParser:
                 if resp.status_code == 200:
                     rp.parse(resp.text.splitlines())
                 elif 300 <= resp.status_code < 400:
-                    rp.disallow_all = True
+                    rp.parse(["User-agent: *", "Disallow: /"])
                 else:
-                    rp.allow_all = True
+                    rp.parse([])
         except Exception as exc:
             logger.debug("Failed to fetch robots.txt from %s: %s", robots_url, exc)
-            rp.allow_all = True
+            rp.parse([])
         self._cache[netloc] = (time.time(), rp)
         return rp
 

@@ -81,7 +81,7 @@ class IndexingConfig:
     chunk_overlap: int = 200
 
     # File type support
-    supported_extensions: set[str] = None
+    supported_extensions: set[str] | None = None
 
     def __post_init__(self) -> None:
         if self.supported_extensions is None:

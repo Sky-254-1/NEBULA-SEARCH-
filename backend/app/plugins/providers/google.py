@@ -28,15 +28,18 @@ class GoogleSearchProvider(SearchProvider):
             return []
         
         url = "https://www.googleapis.com/customsearch/v1"
-        params = {
-            "key": api_key,
+        params: dict[str, str | int] = {
             "cx": cx,
             "q": request.query,
             "num": request.max_results,
         }
         
         async with httpx.AsyncClient() as client:
-            response = await client.get(url, params=params)
+            response = await client.get(
+                url,
+                headers={"X-Goog-Api-Key": api_key},
+                params=params,
+            )
             response.raise_for_status()
             data = response.json()
         

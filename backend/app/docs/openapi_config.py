@@ -2,6 +2,9 @@
 
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
+from fastapi.routing import APIRoute
+
+from app.models.schemas import APIError
 
 
 def configure_openapi(app: FastAPI):
@@ -19,11 +22,15 @@ def configure_openapi(app: FastAPI):
             tags=app.openapi_tags,
         )
         
-        # Add enterprise API information
-        openapi_schema["info"]["x-api-version"] = "2.0.0"
+        # Keep the semantic application version separate from URI versions.
+        openapi_schema["info"]["x-api-version"] = app.version
+        openapi_schema["info"]["x-api-route-versions"] = ["v1", "v2"]
         openapi_schema["info"]["x-api-lifecycle"] = {
             "current": "v2",
             "deprecated": ["v1"],
+            "deprecation_dates": {
+                "v1": "2026-12-31"
+            },
             "sunset_dates": {
                 "v1": "2027-06-30"
             }
@@ -35,21 +42,83 @@ def configure_openapi(app: FastAPI):
                 "type": "http",
                 "scheme": "bearer",
                 "bearerFormat": "JWT",
-                "description": "JWT access token obtained from /api/v1/auth/login"
-            },
-            "ApiKeyAuth": {
-                "type": "apiKey",
-                "in": "header",
-                "name": "X-API-Key",
-                "description": "API key for service accounts"
+                "description": "JWT access token from /api/v1/auth/login; cookie authentication may also be enabled"
             }
         }
-        
-        # Add global security requirement
-        openapi_schema["security"] = [{"BearerAuth": []}]
+
+        def requires_bearer(dependant) -> bool:
+            call = getattr(dependant, "call", None)
+            module = getattr(call, "__module__", "")
+            name = getattr(call, "__name__", "")
+            if module.endswith("services.auth") and name in {
+                "get_current_user", "role_checker", "permission_checker"
+            }:
+                return True
+            return any(requires_bearer(child) for child in dependant.dependencies)
+
+        # FastAPI 0.12x+ keeps included routers deferred in app.routes. OpenAPI
+        # generation expands them, but iterating app.routes directly only sees
+        # `_IncludedRouter` wrappers, so auth/error metadata was silently lost.
+        routes = []
+        pending = list(app.routes)
+        seen_routers = set()
+        while pending:
+            route = pending.pop()
+            if isinstance(route, APIRoute):
+                routes.append(route)
+                continue
+            original_router = getattr(route, "original_router", None)
+            if original_router is not None and id(original_router) not in seen_routers:
+                seen_routers.add(id(original_router))
+                pending.extend(original_router.routes)
+
+        for route in routes:
+            path_item = openapi_schema["paths"].get(route.path)
+            if not path_item:
+                continue
+            for method in route.methods or ():
+                operation = path_item.get(method.lower())
+                if operation is None:
+                    continue
+                if route.path.startswith("/api/"):
+                    operation.setdefault("responses", {}).setdefault(
+                        "default",
+                        {
+                            "description": "API error",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/APIError"}
+                                }
+                            },
+                        },
+                    )
+                if requires_bearer(route.dependant):
+                    operation["security"] = [{"BearerAuth": []}]
+                    operation.setdefault("responses", {}).setdefault(
+                        "401", {"$ref": "#/components/responses/UnauthorizedError"}
+                    )
+                    operation.setdefault("responses", {}).setdefault(
+                        "403", {"$ref": "#/components/responses/ForbiddenError"}
+                    )
+                if route.path == "/api/v1/indexing/jobs" and method.upper() == "POST":
+                    accepted = operation.get("responses", {}).get("202")
+                    if accepted is not None:
+                        accepted.setdefault("headers", {})["Location"] = {
+                            "description": "URI of the created indexing job resource",
+                            "schema": {"type": "string"},
+                        }
+
+        components = openapi_schema.setdefault("components", {})
+        schemas = components.setdefault("schemas", {})
+        error_schema = APIError.model_json_schema(
+            ref_template="#/components/schemas/{model}"
+        )
+        definitions = error_schema.pop("$defs", {})
+        schemas.update(definitions)
+        schemas["APIError"] = error_schema
         
         # Add standard error responses
-        openapi_schema["components"]["responses"] = {
+        components["responses"] = {
             "UnauthorizedError": {
                 "description": "Authentication required",
                 "content": {
@@ -178,7 +247,7 @@ def configure_openapi(app: FastAPI):
         app.openapi_schema = openapi_schema
         return app.openapi_schema
     
-    app.openapi = custom_openapi
+    setattr(app, "openapi", custom_openapi)
 
 
 # Standard error codes

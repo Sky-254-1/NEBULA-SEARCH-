@@ -1,7 +1,9 @@
 """Enhanced rate limiter with Redis backing, sliding window, and standard headers."""
 
 import logging
+import asyncio
 import time
+import uuid
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Optional
@@ -15,6 +17,31 @@ from app.services.cache import cache_service
 
 settings = get_settings()
 logger = logging.getLogger("nebula.ratelimit")
+
+_REDIS_SLIDING_WINDOW_SCRIPT = """
+local key = KEYS[1]
+local window = tonumber(ARGV[1])
+local limit = tonumber(ARGV[2])
+local member = ARGV[3]
+local clock = redis.call('TIME')
+local now = tonumber(clock[1]) + (tonumber(clock[2]) / 1000000)
+local cutoff = now - window
+redis.call('ZREMRANGEBYSCORE', key, '-inf', cutoff)
+redis.call('ZADD', key, now, member)
+local count = redis.call('ZCARD', key)
+redis.call('EXPIRE', key, window + 1)
+if count > limit then
+  redis.call('ZREM', key, member)
+  count = count - 1
+  local oldest = redis.call('ZRANGE', key, 0, 0, 'WITHSCORES')
+  local retry_after = window
+  if oldest[2] then
+    retry_after = math.max(1, math.ceil(tonumber(oldest[2]) + window - now))
+  end
+  return {0, count, retry_after, now + window}
+end
+return {1, count, 0, now + window}
+"""
 
 
 @dataclass
@@ -30,8 +57,9 @@ class RateLimiter:
     """Enhanced rate limiter with sliding window and multiple limit types."""
     
     def __init__(self):
-        self._memory_store: dict[str, list[float]] = defaultdict(list)
-        self._burst_store: dict[str, list[float]] = defaultdict(list)
+        self._memory_store: dict[str, list[tuple[float, str]]] = defaultdict(list)
+        self._memory_lock = asyncio.Lock()
+        self._max_memory_keys = 10000
     
     async def check_rate_limit(
         self,
@@ -94,41 +122,24 @@ class RateLimiter:
         now: float,
     ) -> tuple[bool, dict]:
         """Check sliding window rate limit."""
+        if limit <= 0:
+            return False, {"reset": now + max(window, 1), "retry_after": max(window, 1)}
+
         # Try Redis first
         if cache_service._redis:
             try:
-                # Use sorted set for sliding window
                 redis_key = f"sliding:{key}"
-                pipe = cache_service._redis.pipeline()
-                
-                # Remove old entries
-                pipe.zremrangebyscore(redis_key, 0, now - window)
-                # Add current request
-                pipe.zadd(redis_key, {str(now): now})
-                # Count requests in window
-                pipe.zcard(redis_key)
-                # Set expiry
-                pipe.expire(redis_key, window + 1)
-                
-                results = await pipe.execute()
-                count = results[2]
-                
-                # Calculate reset time
-                reset = now + window
-                
-                if count > limit:
-                    # Get oldest request time for retry_after
-                    oldest = await cache_service._redis.zrange(redis_key, 0, 0, withscores=True)
-                    if oldest:
-                        retry_after = int(oldest[0][1] + window - now) + 1
-                    else:
-                        retry_after = window
-                    
-                    return False, {
-                        "reset": reset,
-                        "retry_after": retry_after,
-                    }
-                
+                request_id = uuid.uuid4().hex
+                allowed, count, retry_after, reset = await cache_service._redis.eval(
+                    _REDIS_SLIDING_WINDOW_SCRIPT,
+                    1,
+                    redis_key,
+                    window,
+                    limit,
+                    request_id,
+                )
+                if not allowed:
+                    return False, {"reset": reset, "retry_after": retry_after}
                 return True, {
                     "remaining": limit - count,
                     "reset": reset,
@@ -138,31 +149,33 @@ class RateLimiter:
         
         # Fallback to in-memory sliding window
         window_key = f"mem:{key}"
-        timestamps = self._memory_store[window_key]
-        
-        # Remove old timestamps
-        self._memory_store[window_key] = [
-            ts for ts in timestamps if now - ts < window
-        ]
-        
-        count = len(self._memory_store[window_key])
-        
-        if count >= limit:
-            oldest = self._memory_store[window_key][0]
-            retry_after = int(oldest + window - now) + 1
-            
-            return False, {
-                "reset": now + window,
-                "retry_after": retry_after,
-            }
-        
-        # Add current timestamp
-        self._memory_store[window_key].append(now)
-        
-        return True, {
-            "remaining": limit - count - 1,
-            "reset": now + window,
-        }
+        async with self._memory_lock:
+            entries = [
+                (timestamp, member)
+                for timestamp, member in self._memory_store.get(window_key, [])
+                if timestamp > now - window
+            ]
+            if entries:
+                self._memory_store[window_key] = entries
+            else:
+                self._memory_store.pop(window_key, None)
+
+            count = len(entries)
+            if count >= limit:
+                oldest = entries[0][0]
+                retry_after = max(1, int(oldest + window - now) + 1)
+                return False, {"reset": now + window, "retry_after": retry_after}
+
+            if window_key not in self._memory_store and len(self._memory_store) >= self._max_memory_keys:
+                oldest_key = min(
+                    self._memory_store,
+                    key=lambda k: self._memory_store[k][-1][0],
+                )
+                self._memory_store.pop(oldest_key, None)
+
+            entries.append((now, uuid.uuid4().hex))
+            self._memory_store[window_key] = entries
+            return True, {"remaining": limit - count - 1, "reset": now + window}
 
 
 # Global rate limiter instance
@@ -187,14 +200,15 @@ async def rate_limit_exceeded_handler(request: Request, exc: HTTPException):
     Compatibility wrapper for SlowAPI's rate limit exceeded handler.
     Returns a proper JSON response with rate limit headers.
     """
-    retry_after = exc.headers.get("Retry-After", "60")
+    headers = exc.headers or {}
+    retry_after = headers.get("Retry-After", "60")
     return JSONResponse(
         status_code=429,
         content={"detail": exc.detail},
         headers={
-            "X-RateLimit-Limit": exc.headers.get("X-RateLimit-Limit", str(settings.rate_limit_per_minute)),
+            "X-RateLimit-Limit": headers.get("X-RateLimit-Limit", str(settings.rate_limit_per_minute)),
             "X-RateLimit-Remaining": "0",
-            "X-RateLimit-Reset": exc.headers.get("X-RateLimit-Reset", str(int(time.time() + 60))),
+            "X-RateLimit-Reset": headers.get("X-RateLimit-Reset", str(int(time.time() + 60))),
             "Retry-After": retry_after,
         },
     )

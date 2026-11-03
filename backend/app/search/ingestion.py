@@ -349,7 +349,7 @@ class DocumentIngester:
         """Parse DOCX file"""
         try:
             import docx
-            doc = docx.Document(file_path)
+            doc = docx.Document(str(file_path))
             text = ""
             for paragraph in doc.paragraphs:
                 text += paragraph.text + "\n"

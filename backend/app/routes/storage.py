@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 
 from app.config import get_settings
 from app.database import get_db
@@ -43,10 +43,18 @@ async def _user_id(db, email: str) -> int:
 
 
 @router.get("/documents", response_model=DocumentListResponse)
-async def list_documents(email: str = Depends(get_current_user), db=Depends(get_db)):
+async def list_documents(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=100),
+    email: str = Depends(get_current_user),
+    db=Depends(get_db),
+):
     user_id = await _user_id(db, email)
     docs = DocumentRepository(db)
-    rows = await docs.list_for_user(user_id)
+    rows = await docs.list_for_user(
+        user_id, limit=page_size, offset=(page - 1) * page_size
+    )
+    total = await docs.count_for_user(user_id)
     return DocumentListResponse(
         documents=[
             DocumentResponse(
@@ -57,7 +65,15 @@ async def list_documents(email: str = Depends(get_current_user), db=Depends(get_
                 created_at=str(r["created_at"]),
             )
             for r in rows
-        ]
+        ],
+        pagination=PaginationMeta(
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=(total + page_size - 1) // page_size,
+            has_next=page * page_size < total,
+            has_previous=page > 1,
+        ),
     )
 
 

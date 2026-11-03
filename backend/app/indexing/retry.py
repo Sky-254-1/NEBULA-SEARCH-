@@ -102,6 +102,11 @@ class RetryHandler:
     def should_retry(self, error: Exception, retry_count: int) -> bool:
         """Check if job should be retried."""
         return self._policy.should_retry(error, retry_count)
+
+    @property
+    def max_retries(self) -> int:
+        """Configured automatic and manual retry limit."""
+        return self._policy.max_retries
     
     def get_delay(self, retry_count: int) -> float:
         """Get delay before next retry."""

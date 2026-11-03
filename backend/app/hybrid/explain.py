@@ -223,7 +223,7 @@ class ExplanationGenerator:
         Returns:
             Search explanation
         """
-        explanation = {
+        explanation: dict[str, Any] = {
             "query": query,
             "result_count": len(results),
             "intent": intent,
@@ -256,14 +256,14 @@ class ExplanationGenerator:
         avg_score = sum(scores) / len(scores) if scores else 0
         
         # Count boost applications
-        boost_counts = {}
+        boost_counts: dict[str, int] = {}
         for expl in explanations:
             for boost in expl.get("boosts", []):
                 boost_type = boost.get("type", "unknown")
                 boost_counts[boost_type] = boost_counts.get(boost_type, 0) + 1
         
         # Count matched term occurrences
-        term_matches = {}
+        term_matches: dict[str, int] = {}
         for expl in explanations:
             for term in expl.get("matched_terms", []):
                 term_matches[term] = term_matches.get(term, 0) + 1
@@ -332,7 +332,7 @@ class ExplanationGenerator:
         Returns:
             Dictionary mapping component to importance (0-1)
         """
-        importance = {}
+        importance: dict[str, float] = {}
         
         breakdown = explanation.get("score_breakdown", {})
         total = 0.0
@@ -340,7 +340,7 @@ class ExplanationGenerator:
         # Calculate raw contribution
         for key, value in breakdown.items():
             if isinstance(value, dict):
-                score = value.get("weighted_score", value.get("score", 0.0))
+                score = float(value.get("weighted_score", value.get("score", 0.0)) or 0.0)
                 importance[key] = score
                 total += score
         

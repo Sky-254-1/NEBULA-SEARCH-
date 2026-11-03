@@ -5,7 +5,7 @@ import logging
 import math
 import re
 from collections import Counter, defaultdict
-from typing import Dict, List, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from app.config import get_settings
 
@@ -28,8 +28,8 @@ class InvertedIndexBuilder:
 
     def __init__(self):
         self._index: Dict[str, Dict[int, List[int]]] = defaultdict(lambda: defaultdict(list))
-        self._documents: Dict[int, Dict] = {}
-        self._term_frequencies: Dict[int, Counter] = {}
+        self._documents: Dict[int, Dict[str, Any]] = {}
+        self._term_frequencies: Dict[int, Counter[str]] = {}
         self._document_lengths: Dict[int, int] = {}
         self._vocabulary: Set[str] = set()
         self._total_terms = 0
@@ -53,7 +53,13 @@ class InvertedIndexBuilder:
         
         return tokens
 
-    def add_document(self, doc_id: int, title: str, content: str, metadata: Dict = None) -> None:
+    def add_document(
+        self,
+        doc_id: int,
+        title: str,
+        content: str,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
         """
         Add a document to the index.
         
@@ -124,7 +130,7 @@ class InvertedIndexBuilder:
             return []
         
         # Calculate BM25 scores
-        scores = defaultdict(float)
+        scores: defaultdict[int, float] = defaultdict(float)
         total_docs = len(self._documents)
         avg_doc_length = self._total_terms / total_docs if total_docs > 0 else 0
         
@@ -155,13 +161,13 @@ class InvertedIndexBuilder:
         ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
         return ranked[:top_k]
 
-    def get_document(self, doc_id: int) -> Dict:
+    def get_document(self, doc_id: int) -> Optional[Dict[str, Any]]:
         """Get document by ID."""
         return self._documents.get(doc_id)
 
     def get_term_frequency(self, doc_id: int, term: str) -> int:
         """Get term frequency for a document."""
-        return self._term_frequencies.get(doc_id, {}).get(term, 0)
+        return self._term_frequencies.get(doc_id, Counter()).get(term, 0)
 
     def get_corpus_stats(self) -> Dict:
         """Get corpus statistics."""
@@ -207,7 +213,7 @@ class InvertedIndexBuilder:
                 docs = list(self._index[token].keys())
                 # Find other tokens that appear in same documents
                 for doc_id in docs[:10]:  # Limit to first 10 docs
-                    doc_tf = self._term_frequencies.get(doc_id, {})
+                    doc_tf = self._term_frequencies.get(doc_id, Counter())
                     for term, freq in doc_tf.most_common(5):
                         if term != token and term not in STOP_WORDS:
                             expanded.add(term)

@@ -110,7 +110,7 @@ async def hybrid_search(
     try:
         # Get documents from vector search/index
         # This is a placeholder - integrate with your document retrieval
-        documents = []
+        documents: List[Dict[str, Any]] = []
         
         # If you have a document store, fetch documents here
         # For now, we expect documents to be passed or fetched
@@ -146,7 +146,7 @@ async def explain_search(
     """
     try:
         # Get documents
-        documents = []
+        documents: List[Dict[str, Any]] = []
         
         explanation = hybrid_search_service.explain_search(
             query=request.query,
