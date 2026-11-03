@@ -4,6 +4,7 @@ import logging
 from datetime import datetime
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple
+from urllib.parse import urlparse
 
 import numpy as np
 
@@ -344,16 +345,22 @@ class MLRanker:
     def _calculate_domain_authority(self, doc: Dict[str, Any]) -> float:
         """Calculate domain authority based on URL."""
         url = doc.get("url", "")
-        url_lower = url.lower()
+        hostname = urlparse(url).hostname or ""
+        host = hostname.lower()
 
         # Known high-authority domains
-        if "wikipedia.org" in url_lower:
+        if host == "wikipedia.org" or host.endswith(".wikipedia.org"):
             return 0.9
-        elif ".edu" in url_lower:
+        elif host == "edu" or host.endswith(".edu"):
             return 0.8
-        elif ".gov" in url_lower:
+        elif host == "gov" or host.endswith(".gov"):
             return 0.85
-        elif "medium.com" in url_lower or "github.com" in url_lower:
+        elif (
+            host == "medium.com"
+            or host.endswith(".medium.com")
+            or host == "github.com"
+            or host.endswith(".github.com")
+        ):
             return 0.7
         else:
             return 0.5  # Default for unknown domains
